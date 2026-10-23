@@ -30,7 +30,18 @@ export async function loadDeckBatch(
   while (visited < maxPages) {
     const { ids, totalPages } = await deps.discover(page);
     const fresh = ids.filter((id) => !decided.has(id));
-    cards.push(...(await Promise.all(fresh.map((id) => deps.snapshot(id)))));
+    const settled = await Promise.allSettled(
+      fresh.map((id) => deps.snapshot(id)),
+    );
+    const firstFailure = settled.find((r) => r.status === "rejected");
+    // One broken detail call must not sink the batch: only give up when
+    // every candidate failed (TMDB down), else drop the failed cards.
+    if (firstFailure && settled.every((r) => r.status === "rejected")) {
+      throw firstFailure.reason;
+    }
+    for (const result of settled) {
+      if (result.status === "fulfilled") cards.push(result.value);
+    }
     visited += 1;
 
     if (page >= totalPages) return { cards, nextPage: null };

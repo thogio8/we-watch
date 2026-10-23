@@ -71,6 +71,23 @@ describe("loadDeckBatch", () => {
     expect(snapshot).not.toHaveBeenCalledWith(2);
   });
 
+  it("garde les cartes réussies quand un détail échoue", async () => {
+    const { deps, snapshot } = makeDeps({ 1: [1, 2, 3] }, 5);
+    snapshot.mockImplementation(async (id: number) => {
+      if (id === 2) throw new Error("404");
+      return snap(id);
+    });
+    const batch = await loadDeckBatch(deps, 1, 2);
+    expect(batch.cards.map((c) => c.tmdbId)).toEqual([1, 3]);
+  });
+
+  it("rejette si tous les détails du lot échouent", async () => {
+    const { deps, snapshot } = makeDeps({ 1: [1, 2] }, 5);
+    const boom = new Error("429");
+    snapshot.mockRejectedValue(boom);
+    await expect(loadDeckBatch(deps, 1, 2)).rejects.toBe(boom);
+  });
+
   it("utilise les valeurs par défaut (10 cartes, 5 pages)", async () => {
     const { deps, discover } = makeDeps({}, 50);
     const batch = await loadDeckBatch(deps, 1);
