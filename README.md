@@ -24,7 +24,7 @@ npm run dev
 - `npm run lint` : ESLint
 - `npm run typecheck` : génération des types Next puis `tsc --noEmit`
 - `npm test` : tests unitaires (Vitest)
-- `npm run test:coverage` : tests avec couverture, résultat consigné dans `docs/coverage.md`
+- `npm run test:coverage` : tests avec couverture, la couverture s'affiche en console ; `docs/coverage.md` est mis à jour à la main à partir de ce résultat
 - `npm run format` : formatage Prettier
 - `npm run db:generate` : génère une migration SQL à partir de `src/db/schema.ts`
 - `npm run db:migrate` : applique les migrations à la base ciblée par `DATABASE_URL`
@@ -55,8 +55,10 @@ turso db shell we-watch ".tables"   # la table movies doit apparaître
 ### 3. Vercel
 
 1. Importer le dépôt `thogio8/we-watch`.
-2. Définir `TMDB_ACCESS_TOKEN`, `DATABASE_URL` et `DATABASE_AUTH_TOKEN` pour les environnements Production et Preview.
-3. Déployer.
+2. Définir `TMDB_ACCESS_TOKEN`, `DATABASE_URL` et `DATABASE_AUTH_TOKEN` pour l'environnement Production.
+   > Attention : si Preview reçoit les mêmes variables, les déploiements de preview pointent vers la même base Turso et écrivent dans les données de prod. Préférer une base Turso séparée pour Preview, ou ne définir les variables que pour Production.
+3. Régler Settings → Functions → Region : Paris (cdg1), pour rester proche de la base Turso (`cdg`).
+4. Déployer.
 
 Les migrations sont lancées à la main (étape 2) avant de déployer un changement de schéma ; le build ne les exécute pas.
 
@@ -76,5 +78,8 @@ Sur l'URL Vercel, depuis un téléphone :
 - `src/db` : schéma Drizzle et repository des films (libSQL)
 - `src/tmdb` : client TMDB, schémas de validation et mapping
 - `src/features` : écrans et actions par fonctionnalité (swipe, list, draw)
-- `src/ui` : composants partagés (boutons, navigation)
+- `src/ui` : composants partagés (boutons, navigation, affiche, tags de plateformes, tampon, ticket, pile déchirée, lignes)
 - `src/app` : routes et layout Next.js
+- `src/server` : composition côté serveur (container : base, client TMDB, repository)
+- `src/styles` : design tokens CSS
+- `src/env.ts` : lecture et validation des variables d'environnement
