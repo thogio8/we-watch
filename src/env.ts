@@ -9,12 +9,15 @@ const serverEnvSchema = z.object({
     .string()
     .optional()
     .transform((value) => (value === "" ? undefined : value)),
+  // Shared code that unlocks a device (see src/access).
+  ACCESS_CODE: z.string().min(4, "ACCESS_CODE must be at least 4 characters"),
 });
 
 export type ServerEnv = {
   TMDB_ACCESS_TOKEN: string;
   DATABASE_URL: string;
   DATABASE_AUTH_TOKEN?: string;
+  ACCESS_CODE: string;
 };
 
 export function parseServerEnv(
