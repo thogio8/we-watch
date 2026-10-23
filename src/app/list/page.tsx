@@ -1,10 +1,15 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ListScreen, ListScreenFallback } from "@/features/list/ListScreen";
-import { removeFromList, unwatch } from "@/features/list/actions";
+import {
+  addFromSearch,
+  removeFromList,
+  searchCatalog,
+  unwatch,
+} from "@/features/list/actions";
 import { getMoviesRepository } from "@/server/container";
 
-/** Reads both lists on every request; no TMDB call here (R10). */
+/** Reads both lists on every request. No TMDB call here: the actions re-render this page (R10). */
 async function ListData() {
   await connection();
   const repository = getMoviesRepository();
@@ -18,6 +23,7 @@ async function ListData() {
       watched={watched}
       onRemove={removeFromList}
       onUnwatch={unwatch}
+      search={{ search: searchCatalog, add: addFromSearch }}
     />
   );
 }

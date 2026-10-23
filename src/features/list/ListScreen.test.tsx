@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Movie } from "@/domain/movie";
@@ -190,6 +196,43 @@ describe("ListScreen", () => {
     await user.click(screen.getByRole("tab", { name: "VUS · 0" }));
 
     expect(panel()).toHaveTextContent("AUCUN FILM VU POUR L’INSTANT");
+  });
+
+  it("avec la recherche : le champ est au-dessus des onglets, les résultats remplacent la liste", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      render(
+        <ListScreen
+          toWatch={[CHIHIRO]}
+          watched={[]}
+          onRemove={() => Promise.resolve()}
+          onUnwatch={() => Promise.resolve()}
+          search={{
+            search: () => Promise.resolve({ ok: true, results: [] }),
+            add: () => Promise.resolve(),
+          }}
+        />,
+      );
+
+      const searchbox = screen.getByRole("searchbox", {
+        name: "Ajouter un film",
+      });
+      expect(
+        searchbox.compareDocumentPosition(screen.getByRole("tablist")),
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+      fireEvent.change(searchbox, { target: { value: "dune" } });
+
+      expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+      expect(screen.getByText("ON CHERCHE…")).toBeVisible();
+      expect(screen.getByRole("contentinfo")).toBeVisible();
+
+      fireEvent.change(searchbox, { target: { value: "" } });
+
+      expect(screen.getByRole("tab", { name: "À VOIR · 1" })).toBeVisible();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("affiche les attributions TMDB et JustWatch", () => {

@@ -1,5 +1,11 @@
 /* Mockup screens 5-7 rows, scaled ~1.3x from the 290 px frames (see tokens.css). */
 
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -103,6 +109,43 @@ button.chip:disabled {
 .done {
   background: var(--paper);
   opacity: 0.6;
+}
+
+/* Empty list, no result, TMDB down. */
+.message {
+  margin-top: 18px;
+  padding: 22px 16px;
+  border: var(--border-dashed);
+  border-radius: var(--radius-button);
+  background: var(--white);
+  text-align: center;
+}
+
+.messageTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.messageText {
+  margin: 8px 0 0;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.alert {
+  margin: 13px 0 0;
+  padding: 8px 12px;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--yellow);
+  box-shadow: var(--shadow-offset-sm);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  text-align: center;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -45,52 +45,6 @@
   color: var(--white);
 }
 
-.alert {
-  margin: 13px 0 0;
-  padding: 8px 12px;
-  border: var(--border);
-  border-radius: var(--radius-button);
-  background: var(--yellow);
-  box-shadow: var(--shadow-offset-sm);
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
-  text-align: center;
-}
-
-.panel {
-  min-width: 0;
-}
-
-.rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Empty list: a dashed ticket stub. */
-.empty {
-  margin-top: 18px;
-  padding: 22px 16px;
-  border: var(--border-dashed);
-  border-radius: var(--radius-button);
-  background: var(--white);
-  text-align: center;
-}
-
-.emptyTitle {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  line-height: 1.1;
-}
-
-.emptyText {
-  margin: 8px 0 0;
-  font-size: var(--text-sm);
-  text-transform: uppercase;
-  opacity: 0.75;
-}
-
 /* TMDB and JustWatch attributions. */
 .footer {
   margin-top: 32px;

@@ -1,0 +1,84 @@
+/* Mockup screens 5′ and 7, scaled ~1.3x from the 290 px frames (see tokens.css). */
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch-min);
+  margin-top: 18px;
+  padding: 4px 4px 4px 13px;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--white);
+  box-shadow: var(--shadow-offset);
+  transition: box-shadow 120ms ease-out;
+}
+
+/* Focused: the pink halo of the mockup. */
+.search:focus-within {
+  box-shadow: var(--shadow-offset), var(--glow-pink);
+}
+
+.icon {
+  flex: none;
+  font-size: var(--text-lg);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  caret-color: var(--pink);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: 700;
+  text-transform: uppercase;
+  outline: none;
+  appearance: none;
+}
+
+.input::placeholder {
+  color: var(--ink);
+  font-weight: 400;
+  opacity: 0.5;
+}
+
+/* Our own ✕ replaces the browser's clear button. */
+.input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.clear {
+  flex: none;
+  min-width: var(--touch-min);
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clear:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 0;
+}
+
+/* « RÉSULTATS TMDB » */
+.label {
+  margin: 16px 0 0;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search {
+    transition: none;
+  }
+}

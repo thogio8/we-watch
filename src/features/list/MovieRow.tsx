@@ -15,6 +15,22 @@ interface MovieRowProps {
   busy?: boolean;
 }
 
+/** The rows of a list or of the search results. */
+export function RowList({
+  busy = false,
+  children,
+}: {
+  /** The rows answer an older query while a newer one is on its way. */
+  busy?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <ul className={styles.list} aria-busy={busy || undefined}>
+      {children}
+    </ul>
+  );
+}
+
 /** One film of the list or of the search results (mockup screens 5-7). */
 export function MovieRow({
   title,
@@ -67,4 +83,32 @@ export function RowButton({ tone, children, ...rest }: RowButtonProps) {
 /** Inactive state in place of a button, e.g. « ✓ À VOIR ». */
 export function RowDone({ children }: { children: ReactNode }) {
   return <span className={`${styles.chip} ${styles.done}`}>{children}</span>;
+}
+
+/** Empty list, no result, TMDB down: a dashed ticket stub in place of the rows. */
+export function ListMessage({
+  title,
+  children,
+  live = false,
+}: {
+  title: string;
+  children?: ReactNode;
+  /** Announced to screen readers, e.g. the search's answers. */
+  live?: boolean;
+}) {
+  return (
+    <div className={styles.message} role={live ? "status" : undefined}>
+      <p className={styles.messageTitle}>{title}</p>
+      {children && <p className={styles.messageText}>{children}</p>}
+    </div>
+  );
+}
+
+/** A save that failed: the row is usable again, and this says so. */
+export function ListAlert({ children }: { children: ReactNode }) {
+  return (
+    <p className={styles.alert} role="alert">
+      {children}
+    </p>
+  );
 }

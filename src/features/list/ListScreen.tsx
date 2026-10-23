@@ -3,16 +3,24 @@
 import Image from "next/image";
 import {
   type KeyboardEvent,
+  type ReactNode,
   useId,
   useRef,
   useState,
-  useSyncExternalStore,
   useTransition,
 } from "react";
 import type { Movie } from "@/domain/movie";
 import { formatRuntime, formatShortDate } from "@/domain/time";
 import styles from "./ListScreen.module.css";
-import { MovieRow, RowButton, RowMeta } from "./MovieRow";
+import {
+  ListAlert,
+  ListMessage,
+  MovieRow,
+  RowButton,
+  RowList,
+  RowMeta,
+} from "./MovieRow";
+import { type SearchActions, SearchPanel } from "./SearchPanel";
 
 type ListAction = (tmdbId: number) => Promise<void>;
 
@@ -21,6 +29,8 @@ interface ListScreenProps {
   watched: Movie[];
   onRemove: ListAction;
   onUnwatch: ListAction;
+  /** « AJOUTER UN FILM… » above the tabs; its results replace the list. */
+  search?: SearchActions;
 }
 
 type Tab = "toWatch" | "watched";
@@ -32,7 +42,7 @@ const TAB_LABELS: Record<Tab, string> = { toWatch: "À VOIR", watched: "VUS" };
 const EMPTY: Record<Tab, { title: string; text: string }> = {
   toWatch: {
     title: "RIEN À VOIR POUR L’INSTANT",
-    text: "Swipez quelques films pour la remplir",
+    text: "Swipez quelques films, ou cherchez-en un au-dessus",
   },
   watched: {
     title: "AUCUN FILM VU POUR L’INSTANT",
@@ -51,41 +61,22 @@ function toWatchMeta(movie: Movie): string {
     .join(" · ");
 }
 
-const subscribeNever = () => () => {};
-
-/**
- * True once hydrated. « Vu le JJ/MM » is a date on the device's clock: the
- * server's time zone may differ, so the date is only written on the client.
- */
-function useIsClient(): boolean {
-  return useSyncExternalStore(
-    subscribeNever,
-    () => true,
-    () => false,
-  );
-}
-
 interface ListRowProps {
   movie: Movie;
-  watchedDate: boolean;
   run: (action: ListAction, tmdbId: number) => Promise<void>;
   onRemove: ListAction;
   onUnwatch: ListAction;
 }
 
 /** A row with its own pending state, so a double tap cannot act twice. */
-function ListRow({
-  movie,
-  watchedDate,
-  run,
-  onRemove,
-  onUnwatch,
-}: ListRowProps) {
+function ListRow({ movie, run, onRemove, onUnwatch }: ListRowProps) {
   const [busy, startTransition] = useTransition();
   const act = (action: ListAction) =>
     startTransition(() => run(action, movie.tmdbId));
 
   if (movie.status === "watched") {
+    // « Vu le JJ/MM » is on the device's clock. These rows are never
+    // server-rendered (À VOIR is the default tab), so no time-zone mismatch.
     return (
       <MovieRow
         title={movie.title}
@@ -105,9 +96,7 @@ function ListRow({
       >
         <RowMeta>
           Vu le
-          {watchedDate && movie.watchedAt
-            ? ` ${formatShortDate(movie.watchedAt)}`
-            : null}
+          {movie.watchedAt && ` ${formatShortDate(movie.watchedAt)}`}
         </RowMeta>
       </MovieRow>
     );
@@ -138,10 +127,10 @@ export function ListScreen({
   watched,
   onRemove,
   onUnwatch,
+  search,
 }: ListScreenProps) {
   const [tab, setTab] = useState<Tab>("toWatch");
   const [failed, setFailed] = useState(false);
-  const isClient = useIsClient();
   const id = useId();
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
@@ -166,10 +155,8 @@ export function ListScreen({
     tabRefs.current[next]?.focus();
   };
 
-  return (
-    <main className={styles.screen}>
-      <h1 className={styles.logo}>NOTRE LISTE</h1>
-
+  const lists: ReactNode = (
+    <>
       <div
         className={styles.tabs}
         role="tablist"
@@ -196,38 +183,32 @@ export function ListScreen({
         ))}
       </div>
 
-      {failed && (
-        <p className={styles.alert} role="alert">
-          PAS RÉUSSI À ENREGISTRER, RÉESSAIE
-        </p>
-      )}
+      {failed && <ListAlert>PAS RÉUSSI À ENREGISTRER, RÉESSAIE</ListAlert>}
 
-      <div
-        role="tabpanel"
-        id={`${id}-panel`}
-        aria-labelledby={`${id}-${tab}`}
-        className={styles.panel}
-      >
+      <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`}>
         {shown.length === 0 ? (
-          <div className={styles.empty}>
-            <p className={styles.emptyTitle}>{EMPTY[tab].title}</p>
-            <p className={styles.emptyText}>{EMPTY[tab].text}</p>
-          </div>
+          <ListMessage title={EMPTY[tab].title}>{EMPTY[tab].text}</ListMessage>
         ) : (
-          <ul className={styles.rows}>
+          <RowList>
             {shown.map((movie) => (
               <ListRow
                 key={movie.tmdbId}
                 movie={movie}
-                watchedDate={isClient}
                 run={run}
                 onRemove={onRemove}
                 onUnwatch={onUnwatch}
               />
             ))}
-          </ul>
+          </RowList>
         )}
       </div>
+    </>
+  );
+
+  return (
+    <main className={styles.screen}>
+      <h1 className={styles.logo}>NOTRE LISTE</h1>
+      {search ? <SearchPanel {...search}>{lists}</SearchPanel> : lists}
 
       <footer className={styles.footer}>
         <a
