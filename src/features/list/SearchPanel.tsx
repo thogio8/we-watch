@@ -36,7 +36,13 @@ interface SearchPanelProps extends SearchActions {
 /** The last answer, and the (trimmed) query it answers. */
 interface Answer {
   query: string;
-  outcome: SearchOutcome;
+  outcome: SearchOutcome | Crashed;
+}
+
+/** The search itself threw (not a TMDB outage, which comes back as ok: false). */
+interface Crashed {
+  ok: false;
+  crashed: true;
 }
 
 const DEBOUNCE_MS = 300;
@@ -95,6 +101,9 @@ function Results({
     return <ListMessage title="ON CHERCHE…" live />;
   }
   if (!answer.outcome.ok) {
+    if ("crashed" in answer.outcome) {
+      return <ListMessage title="LA RECHERCHE A ÉCHOUÉ, RÉESSAIE" live />;
+    }
     return <ListMessage title="TMDB NE RÉPOND PAS, RÉESSAIE" live />;
   }
   if (answer.outcome.results.length === 0) {
@@ -127,7 +136,7 @@ export function SearchPanel({ search, add, children }: SearchPanelProps) {
     let current = true;
     const timer = setTimeout(() => {
       search(trimmed)
-        .catch((): SearchOutcome => ({ ok: false }))
+        .catch((): Crashed => ({ ok: false, crashed: true }))
         .then((outcome) => {
           if (current) setAnswer({ query: trimmed, outcome });
         });

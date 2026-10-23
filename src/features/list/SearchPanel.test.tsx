@@ -259,7 +259,7 @@ describe("SearchPanel", () => {
     );
   });
 
-  it("une recherche rejetée est traitée comme un échec TMDB", async () => {
+  it("une recherche rejetée affiche un échec neutre, pas une panne TMDB", async () => {
     renderPanel({
       search: vi.fn<Search>(() => Promise.reject(new Error("offline"))),
     });
@@ -267,7 +267,8 @@ describe("SearchPanel", () => {
     typeQuery("dune");
     await settle();
 
-    expect(screen.getByText("TMDB NE RÉPOND PAS, RÉESSAIE")).toBeVisible();
+    expect(screen.getByText("LA RECHERCHE A ÉCHOUÉ, RÉESSAIE")).toBeVisible();
+    expect(screen.queryByText("TMDB NE RÉPOND PAS, RÉESSAIE")).toBeNull();
   });
 
   it("aucun résultat → « RIEN TROUVÉ POUR « … » »", async () => {
