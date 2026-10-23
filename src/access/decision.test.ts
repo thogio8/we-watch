@@ -57,6 +57,7 @@ const cases: [string, string, CookieKind, AccessDecision][] = [
   ["/icon/32", "GET", "absent", "allow"],
   ["/icon/512", "GET", "absent", "allow"],
   ["/apple-icon", "GET", "absent", "allow"],
+  ["/maskable-icon", "GET", "absent", "allow"],
   ["/iconographie", "GET", "absent", "redirect"],
   ["/apple-icons", "GET", "absent", "redirect"],
   // A static extension does not open a POST

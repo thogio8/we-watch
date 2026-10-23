@@ -16,7 +16,7 @@ interface AccessRequest {
  * and the PWA manifest and icons (iOS fetches them without cookies).
  */
 const PUBLIC_ASSET =
-  /^(?:\/_next\/.*|\/manifest\.webmanifest|\/(?:apple-)?icon(?:\/[^/]*)?|\/[^/]+\.(?:svg|png|jpe?g|webp|gif|ico|woff2?))$/;
+  /^(?:\/_next\/.*|\/manifest\.webmanifest|\/(?:apple-|maskable-)?icon(?:\/[^/]*)?|\/[^/]+\.(?:svg|png|jpe?g|webp|gif|ico|woff2?))$/;
 
 function isReadOnly(method: string): boolean {
   return method === "GET" || method === "HEAD";
