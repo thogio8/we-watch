@@ -15,6 +15,10 @@ const searchMovies = vi.fn();
 const getMovieSnapshot = vi.fn();
 const client = { get: vi.fn() };
 
+const assertUnlocked = vi.fn();
+vi.mock("@/access/assert-unlocked", () => ({
+  assertUnlocked: () => assertUnlocked(),
+}));
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply, statusesOf }),
   getTmdbClient: () => client,
@@ -45,6 +49,7 @@ const DUNE_2 = snapshot(693134, "Dune : Deuxième partie");
 const DUNE_1984 = snapshot(841, "Dune");
 
 beforeEach(() => {
+  assertUnlocked.mockReset().mockResolvedValue(undefined);
   apply.mockReset().mockResolvedValue("applied");
   statusesOf.mockReset().mockResolvedValue(new Map());
   revalidatePath.mockReset();
@@ -143,4 +148,22 @@ describe("addFromSearch", () => {
       expect(apply).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("appareil verrouillé", () => {
+  it.each([
+    ["removeFromList", () => removeFromList(841)],
+    ["unwatch", () => unwatch(841)],
+    ["searchCatalog", () => searchCatalog("dune")],
+    ["addFromSearch", () => addFromSearch(841)],
+  ] as const)("%s refuse sans rien appliquer", async (_name, call) => {
+    assertUnlocked.mockRejectedValue(new Error("device is locked"));
+
+    await expect(call()).rejects.toThrow("device is locked");
+    expect(apply).not.toHaveBeenCalled();
+    expect(searchMovies).not.toHaveBeenCalled();
+    expect(getMovieSnapshot).not.toHaveBeenCalled();
+    expect(statusesOf).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
 });

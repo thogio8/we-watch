@@ -1,5 +1,6 @@
 "use server";
 
+import { assertUnlocked } from "@/access/assert-unlocked";
 import {
   getDeckDeps,
   getMoviesRepository,
@@ -26,6 +27,7 @@ export async function decideSwipe(
   tmdbId: number,
   decision: SwipeDecision,
 ): Promise<void> {
+  await assertUnlocked();
   // Server Actions are public endpoints: never trust the arguments' types.
   if (!isPositiveInt(tmdbId)) {
     throw new Error(`decideSwipe: invalid tmdbId ${String(tmdbId)}`);
@@ -43,6 +45,7 @@ export async function decideSwipe(
 
 /** Next deck batch from `page`. TMDB being down is expected: `{ ok: false }`. */
 export async function loadMoreCards(page: number): Promise<LoadMoreResult> {
+  await assertUnlocked();
   if (!isPositiveInt(page)) {
     throw new Error(`loadMoreCards: invalid page ${String(page)}`);
   }

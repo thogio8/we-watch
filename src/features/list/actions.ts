@@ -1,5 +1,6 @@
 "use server";
 
+import { assertUnlocked } from "@/access/assert-unlocked";
 import { revalidatePath } from "next/cache";
 import type { MovieSnapshot, MovieStatus } from "@/domain/movie";
 import type { MovieAction } from "@/domain/transitions";
@@ -43,16 +44,19 @@ async function applyFromList(
 
 /** ✕ on « à voir »: the movie becomes « refusé », so it never comes back to the swipe. */
 export async function removeFromList(tmdbId: number): Promise<void> {
+  await assertUnlocked();
   await applyFromList("remove", tmdbId);
 }
 
 /** ↺ À VOIR on « vus »: back to « à voir », `watched_at` cleared. */
 export async function unwatch(tmdbId: number): Promise<void> {
+  await assertUnlocked();
   await applyFromList("unwatch", tmdbId);
 }
 
 /** TMDB search (fr-FR) with each film's status. TMDB being down is expected: `{ ok: false }`. */
 export async function searchCatalog(query: string): Promise<SearchOutcome> {
+  await assertUnlocked();
   if (typeof query !== "string" || query.length > MAX_QUERY_LENGTH) {
     throw new Error("searchCatalog: invalid query");
   }
@@ -82,6 +86,7 @@ export async function searchCatalog(query: string): Promise<SearchOutcome> {
  * our minds). The snapshot is fetched again here rather than trusted from the client.
  */
 export async function addFromSearch(tmdbId: number): Promise<void> {
+  await assertUnlocked();
   assertTmdbId("search_add", tmdbId);
   const snapshot = await getMovieSnapshot(getTmdbClient(), tmdbId);
   await getMoviesRepository().apply("search_add", tmdbId, snapshot);

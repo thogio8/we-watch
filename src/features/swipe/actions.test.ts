@@ -10,6 +10,10 @@ const loadDeckBatch = vi.fn();
 const client = { get: vi.fn() };
 const deckDeps = { discover: vi.fn(), snapshot: vi.fn(), decidedIds: vi.fn() };
 
+const assertUnlocked = vi.fn();
+vi.mock("@/access/assert-unlocked", () => ({
+  assertUnlocked: () => assertUnlocked(),
+}));
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply }),
   getTmdbClient: () => client,
@@ -37,6 +41,7 @@ const WHIPLASH: MovieSnapshot = {
 };
 
 beforeEach(() => {
+  assertUnlocked.mockReset().mockResolvedValue(undefined);
   apply.mockReset().mockResolvedValue("applied");
   revalidatePath.mockReset();
   getMovieSnapshot.mockReset().mockResolvedValue(WHIPLASH);
@@ -108,4 +113,18 @@ describe("loadMoreCards", () => {
       expect(loadDeckBatch).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("appareil verrouillé", () => {
+  it.each([
+    ["decideSwipe", () => decideSwipe(244786, "keep")],
+    ["loadMoreCards", () => loadMoreCards(1)],
+  ] as const)("%s refuse sans rien appliquer", async (_name, call) => {
+    assertUnlocked.mockRejectedValue(new Error("device is locked"));
+
+    await expect(call()).rejects.toThrow("device is locked");
+    expect(getMovieSnapshot).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+    expect(loadDeckBatch).not.toHaveBeenCalled();
+  });
 });
