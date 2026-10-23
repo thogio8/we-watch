@@ -49,7 +49,7 @@ Hébergement : Vercel (app) + Turso (base libSQL).
 ### 1. Turso
 
 ```bash
-turso db create we-watch --location cdg
+turso db create we-watch --location aws-eu-west-1
 turso db show we-watch --url        # → DATABASE_URL (libsql://…)
 turso db tokens create we-watch     # → DATABASE_AUTH_TOKEN
 ```
@@ -70,7 +70,7 @@ turso db shell we-watch ".tables"   # la table movies doit apparaître
 1. Importer le dépôt `thogio8/we-watch`.
 2. Définir `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN` et `ACCESS_CODE` pour l'environnement Production.
    > Attention : si Preview reçoit les mêmes variables, les déploiements de preview pointent vers la même base Turso et écrivent dans les données de prod. Préférer une base Turso séparée pour Preview, ou ne définir les variables que pour Production.
-3. Régler Settings → Functions → Region : Paris (cdg1), pour rester proche de la base Turso (`cdg`).
+3. La région des fonctions est fixée à Dublin (`dub1`) par `vercel.json`, au plus près de la base Turso (`aws-eu-west-1`, Irlande — Turso ne propose pas Paris).
 4. Déployer.
 
 Les migrations sont lancées à la main (étape 2) avant de déployer un changement de schéma ; le build ne les exécute pas.
