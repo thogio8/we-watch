@@ -1,0 +1,111 @@
+// @vitest-environment jsdom
+// Own file: motion reads `prefers-reduced-motion` once per module, and these
+// tests need the real fly-out (SwipeDeck.test.tsx runs reduced motion).
+import "@testing-library/jest-dom/vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { MovieSnapshot } from "@/domain/movie";
+import type { SwipeDecision } from "./actions";
+import { SwipeDeck } from "./SwipeDeck";
+
+const card = (tmdbId: number, title: string): MovieSnapshot => ({
+  tmdbId,
+  title,
+  releaseYear: 2014,
+  runtimeMinutes: 107,
+  overview: "",
+  posterPath: null,
+  voteAverage: 8.4,
+  providers: [],
+});
+
+const WHIPLASH = card(244786, "WHIPLASH");
+const CHIHIRO = card(129, "LE VOYAGE DE CHIHIRO");
+
+beforeEach(() => {
+  vi.stubGlobal(
+    "matchMedia",
+    (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) satisfies MediaQueryList,
+  );
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+describe("SwipeDeck (animations actives)", () => {
+  it("un double tap pendant l'envol ne décide qu'une carte", async () => {
+    const decide = vi.fn(() => Promise.resolve());
+    const user = userEvent.setup();
+    render(
+      <SwipeDeck
+        initial={{
+          ok: true,
+          batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
+        }}
+        decide={decide}
+        loadMore={() => Promise.resolve({ ok: false })}
+      />,
+    );
+
+    await user.dblClick(screen.getByRole("button", { name: "ON LE VEUT ♥" }));
+
+    expect(decide).toHaveBeenCalledExactlyOnceWith(244786, "keep");
+  });
+
+  it("un échec pendant l'envol de l'avant-dernière carte rend la main aux boutons", async () => {
+    // The save fails while the card is still flying out (~350 ms): it comes
+    // back, and with two cards no other exit is left to release the buttons.
+    const decide = vi
+      .fn<(tmdbId: number, decision: SwipeDecision) => Promise<void>>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("offline")), 100),
+          ),
+      )
+      .mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <SwipeDeck
+        initial={{
+          ok: true,
+          batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
+        }}
+        decide={decide}
+        loadMore={() => Promise.resolve({ ok: false })}
+      />,
+    );
+    const keep = () => screen.getByRole("button", { name: "ON LE VEUT ♥" });
+    const deck = () => screen.getByRole("region", { name: "Film à trier" });
+
+    await user.click(keep());
+    expect(deck()).toHaveAttribute("aria-busy", "true");
+    await screen.findByRole("alert");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+        "WHIPLASH",
+      ),
+    );
+    await waitFor(() => expect(deck()).not.toHaveAttribute("aria-busy"), {
+      timeout: 1500,
+    });
+    await user.click(keep());
+
+    expect(decide).toHaveBeenCalledTimes(2);
+    expect(decide).toHaveBeenLastCalledWith(244786, "keep");
+  });
+});

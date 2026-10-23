@@ -48,13 +48,13 @@ describe("decideSwipe", () => {
     ["keep", "swipe_keep"],
     ["reject", "swipe_reject"],
   ] as const)(
-    "%s enregistre le film avec son snapshot et rafraîchit les pages",
+    "%s enregistre le film avec son snapshot, sans re-rendre la page (R10)",
     async (decision, action) => {
       await decideSwipe(244786, decision);
 
       expect(getMovieSnapshot).toHaveBeenCalledWith(client, 244786);
       expect(apply).toHaveBeenCalledWith(action, 244786, WHIPLASH);
-      expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+      expect(revalidatePath).not.toHaveBeenCalled();
     },
   );
 

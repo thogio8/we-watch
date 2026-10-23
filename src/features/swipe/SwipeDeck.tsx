@@ -131,21 +131,28 @@ interface CardStackProps {
 /**
  * The top two tickets and the buttons. While a card flies out, the buttons
  * wait, so a double tap cannot decide the next film before anyone has seen
- * it. That lock lives here: it resets with the stack whenever the deck runs
- * dry, since the leaving card then never reports the end of its exit.
+ * it. The lock is the set of leaving ids, cleared when every exit completes.
+ * A card whose save failed comes back mid-flight: AnimatePresence then never
+ * reports the end of its exit, so a leaving id back in the queue no longer
+ * locks. The lock also resets with the stack whenever the deck runs dry.
  */
 function CardStack({ queue, lastDecision, onDecide }: CardStackProps) {
   const reduce = useReducedMotion() ?? false;
-  const [leaving, setLeaving] = useState(false);
+  const [leavingIds, setLeavingIds] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
   const [top] = queue;
   if (!top) return null;
 
+  const queued = new Set(queue.map((card) => card.tmdbId));
+  const locked = [...leavingIds].some((id) => !queued.has(id));
+
   const decide = (card: MovieSnapshot, decision: SwipeDecision) => {
-    setLeaving(true);
+    setLeavingIds((ids) => new Set(ids).add(card.tmdbId));
     onDecide(card, decision);
   };
   const choose = (decision: SwipeDecision) => {
-    if (!leaving) decide(top, decision);
+    if (!locked) decide(top, decision);
   };
 
   return (
@@ -153,12 +160,12 @@ function CardStack({ queue, lastDecision, onDecide }: CardStackProps) {
       <section
         className={styles.deck}
         aria-label="Film à trier"
-        aria-busy={leaving || undefined}
+        aria-busy={locked || undefined}
       >
         <AnimatePresence
           custom={lastDecision}
           initial={false}
-          onExitComplete={() => setLeaving(false)}
+          onExitComplete={() => setLeavingIds(new Set())}
         >
           {/* Behind first: later grid items paint on top. */}
           {queue
