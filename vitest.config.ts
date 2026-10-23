@@ -20,6 +20,7 @@ export default defineConfig({
       provider: "v8",
       // Business scope gated before the front-end work (see global constraints).
       include: [
+        "src/access/**",
         "src/domain/**",
         "src/db/**",
         "src/tmdb/**",
