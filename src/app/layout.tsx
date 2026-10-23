@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo_Black, Space_Mono } from "next/font/google";
+import { DrawSessionProvider } from "@/features/draw/DrawSessionProvider";
 import { BottomNav } from "@/ui/BottomNav";
 import "@/styles/tokens.css";
 import "./globals.css";
@@ -29,7 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${display.variable} ${mono.variable}`}>
       <body>
-        <div className="shell">{children}</div>
+        {/* Above the routes: the draw survives tab switches (spec §4.1). */}
+        <DrawSessionProvider>
+          <div className="shell">{children}</div>
+        </DrawSessionProvider>
         <BottomNav />
       </body>
     </html>
