@@ -8,7 +8,7 @@ interface TicketProps {
   className?: string;
 }
 
-const DEFAULT_POSTER_HEIGHT = 250;
+const DEFAULT_POSTER_HEIGHT = 330;
 
 export function Ticket({
   poster,

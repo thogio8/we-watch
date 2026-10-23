@@ -9,15 +9,15 @@
 
 /* « ADMIT 2 », platform stamps. */
 .paper {
-  padding: 3px 8px;
+  padding: 4px 10px;
   background: var(--paper);
-  font-size: 12px;
+  font-size: var(--text-md);
 }
 
 /* « FINI À 23H12 », « DURÉE INCONNUE ». */
 .yellow {
-  padding: 4px 8px;
+  padding: 5px 10px;
   background: var(--yellow);
   box-shadow: var(--shadow-offset-sm);
-  font-size: 13px;
+  font-size: var(--text-lg);
 }

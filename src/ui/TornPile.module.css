@@ -2,9 +2,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 16px;
-  font-size: 10px;
+  gap: 10px;
+  margin-top: 20px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
 }
 
@@ -14,8 +14,8 @@
 
 /* Small pink ticket with a torn bottom edge. */
 .torn {
-  width: 26px;
-  height: 16px;
+  width: 34px;
+  height: 21px;
   border: var(--border-thin);
   background: var(--pink);
   clip-path: polygon(
@@ -33,5 +33,5 @@
 }
 
 .torn + .torn {
-  margin-left: -18px;
+  margin-left: -23px;
 }

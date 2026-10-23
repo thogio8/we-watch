@@ -8,12 +8,6 @@ interface PosterProps {
   size: PosterSize;
 }
 
-const RENDERED_WIDTH: Record<PosterSize, string> = {
-  w92: "92px",
-  w342: "342px",
-  w500: "480px",
-};
-
 /** Fills its sized parent; falls back to the mockup's riso print without a poster. */
 export function Poster({ path, title, size }: PosterProps) {
   if (path === null) {
@@ -31,7 +25,6 @@ export function Poster({ path, title, size }: PosterProps) {
         src={posterUrl(path, size)}
         alt={`Affiche de ${title}`}
         fill
-        sizes={RENDERED_WIDTH[size]}
         className={styles.image}
       />
     </div>

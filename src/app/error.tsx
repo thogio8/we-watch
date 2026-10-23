@@ -14,9 +14,9 @@ export default function ErrorPage({ retry }: ErrorPageProps) {
   return (
     <main className={styles.page}>
       <Ticket
-        posterHeight={160}
+        posterHeight={200}
         poster={
-          <div aria-hidden="true">
+          <div className={styles.art} aria-hidden="true">
             <Poster path={null} title="Bobine" size="w342" />
             <Stamp tone="paper" tilt={-5} className={styles.stamp}>
               HORS SERVICE

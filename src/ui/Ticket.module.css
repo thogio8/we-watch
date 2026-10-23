@@ -16,8 +16,8 @@
 /* Punched notches on both sides of the perforation. */
 .stub {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 31px;
+  height: 31px;
   border: var(--border);
   border-radius: var(--radius-round);
   background: var(--paper);
@@ -25,14 +25,14 @@
 }
 
 .stubLeft {
-  left: -15px;
+  left: -19px;
 }
 
 .stubRight {
-  right: -15px;
+  right: -19px;
 }
 
 .info {
-  padding: 10px 12px;
+  padding: 13px 16px;
   color: var(--white);
 }

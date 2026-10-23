@@ -2,6 +2,10 @@
   padding-top: 24px;
 }
 
+.art {
+  height: 100%;
+}
+
 .stamp {
   position: absolute;
   bottom: 12px;
@@ -9,7 +13,7 @@
 }
 
 .title {
-  font-size: 18px;
+  font-size: var(--text-xl);
   line-height: 1.05;
 }
 

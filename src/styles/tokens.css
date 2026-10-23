@@ -25,6 +25,25 @@
     var(--pink) 70%
   );
 
+  /*
+   * Type scale. The mockup frames are 290 px wide; real phones are 390-480 px,
+   * so mockup sizes are scaled ~1.3x, with an 11 px floor for any text.
+   * Mockup px -> token: 8 -> 2xs, 9 -> xs, 10 -> sm, 12 -> md, 13 -> lg,
+   * 18 -> xl, 22 -> 2xl, 26 -> 3xl, 30 -> 4xl.
+   */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 16px;
+  --text-lg: 17px;
+  --text-xl: 23px;
+  --text-2xl: 29px;
+  --text-3xl: 34px;
+  --text-4xl: 39px;
+
+  /* Minimum touch target height (buttons, nav tabs) */
+  --touch-min: 44px;
+
   /* Outlines */
   --border-width: 3px;
   --border: var(--border-width) solid var(--ink);
@@ -56,5 +75,5 @@
 
   /* Layout */
   --column-max: 480px;
-  --nav-height: 72px;
+  --nav-height: 82px;
 }

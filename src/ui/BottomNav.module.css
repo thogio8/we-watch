@@ -4,24 +4,28 @@
   left: 50%;
   z-index: 10;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   max-width: var(--column-max);
-  padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
+  padding: 12px 18px calc(20px + env(safe-area-inset-bottom));
   border-top: var(--border);
   background: var(--paper);
   transform: translateX(-50%);
 }
 
 .tab {
+  display: flex;
   flex: 1;
-  padding: 8px 0;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  padding: 10px 0;
   border: var(--border);
   border-radius: var(--radius-tab);
   background: var(--white);
   color: var(--ink);
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: var(--text-md);
   text-align: center;
   text-decoration: none;
 }
