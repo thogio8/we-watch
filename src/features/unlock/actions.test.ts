@@ -16,9 +16,17 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => redirect(url),
 }));
 
-/** Lets the real crypto work finish until the action arms its delay. */
-async function untilDelayIsArmed(): Promise<void> {
-  while (vi.getTimerCount() === 0) {
+/**
+ * Lets the real crypto work finish until the action arms its delay
+ * (or settles without one, so a missing delay fails instead of hanging).
+ */
+async function untilDelayIsArmed(pending: Promise<unknown>): Promise<void> {
+  let settled = false;
+  pending.then(
+    () => (settled = true),
+    () => (settled = true),
+  );
+  while (!settled && vi.getTimerCount() === 0) {
     await new Promise((resolve) => setImmediate(resolve));
   }
 }
@@ -89,7 +97,7 @@ describe("unlock", () => {
         settled = true;
       });
 
-      await untilDelayIsArmed();
+      await untilDelayIsArmed(pending);
       await vi.advanceTimersByTimeAsync(WRONG_CODE_DELAY_MS - 1);
       expect(settled).toBe(false);
       await vi.advanceTimersByTimeAsync(1);
@@ -105,10 +113,22 @@ describe("unlock", () => {
     data.set("code", new Blob(["popcorn"]));
 
     const pending = unlock({ error: null }, data);
-    await untilDelayIsArmed();
+    await untilDelayIsArmed(pending);
     await vi.advanceTimersByTimeAsync(WRONG_CODE_DELAY_MS);
 
     await expect(pending).resolves.toEqual({ error: "MAUVAIS CODE" });
     expect(set).not.toHaveBeenCalled();
   });
+
+  it.each([null, "popcorn", { code: "popcorn" }])(
+    "traite un corps mal formé (%s) comme un mauvais code",
+    async (body) => {
+      const pending = unlock({ error: null }, body as unknown as FormData);
+      await untilDelayIsArmed(pending);
+      await vi.advanceTimersByTimeAsync(WRONG_CODE_DELAY_MS);
+
+      await expect(pending).resolves.toEqual({ error: "MAUVAIS CODE" });
+      expect(set).not.toHaveBeenCalled();
+    },
+  );
 });

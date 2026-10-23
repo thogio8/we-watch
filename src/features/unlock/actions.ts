@@ -16,8 +16,9 @@ export async function unlock(
   _previous: UnlockState,
   formData: FormData,
 ): Promise<UnlockState> {
-  // Server Actions are public endpoints: the field may be missing or a file.
-  const submitted = formData.get("code");
+  // Server Actions are public endpoints: the body may not be a form, and the
+  // field may be missing or a file. All of these are a wrong code.
+  const submitted = formData instanceof FormData ? formData.get("code") : null;
   const code = typeof submitted === "string" ? submitted : "";
   const { ACCESS_CODE } = getServerEnv();
 
