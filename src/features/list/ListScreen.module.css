@@ -52,11 +52,11 @@
   border-top: var(--border-thin-dashed);
   font-size: var(--text-2xs);
   line-height: 1.4;
-  opacity: 0.8;
 }
 
 .footer p {
   margin: 0 0 6px;
+  opacity: 0.8;
 }
 
 .footer a {
