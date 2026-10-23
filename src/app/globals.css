@@ -38,8 +38,11 @@ button {
   width: 100%;
   max-width: var(--column-max);
   margin: 0 auto;
-  padding: 20px 18px
-    calc(var(--nav-height) + 24px + env(safe-area-inset-bottom));
+  /* Safe-area insets keep content clear of the notch and home indicator. */
+  padding: calc(20px + env(safe-area-inset-top))
+    calc(18px + env(safe-area-inset-right))
+    calc(var(--nav-height) + 24px + env(safe-area-inset-bottom))
+    calc(18px + env(safe-area-inset-left));
 }
 
 @media (prefers-reduced-motion: reduce) {
