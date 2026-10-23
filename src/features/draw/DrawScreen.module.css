@@ -6,10 +6,6 @@
   align-items: center;
 }
 
-.line {
-  display: block;
-}
-
 /* « CE SOIR ON REGARDE », « VOUS ÊTES DIFFICILES CE SOIR ». */
 .logo {
   color: var(--pink);

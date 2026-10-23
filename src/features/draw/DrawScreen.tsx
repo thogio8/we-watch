@@ -7,18 +7,14 @@ import {
   useReducedMotion,
   type Variants,
 } from "motion/react";
-import {
-  Fragment,
-  type ReactNode,
-  useEffect,
-  useState,
-  useTransition,
-} from "react";
+import { type ReactNode, useEffect, useState, useTransition } from "react";
 import type { DrawSessionState } from "@/domain/draw-session";
 import type { Movie } from "@/domain/movie";
-import { computeEndTime, formatClock, formatRuntime } from "@/domain/time";
+import { computeEndTime, formatClock } from "@/domain/time";
 import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
+import { Lines } from "@/ui/Lines";
+import { movieMeta } from "@/ui/movieMeta";
 import { Poster } from "@/ui/Poster";
 import { ProviderTags } from "@/ui/ProviderTags";
 import { Stamp } from "@/ui/Stamp";
@@ -69,29 +65,6 @@ type Exit = "tear" | "fade";
 
 const plural = (n: number, singular: string, pluralForm: string) =>
   `${n} ${n > 1 ? pluralForm : singular}`;
-
-/** "8,5": one decimal, French comma. */
-const formatRating = (vote: number) => vote.toFixed(1).replace(".", ",");
-
-function movieMeta(movie: Movie): string {
-  return [
-    movie.releaseYear,
-    formatRuntime(movie.runtimeMinutes),
-    `★${formatRating(movie.voteAverage)}`,
-  ]
-    .filter((part) => part !== null)
-    .join(" · ");
-}
-
-/** A display title broken into lines, read as one sentence by screen readers. */
-function Lines({ lines }: { lines: readonly string[] }) {
-  return lines.map((line, index) => (
-    <Fragment key={line}>
-      {index > 0 && " "}
-      <span className={styles.line}>{line}</span>
-    </Fragment>
-  ));
-}
 
 const POSTER_HEIGHT = 290;
 

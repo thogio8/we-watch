@@ -1,0 +1,81 @@
+/* Mockup screen 4, scaled ~1.3x from the 290 px frame (see tokens.css). */
+
+/* Every card of the deck shares one grid cell, so they stack. */
+.card {
+  grid-area: 1 / 1;
+  /* Vertical scrolling stays with the browser; horizontal moves the card. */
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+/* A dragged poster must move the card, not start a native image drag. */
+.card img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* First FR platform, or « PAS EN STREAMING ». */
+.platform {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+}
+
+/* « ON LE VEUT ♥ » / « ✕ BOF », inked in while dragging. */
+.verdict {
+  position: absolute;
+  top: 40%;
+  pointer-events: none;
+}
+
+.verdict > * {
+  font-size: var(--text-2xl);
+}
+
+.keep {
+  left: 16px;
+}
+
+.reject {
+  right: 16px;
+}
+
+/* Same height for every card, so the buttons do not jump between films. */
+.info {
+  min-height: 150px;
+}
+
+.title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--text-xl);
+  line-height: 1.05;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.meta {
+  margin: 6px 0 0;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+}
+
+/* Short summary: the first lines only. */
+.overview {
+  display: -webkit-box;
+  margin: 8px 0 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  opacity: 0.95;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}

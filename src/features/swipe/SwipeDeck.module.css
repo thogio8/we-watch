@@ -1,0 +1,93 @@
+/* Mockup screen 4, scaled ~1.3x from the 290 px frame (see tokens.css). */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /*
+   * Reach the viewport edges through the shell's padding, then clip there:
+   * a thrown card must not widen the page, but its shadow and glow still show.
+   */
+  margin-inline: -18px;
+  padding-inline: 18px;
+  overflow-x: clip;
+}
+
+/* « LES MIEUX NOTÉS »: the mockup's small caption, as the page heading. */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* Cards stack in one grid cell (see SwipeCard.module.css). */
+.deck {
+  display: grid;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.deck > * {
+  grid-area: 1 / 1;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+/* « VOUS AVEZ TOUT VU (OU PRESQUE) », « TMDB NE RÉPOND PAS ». */
+.logo {
+  margin-top: 52px;
+  color: var(--pink);
+  font-size: var(--text-3xl);
+  line-height: 0.95;
+  letter-spacing: -1px;
+  text-align: center;
+  text-shadow: var(--shadow-logo);
+}
+
+.small {
+  max-width: 30ch;
+  margin: 18px 0 14px;
+  font-size: var(--text-sm);
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* Loading ticket: the riso print where the poster will be. */
+.blank {
+  height: 100%;
+  background: var(--riso-fill);
+}
+
+.waiting {
+  min-height: 150px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+/* Failed save: a yellow slip above the bottom nav. */
+.toast {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 16px + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 20;
+  width: max-content;
+  max-width: calc(100% - 36px);
+  margin: 0;
+  padding: 10px 14px;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--yellow);
+  box-shadow: var(--shadow-offset), var(--glow-yellow);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  text-align: center;
+  transform: translateX(-50%);
+}
