@@ -20,7 +20,7 @@ npm run dev
 
 L'URL de prod est publique : un code partagé, saisi une fois par appareil sur `/unlock`, protège l'app (pas de comptes).
 
-- `ACCESS_CODE` (4 caractères minimum) est obligatoire, en local comme sur Vercel.
+- `ACCESS_CODE` est obligatoire, en local comme sur Vercel : 8 caractères minimum, mais choisir une **phrase de passe de 12 caractères ou plus** (3 ou 4 mots, ex. « pop corn sous la couette »), facile à taper sur un téléphone. La pause de 500 ms après un mauvais code ne freine pas des essais lancés en parallèle : c'est la longueur du code qui protège.
 - Le bon code pose le cookie `ww_access` (httpOnly, SameSite=Lax, un an). Le cookie est `Secure` dès que `NODE_ENV=production` : `npm start` servi en http sur une IP du réseau local ne garde donc pas le cookie (`localhost` est accepté par les navigateurs) ; pour tester depuis un téléphone en LAN, utiliser `npm run dev`.
 - Changer `ACCESS_CODE` déconnecte tous les appareils.
 

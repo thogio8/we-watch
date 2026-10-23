@@ -7,12 +7,12 @@ describe("parseServerEnv", () => {
       parseServerEnv({
         TMDB_ACCESS_TOKEN: "tok",
         DATABASE_URL: "file:local.db",
-        ACCESS_CODE: "popcorn",
+        ACCESS_CODE: "pop corn ce soir",
       }),
     ).toEqual({
       TMDB_ACCESS_TOKEN: "tok",
       DATABASE_URL: "file:local.db",
-      ACCESS_CODE: "popcorn",
+      ACCESS_CODE: "pop corn ce soir",
     });
   });
   it("refuse un token TMDB manquant ou vide", () => {
@@ -20,7 +20,7 @@ describe("parseServerEnv", () => {
       parseServerEnv({
         TMDB_ACCESS_TOKEN: "",
         DATABASE_URL: "file:local.db",
-        ACCESS_CODE: "popcorn",
+        ACCESS_CODE: "pop corn ce soir",
       }),
     ).toThrow(/TMDB_ACCESS_TOKEN/);
   });
@@ -30,7 +30,7 @@ describe("parseServerEnv", () => {
         TMDB_ACCESS_TOKEN: "t",
         DATABASE_URL: "libsql://x.turso.io",
         DATABASE_AUTH_TOKEN: "",
-        ACCESS_CODE: "popcorn",
+        ACCESS_CODE: "pop corn ce soir",
       }).DATABASE_AUTH_TOKEN,
     ).toBeUndefined();
   });
@@ -39,13 +39,13 @@ describe("parseServerEnv", () => {
       parseServerEnv({ TMDB_ACCESS_TOKEN: "t", DATABASE_URL: "file:local.db" }),
     ).toThrow(/ACCESS_CODE/);
   });
-  it("refuse un code d'accès de moins de 4 caractères", () => {
+  it("refuse un code d'accès de moins de 8 caractères", () => {
     expect(() =>
       parseServerEnv({
         TMDB_ACCESS_TOKEN: "t",
         DATABASE_URL: "file:local.db",
-        ACCESS_CODE: "abc",
+        ACCESS_CODE: "popcorn",
       }),
-    ).toThrow(/ACCESS_CODE: ACCESS_CODE must be at least 4 characters/);
+    ).toThrow(/ACCESS_CODE: ACCESS_CODE must be at least 8 characters/);
   });
 });

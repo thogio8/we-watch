@@ -175,7 +175,7 @@ Les films refusés peuvent ne garder que le strict nécessaire, mais une seule t
 
 L'URL de prod est publique : un code partagé, saisi une fois par appareil, tient les inconnus dehors. Toujours pas de comptes.
 
-- Variable serveur **`ACCESS_CODE`** obligatoire (4 caractères minimum), validée avec les autres dans `src/env.ts`.
+- Variable serveur **`ACCESS_CODE`** obligatoire (8 caractères minimum ; phrase de passe de 12+ caractères recommandée, la pause sur mauvais code ne bloquant pas les essais en parallèle), validée avec les autres dans `src/env.ts`.
 - **Jeton** = HMAC-SHA256 (clé `ACCESS_CODE`, message `we-watch-access-v1`), en hexadécimal, calculé avec Web Crypto et comparé en temps constant. Changer `ACCESS_CODE` déconnecte tous les appareils.
 - **Cookie `ww_access`** : httpOnly, `Secure` en production (pas en dev http local / LAN), SameSite=Lax, Path=/, un an.
 - **`src/proxy.ts`** (le `middleware` renommé de Next 16) protège toutes les requêtes, pages et POST de Server Actions, sauf `/unlock`, `/_next/*`, les fichiers statiques (polices, images, `/tmdb-logo.svg`), le manifest et les icônes (iOS les charge sans cookie). Sans cookie valide : une page est redirigée vers `/unlock`, un POST reçoit un 401. La décision est une fonction pure testée (`accessDecision`).
