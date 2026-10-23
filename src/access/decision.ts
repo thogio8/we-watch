@@ -14,6 +14,8 @@ interface AccessRequest {
 /**
  * Paths readable without the cookie: framework assets, files from public/,
  * and the PWA manifest and icons (iOS fetches them without cookies).
+ * The root static-extension rule assumes no root dynamic segment (`/[slug]`):
+ * if one is added, `/anything.png` would reach it unlocked, so revisit this.
  */
 const PUBLIC_ASSET =
   /^(?:\/_next\/.*|\/manifest\.webmanifest|\/(?:apple-|maskable-)?icon(?:\/[^/]*)?|\/[^/]+\.(?:svg|png|jpe?g|webp|gif|ico|woff2?))$/;
