@@ -1,0 +1,20 @@
+{
+  "id": 129,
+  "title": "Le Voyage de Chihiro",
+  "release_date": "2001-07-20",
+  "runtime": 125,
+  "overview": "Chihiro, dix ans, pénètre dans un monde d'esprits où ses parents ont été transformés en cochons.",
+  "poster_path": "/chihiro.jpg",
+  "vote_average": 8.5,
+  "watch/providers": {
+    "results": {
+      "FR": {
+        "link": "https://www.themoviedb.org/movie/129-spirited-away/watch?locale=FR",
+        "flatrate": [
+          { "provider_id": 119, "provider_name": "Amazon Prime Video", "logo_path": "/prime.jpg", "display_priority": 5 },
+          { "provider_id": 8, "provider_name": "Netflix", "logo_path": "/netflix.jpg", "display_priority": 1 }
+        ]
+      }
+    }
+  }
+}

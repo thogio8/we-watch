@@ -1,0 +1,17 @@
+{
+  "page": 1,
+  "results": [
+    { "id": 129, "title": "Le Voyage de Chihiro", "release_date": "2001-07-20" },
+    { "id": 128, "title": "Princesse Mononoké", "release_date": "1997-07-12" },
+    { "id": 4935, "title": "Le Château ambulant", "release_date": "2004-11-19" },
+    { "id": 8392, "title": "Mon voisin Totoro", "release_date": "1988-04-16" },
+    { "id": 16859, "title": "Kiki la petite sorcière", "release_date": "1989-07-29" },
+    { "id": 12429, "title": "Ponyo sur la falaise", "release_date": "2008-07-19" },
+    { "id": 10515, "title": "Porco Rosso", "release_date": "1992-07-18" },
+    { "id": 149870, "title": "Le Vent se lève", "release_date": "2013-07-20" },
+    { "id": 81, "title": "Nausicaä de la vallée du vent", "release_date": "1984-03-11" },
+    { "id": 10897, "title": "Le Tombeau des lucioles", "release_date": "1988-04-16" }
+  ],
+  "total_pages": 1,
+  "total_results": 10
+}
