@@ -43,7 +43,8 @@ type View =
 /**
  * What to show for the session, given the current list. The list may have
  * changed since the draw (other tab, other device): a vanished movie or newly
- * added ones send the screen back home, the pile being kept.
+ * added ones send the screen back home, the pile being kept; an exhausted pile
+ * whose list was emptied shows the empty-list screen.
  */
 function resolveView(state: DrawSessionState, toWatch: Movie[]): View {
   switch (state.phase) {
@@ -52,6 +53,7 @@ function resolveView(state: DrawSessionState, toWatch: Movie[]): View {
       return movie ? { phase: "result", movie } : { phase: "home" };
     }
     case "exhausted":
+      if (toWatch.length === 0) return { phase: "empty" };
       return toWatch.every((m) => state.pile.includes(m.tmdbId))
         ? { phase: "exhausted" }
         : { phase: "home" };
@@ -224,8 +226,9 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
   const [isWatching, startWatching] = useTransition();
 
   const view = resolveView(state, toWatch);
-  const stale = view.phase !== state.phase;
-  // Keep the session in line with what is shown, so a stale movie cannot resurface.
+  // Keep the session in line with a fall back home, so a stale movie cannot
+  // resurface. An exhausted session shown as « empty » is left as is.
+  const stale = view.phase === "home" && state.phase !== "home";
   useEffect(() => {
     if (stale) dispatch({ type: "back_home" });
   }, [stale, dispatch]);

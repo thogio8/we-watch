@@ -174,11 +174,9 @@ describe("DrawScreen", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("durée inconnue → DURÉE INCONNUE", async () => {
+  it.each([null, 0])("durée %s → DURÉE INCONNUE", async (runtimeMinutes) => {
     const { user } = renderDraw({
-      toWatch: [
-        movie(1, "SANS DURÉE", { runtimeMinutes: null, releaseYear: null }),
-      ],
+      toWatch: [movie(1, "SANS DURÉE", { runtimeMinutes, releaseYear: null })],
     });
 
     await user.click(drawButton());
@@ -258,5 +256,32 @@ describe("DrawScreen", () => {
       await screen.findByRole("heading", { name: "WHIPLASH" }),
     ).toBeVisible();
     expect(screen.getByText(/^PAS CE SOIR\s: 1$/)).toBeVisible();
+  });
+
+  it("pile épuisée puis liste vidée → écran liste vide", async () => {
+    const { user, rerender } = renderDraw({ toWatch: [CHIHIRO] });
+    await user.click(drawButton());
+    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
+    await screen.findByRole("heading", {
+      name: "VOUS ÊTES DIFFICILES CE SOIR",
+    });
+
+    rerender({ toWatch: [] });
+
+    expect(
+      await screen.findByRole("heading", { name: "RIEN À TIRER CE SOIR" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "ON REMET TOUT" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "ALLER SWIPER" })).toBeVisible();
+    // The pile is kept: a film added later is drawable, the old ones are not.
+    rerender({ toWatch: [WHIPLASH, CHIHIRO] });
+    await user.click(
+      await screen.findByRole("button", { name: "TIRER UN FILM" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "WHIPLASH" }),
+    ).toBeVisible();
   });
 });
