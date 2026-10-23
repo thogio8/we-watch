@@ -25,6 +25,7 @@ export default defineConfig({
         "src/db/**",
         "src/tmdb/**",
         "src/features/swipe/deck.ts",
+        "src/features/unlock/actions.ts",
       ],
       thresholds: { lines: 95, functions: 95, statements: 95, branches: 90 },
     },
