@@ -1,8 +1,7 @@
+import { UNLOCK_PATH } from "./paths";
 import { isValidAccessToken } from "./token";
 
 export type AccessDecision = "allow" | "redirect" | "unauthorized";
-
-export const UNLOCK_PATH = "/unlock";
 
 interface AccessRequest {
   pathname: string;

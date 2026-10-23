@@ -4,9 +4,14 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BottomNav } from "./BottomNav";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/swipe" }));
+const pathname = vi.hoisted(() => ({ current: "/swipe" }));
 
-afterEach(cleanup);
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
+
+afterEach(() => {
+  cleanup();
+  pathname.current = "/swipe";
+});
 
 describe("BottomNav", () => {
   it("BottomNav marque l'onglet courant", () => {
@@ -36,5 +41,12 @@ describe("BottomNav", () => {
       "href",
       "/list",
     );
+  });
+
+  it("BottomNav disparaît sur l'écran du code d'accès", () => {
+    pathname.current = "/unlock";
+    render(<BottomNav />);
+
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
 });
