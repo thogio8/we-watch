@@ -32,7 +32,7 @@ export function nextStatus(
       return current === "watched" ? "to_watch" : null;
     default: {
       const unhandled: never = action;
-      return unhandled;
+      throw new Error(`Unhandled movie action: ${String(unhandled)}`);
     }
   }
 }

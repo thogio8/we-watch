@@ -35,4 +35,10 @@ describe("nextStatus", () => {
   it.each(table)("%s × %s → %s", (current, action, expected) => {
     expect(nextStatus(current, action)).toBe(expected);
   });
+
+  it("action inconnue (hors typage) → erreur", () => {
+    expect(() =>
+      nextStatus("to_watch", "bogus" as unknown as MovieAction),
+    ).toThrow("Unhandled movie action");
+  });
 });
