@@ -49,29 +49,45 @@ describe("toSnapshot", () => {
   });
 
   it("gère l'absence totale de watch/providers, runtime et FR sans flatrate", () => {
-    const base = { id: 1, title: "T", release_date: "2020-01-01", vote_average: 5 };
+    const base = {
+      id: 1,
+      title: "T",
+      release_date: "2020-01-01",
+      vote_average: 5,
+    };
     expect(toSnapshot(tmdbMovieDetailsSchema.parse(base))).toMatchObject({
       providers: [],
       runtimeMinutes: null,
       posterPath: null,
       releaseYear: 2020,
     });
-    const noFlatrate = { ...base, "watch/providers": { results: { FR: { link: "x" } } } };
-    expect(toSnapshot(tmdbMovieDetailsSchema.parse(noFlatrate)).providers).toEqual([]);
+    const noFlatrate = {
+      ...base,
+      "watch/providers": { results: { FR: { link: "x" } } },
+    };
+    expect(
+      toSnapshot(tmdbMovieDetailsSchema.parse(noFlatrate)).providers,
+    ).toEqual([]);
   });
 
   it("release_date absente ou illisible → releaseYear null", () => {
     const base = { id: 1, title: "T", vote_average: 5 };
-    expect(toSnapshot(tmdbMovieDetailsSchema.parse(base)).releaseYear).toBeNull();
     expect(
-      toSnapshot(tmdbMovieDetailsSchema.parse({ ...base, release_date: "abcd" })).releaseYear,
+      toSnapshot(tmdbMovieDetailsSchema.parse(base)).releaseYear,
+    ).toBeNull();
+    expect(
+      toSnapshot(
+        tmdbMovieDetailsSchema.parse({ ...base, release_date: "abcd" }),
+      ).releaseYear,
     ).toBeNull();
   });
 });
 
 describe("posterUrl", () => {
   it("construit l'URL d'image", () => {
-    expect(posterUrl("/a.jpg", "w342")).toBe("https://image.tmdb.org/t/p/w342/a.jpg");
+    expect(posterUrl("/a.jpg", "w342")).toBe(
+      "https://image.tmdb.org/t/p/w342/a.jpg",
+    );
   });
 });
 
@@ -93,12 +109,18 @@ describe("discoverTopRated", () => {
 
   it("plafonne totalPages à 500", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(discover));
-    expect((await discoverTopRated(clientWith(fetchImpl), 1)).totalPages).toBe(500);
+    expect((await discoverTopRated(clientWith(fetchImpl), 1)).totalPages).toBe(
+      500,
+    );
   });
 
   it("garde totalPages s'il est sous le plafond", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ ...discover, total_pages: 7 }));
-    expect((await discoverTopRated(clientWith(fetchImpl), 1)).totalPages).toBe(7);
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ ...discover, total_pages: 7 }));
+    expect((await discoverTopRated(clientWith(fetchImpl), 1)).totalPages).toBe(
+      7,
+    );
   });
 });
 
@@ -106,7 +128,10 @@ describe("getMovieSnapshot", () => {
   it("demande les providers et met en cache 24 h", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(detailsFull));
     const snap = await getMovieSnapshot(clientWith(fetchImpl), 129);
-    const [rawUrl, init] = fetchImpl.mock.calls[0] as [string, { next?: unknown }];
+    const [rawUrl, init] = fetchImpl.mock.calls[0] as [
+      string,
+      { next?: unknown },
+    ];
     const url = new URL(rawUrl);
     expect(url.pathname).toBe("/3/movie/129");
     expect(url.searchParams.get("append_to_response")).toBe("watch/providers");
@@ -134,10 +159,16 @@ describe("searchMovies", () => {
       // Reverse delay so that out-of-order completion would break ordering.
       const delay = (10 - (id % 10)) * 2;
       return new Promise<Response>((resolve) =>
-        setTimeout(() => resolve(jsonResponse({ ...detailsFull, id, title: `F${id}` })), delay),
+        setTimeout(
+          () => resolve(jsonResponse({ ...detailsFull, id, title: `F${id}` })),
+          delay,
+        ),
       );
     });
-    const result = await searchMovies(clientWith(fetchImpl as unknown as typeof fetch), "  ghibli ");
+    const result = await searchMovies(
+      clientWith(fetchImpl as unknown as typeof fetch),
+      "  ghibli ",
+    );
     expect(result.map((m) => m.tmdbId)).toEqual(
       search.results.slice(0, 8).map((r) => r.id),
     );

@@ -1,0 +1,6 @@
+docs/
+drizzle/
+coverage/
+.next/
+package-lock.json
+.superpowers/

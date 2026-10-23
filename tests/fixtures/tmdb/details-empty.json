@@ -7,7 +7,9 @@
   "poster_path": null,
   "watch/providers": {
     "results": {
-      "US": { "link": "https://www.themoviedb.org/movie/999001/watch?locale=US" }
+      "US": {
+        "link": "https://www.themoviedb.org/movie/999001/watch?locale=US"
+      }
     }
   }
 }

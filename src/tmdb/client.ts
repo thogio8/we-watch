@@ -56,7 +56,10 @@ export function createTmdbClient(opts: {
         throw new TmdbError(null, "TMDB request failed");
       }
       if (!response.ok) {
-        throw new TmdbError(response.status, `TMDB responded ${response.status}`);
+        throw new TmdbError(
+          response.status,
+          `TMDB responded ${response.status}`,
+        );
       }
 
       let body: unknown;
@@ -67,7 +70,10 @@ export function createTmdbClient(opts: {
       }
       const parsed = schema.safeParse(body);
       if (!parsed.success) {
-        throw new TmdbError(null, "TMDB response does not match the expected schema");
+        throw new TmdbError(
+          null,
+          "TMDB response does not match the expected schema",
+        );
       }
       return parsed.data;
     },
