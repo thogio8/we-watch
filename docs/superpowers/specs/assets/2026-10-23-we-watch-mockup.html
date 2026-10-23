@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>we-watch — maquette V1 (direction « Ticket d'entrée »)</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;padding:32px;font-family:system-ui,sans-serif;color:#1d1d1f;background:#f2f2f2}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px 20px;max-width:1100px;margin:0 auto}
+  .phone{--paper:#fff4d6;--ink:#1b1b6b;--pink:#ff3fa4;--yel:#ffe600;--blue:#2f6bff;
+    width:290px;height:600px;margin:0 auto;border-radius:38px;overflow:hidden;position:relative;
+    box-shadow:0 20px 50px rgba(0,0,0,.3);padding:20px 18px 0;font-family:'Space Mono',monospace;color:var(--ink);
+    background:var(--paper);background-image:radial-gradient(rgba(27,27,107,.09) 1px,transparent 1px);background-size:6px 6px}
+  .phone *{box-sizing:border-box}
+  .logo{font-family:'Archivo Black';font-size:26px;line-height:.95;text-align:center;letter-spacing:-1px;color:var(--pink);text-shadow:3px 3px 0 var(--blue)}
+  .small{font-size:10px;text-transform:uppercase;text-align:center;margin-top:6px;opacity:.75}
+  .nav{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px 14px 16px;background:var(--paper);border-top:3px solid var(--ink)}
+  .nav div{flex:1;text-align:center;font-family:'Archivo Black';font-size:12px;padding:8px 0;border:3px solid var(--ink);border-radius:10px;background:#fff}
+  .nav .on{background:var(--yel);box-shadow:3px 3px 0 var(--ink)}
+  .ticket{border:3px solid var(--ink);border-radius:16px;background:var(--pink);position:relative;overflow:hidden;box-shadow:7px 7px 0 var(--blue),0 0 40px rgba(255,63,164,.45)}
+  .poster{border-bottom:3px dashed var(--ink);position:relative;background:linear-gradient(135deg,var(--yel) 0 40%,var(--blue) 40% 70%,var(--pink) 70%)}
+  .stub{position:absolute;width:24px;height:24px;border-radius:50%;background:var(--paper);border:3px solid var(--ink);transform:translateY(-50%)}
+  .stamp{position:absolute;border:3px solid var(--ink);background:var(--paper);padding:3px 8px;font-family:'Archivo Black';font-size:12px}
+  .info{padding:10px 12px;color:#fff}
+  .t{font-family:'Archivo Black';font-size:18px;line-height:1.05;text-transform:uppercase}
+  .meta{font-size:10px;margin-top:5px;text-transform:uppercase}
+  .desc{font-size:10px;line-height:1.35;margin-top:6px;opacity:.95}
+  .btns{display:flex;justify-content:center;gap:12px;margin-top:20px}
+  .b{padding:11px 16px;border:3px solid var(--ink);border-radius:12px;font-family:'Archivo Black';font-size:13px;background:#fff;box-shadow:4px 4px 0 var(--ink)}
+  .b.y{background:var(--yel);box-shadow:4px 4px 0 var(--ink),0 0 22px rgba(255,230,0,.85)}
+  .b.p{background:var(--pink);color:#fff;box-shadow:4px 4px 0 var(--ink),0 0 22px rgba(255,63,164,.7)}
+  .big{margin:34px auto 0;width:210px;height:210px;border-radius:50%;border:4px solid var(--ink);background:var(--yel);
+    box-shadow:8px 8px 0 var(--ink),0 0 60px rgba(255,230,0,.9);display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Archivo Black';font-size:30px;line-height:1}
+  .end{position:absolute;top:12px;right:10px;transform:rotate(7deg);background:var(--yel);border:3px solid var(--ink);padding:4px 8px;font-family:'Archivo Black';font-size:13px;box-shadow:3px 3px 0 var(--ink)}
+  .pile{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;font-size:10px;text-transform:uppercase}
+  .torn{width:26px;height:16px;background:var(--pink);border:2px solid var(--ink);clip-path:polygon(0 0,100% 0,100% 70%,85% 100%,70% 70%,55% 100%,40% 70%,25% 100%,10% 70%,0 100%)}
+  .tabs{display:flex;gap:8px;margin-top:14px}
+  .tabs div{flex:1;text-align:center;font-family:'Archivo Black';font-size:12px;padding:7px 0;border:3px solid var(--ink);border-radius:10px;background:#fff}
+  .tabs .on{background:var(--pink);color:#fff;box-shadow:3px 3px 0 var(--ink)}
+  .row{display:flex;align-items:center;gap:10px;margin-top:10px;border:3px solid var(--ink);border-radius:12px;background:#fff;padding:6px;position:relative}
+  .mini{width:38px;height:54px;border:2px solid var(--ink);border-radius:6px;flex:none}
+  .row .rt{font-family:'Archivo Black';font-size:12px;line-height:1.05;text-transform:uppercase}
+  .row .rm{font-size:9px;text-transform:uppercase;margin-top:3px;opacity:.8}
+  .act{margin-left:auto;flex:none;border:2px solid var(--ink);border-radius:8px;padding:4px 6px;font-family:'Archivo Black';font-size:10px;background:var(--paper)}
+  .cap{margin-top:12px;font-size:14px;line-height:1.4;text-align:center}
+  .cap b{display:inline-block;min-width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:#1d1d1f;color:#fff;font-size:12px;margin-right:6px}
+  .cap span{color:#666}
+  .search{display:flex;align-items:center;gap:8px;margin-top:14px;border:3px solid var(--ink);border-radius:12px;background:#fff;padding:9px 10px;box-shadow:4px 4px 0 var(--ink);font-size:12px}
+  .search.focus{box-shadow:4px 4px 0 var(--ink),0 0 22px rgba(255,63,164,.6)}
+  .search .ph{opacity:.5;text-transform:uppercase}
+  .search .q{font-weight:700;text-transform:uppercase}
+  .caret{display:inline-block;width:2px;height:14px;background:var(--pink);vertical-align:middle;margin-left:1px}
+  .tag{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border:2px solid var(--ink);border-radius:99px;margin-top:4px;background:var(--yel)}
+  .tag.off{background:#fff;border-style:dashed;opacity:.8}
+  .act.add{background:var(--yel);box-shadow:2px 2px 0 var(--ink)}
+  .act.done{opacity:.6}
+  .label{font-size:10px;text-transform:uppercase;margin-top:12px;opacity:.7}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div>
+    <div class="phone">
+      <div class="logo">CE SOIR<br>ON REGARDE</div>
+      <div class="small">23 films à regarder · 4 vus</div>
+      <div class="big">TIRER<br>UN<br>FILM</div>
+      <div class="small" style="margin-top:28px">Il est 21h07</div>
+      <div class="nav"><div class="on">TIRER</div><div>SWIPER</div><div>LISTE</div></div>
+    </div>
+    <div class="cap"><b>1</b>Accueil = tirage. <span>Un seul gros bouton.</span></div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="small" style="margin-top:0">Ce soir, ce sera…</div>
+      <div class="ticket" style="margin-top:8px">
+        <div class="poster" style="height:210px"><div class="end">FINI À 23H12</div><div class="stamp" style="bottom:12px;left:10px;transform:rotate(-5deg)">ADMIT 2</div></div>
+        <div class="stub" style="left:-15px;top:210px"></div><div class="stub" style="right:-15px;top:210px"></div>
+        <div class="info"><div class="t">Le Voyage de Chihiro</div><div class="meta">2001 · 2h05 · ★8,5 · Netflix</div>
+          <div class="desc">Chihiro, dix ans, se retrouve piégée dans un monde peuplé d'esprits et doit sauver ses parents.</div></div>
+      </div>
+      <div class="btns"><div class="b">RETIRER</div><div class="b y">ON LE REGARDE</div></div>
+      <div class="pile"><div class="torn"></div><div class="torn" style="margin-left:-18px;transform:rotate(-8deg)"></div>Pas ce soir : 2</div>
+      <div class="nav"><div class="on">TIRER</div><div>SWIPER</div><div>LISTE</div></div>
+    </div>
+    <div class="cap"><b>2</b>Résultat du tirage. <span>« Retirer » → pile, « On le regarde » → vu.</span></div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="logo" style="margin-top:40px">VOUS ÊTES<br>DIFFICILES<br>CE SOIR</div>
+      <div class="pile" style="margin-top:30px;flex-wrap:wrap;padding:0 30px">
+        <div class="torn"></div><div class="torn" style="transform:rotate(9deg)"></div><div class="torn" style="transform:rotate(-6deg)"></div><div class="torn"></div><div class="torn" style="transform:rotate(12deg)"></div><div class="torn" style="transform:rotate(-10deg)"></div>
+      </div>
+      <div class="small" style="margin-top:14px">Les 23 films sont passés à la trappe</div>
+      <div class="btns" style="margin-top:30px"><div class="b y">ON REMET TOUT</div></div>
+      <div class="small" style="margin-top:18px">ou</div>
+      <div class="btns" style="margin-top:12px"><div class="b">ALLER SWIPER</div></div>
+      <div class="nav"><div class="on">TIRER</div><div>SWIPER</div><div>LISTE</div></div>
+    </div>
+    <div class="cap"><b>3</b>Pile épuisée. <span>(Liste vide : même écran, « Aller swiper » seul.)</span></div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="small" style="margin-top:0">Les mieux notés</div>
+      <div class="ticket" style="margin-top:10px">
+        <div class="poster" style="height:250px"><div class="stamp" style="top:12px;right:10px;transform:rotate(7deg)">PRIME</div></div>
+        <div class="stub" style="left:-15px;top:250px"></div><div class="stub" style="right:-15px;top:250px"></div>
+        <div class="info"><div class="t">Whiplash</div><div class="meta">2014 · 1h47 · ★8,4</div>
+          <div class="desc">Un jeune batteur de jazz face à un professeur tyrannique.</div></div>
+      </div>
+      <div class="btns"><div class="b">✕ BOF</div><div class="b p">ON LE VEUT ♥</div></div>
+      <div class="nav"><div>TIRER</div><div class="on">SWIPER</div><div>LISTE</div></div>
+    </div>
+    <div class="cap"><b>4</b>Swipe. <span>Geste ou boutons. Un « bof » ne revient jamais.</span></div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="logo" style="font-size:22px">NOTRE LISTE</div>
+      <div class="tabs"><div class="on">À VOIR · 23</div><div>VUS · 4</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#ffe600 50%,#2f6bff 50%)"></div><div><div class="rt">Le Voyage de Chihiro</div><div class="rm">2h05 · Netflix</div></div><div class="act">✕</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#ff3fa4 50%,#ffe600 50%)"></div><div><div class="rt">Whiplash</div><div class="rm">1h47 · Prime</div></div><div class="act">✕</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#2f6bff 50%,#ff3fa4 50%)"></div><div><div class="rt">Parasite</div><div class="rm">2h12 · Prime</div></div><div class="act">✕</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#ffe600 50%,#ff3fa4 50%)"></div><div><div class="rt">Le Fabuleux destin d'Amélie Poulain</div><div class="rm">2h02 · Netflix</div></div><div class="act">✕</div></div>
+      <div class="nav"><div>TIRER</div><div>SWIPER</div><div class="on">LISTE</div></div>
+    </div>
+    <div class="cap"><b>5</b>Liste « à voir ». <span>✕ retire un film ajouté par erreur.</span></div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="logo" style="font-size:22px">NOTRE LISTE</div>
+      <div class="tabs"><div>À VOIR · 23</div><div class="on">VUS · 4</div></div>
+      <div class="row" style="opacity:.85"><div class="mini" style="background:linear-gradient(135deg,#2f6bff 50%,#ffe600 50%)"></div><div><div class="rt">Interstellar</div><div class="rm">Vu le 18/10</div></div><div class="act">↺ À VOIR</div></div>
+      <div class="row" style="opacity:.85"><div class="mini" style="background:linear-gradient(135deg,#ff3fa4 50%,#2f6bff 50%)"></div><div><div class="rt">La La Land</div><div class="rm">Vu le 11/10</div></div><div class="act">↺ À VOIR</div></div>
+      <div class="row" style="opacity:.85"><div class="mini" style="background:linear-gradient(135deg,#ffe600 50%,#ff3fa4 50%)"></div><div><div class="rt">Le Dîner de cons</div><div class="rm">Vu le 04/10</div></div><div class="act">↺ À VOIR</div></div>
+      <div class="nav"><div>TIRER</div><div>SWIPER</div><div class="on">LISTE</div></div>
+    </div>
+    <div class="cap"><b>6</b>Liste « vus ». <span>« ↺ À voir » annule un « on le regarde » fait par erreur.</span></div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="logo" style="font-size:22px">NOTRE LISTE</div>
+      <div class="search"><span>⌕</span><span class="ph">Ajouter un film…</span></div>
+      <div class="tabs"><div class="on">À VOIR · 23</div><div>VUS · 4</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#ffe600 50%,#2f6bff 50%)"></div><div><div class="rt">Le Voyage de Chihiro</div><div class="rm">2h05 · Netflix</div></div><div class="act">✕</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#ff3fa4 50%,#ffe600 50%)"></div><div><div class="rt">Whiplash</div><div class="rm">1h47 · Prime · Canal+</div></div><div class="act">✕</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#2f6bff 50%,#ff3fa4 50%)"></div><div><div class="rt">Parasite</div><div class="rm">2h12 · Prime</div></div><div class="act">✕</div></div>
+      <div class="nav"><div>TIRER</div><div>SWIPER</div><div class="on">LISTE</div></div>
+    </div>
+    <div class="cap"><b>5′</b>Barre « Ajouter un film… » en haut de la liste. <span>Visible sur les deux sous-onglets.</span></div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="logo" style="font-size:22px">NOTRE LISTE</div>
+      <div class="search focus"><span>⌕</span><span class="q">dune</span><span class="caret"></span><span style="margin-left:auto;font-weight:700">✕</span></div>
+      <div class="label">Résultats TMDB</div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#ff8a3d 50%,#1b1b6b 50%)"></div><div><div class="rt">Dune</div><div class="rm">2021 · 2h35 · ★7,8</div><span class="tag">NETFLIX</span> <span class="tag">MAX</span></div><div class="act add">+ AJOUTER</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#ffe600 50%,#ff8a3d 50%)"></div><div><div class="rt">Dune : Deuxième partie</div><div class="rm">2024 · 2h46 · ★8,1</div><span class="tag">PRIME</span></div><div class="act done">✓ À VOIR</div></div>
+      <div class="row"><div class="mini" style="background:linear-gradient(135deg,#2f6bff 50%,#ffe600 50%)"></div><div><div class="rt">Dune</div><div class="rm">1984 · 2h17 · ★6,3</div><span class="tag off">PAS EN STREAMING</span></div><div class="act add">+ AJOUTER</div></div>
+      <div class="nav"><div>TIRER</div><div>SWIPER</div><div class="on">LISTE</div></div>
+    </div>
+    <div class="cap"><b>7</b>Recherche TMDB. <span>Plateformes FR affichées ; déjà en liste → « ✓ À VOIR » / « ✓ VU » ; aucun blocage.</span></div>
+  </div>
+
+</div>
+</body>
+</html>
