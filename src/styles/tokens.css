@@ -1,0 +1,60 @@
+/*
+ * Design tokens of the "Ticket d'entrée" direction (riso fluo).
+ * Values are taken verbatim from docs/superpowers/specs/assets/2026-10-23-we-watch-mockup.html.
+ * This is the ONLY file allowed to hold raw colours, shadows and radii.
+ * --font-display and --font-mono are injected by next/font in src/app/layout.tsx.
+ */
+:root {
+  /* Inks */
+  --paper: #fff4d6;
+  --ink: #1b1b6b;
+  --pink: #ff3fa4;
+  --yellow: #ffe600;
+  --blue: #2f6bff;
+  --white: #ffffff;
+
+  /* Riso paper: 1 px dots on a 6 px grid */
+  --paper-dots: radial-gradient(rgba(27, 27, 107, 0.09) 1px, transparent 1px);
+  --paper-dots-size: 6px 6px;
+
+  /* Placeholder print when TMDB has no poster */
+  --riso-fill: linear-gradient(
+    135deg,
+    var(--yellow) 0 40%,
+    var(--blue) 40% 70%,
+    var(--pink) 70%
+  );
+
+  /* Outlines */
+  --border-width: 3px;
+  --border: var(--border-width) solid var(--ink);
+  --border-dashed: var(--border-width) dashed var(--ink);
+  --border-thin: 2px solid var(--ink);
+  --border-thin-dashed: 2px dashed var(--ink);
+
+  /* Solid offset shadows */
+  --shadow-offset: 4px 4px 0 var(--ink);
+  --shadow-offset-sm: 3px 3px 0 var(--ink);
+  --shadow-offset-xs: 2px 2px 0 var(--ink);
+  --shadow-ticket: 7px 7px 0 var(--blue);
+
+  /* Coloured glows */
+  --glow-pink: 0 0 22px rgba(255, 63, 164, 0.7);
+  --glow-yellow: 0 0 22px rgba(255, 230, 0, 0.85);
+  --glow-ticket: 0 0 40px rgba(255, 63, 164, 0.45);
+
+  /* Radii */
+  --radius-ticket: 16px;
+  --radius-button: 12px;
+  --radius-tab: 10px;
+  --radius-pill: 99px;
+  --radius-round: 50%;
+
+  /* Focus ring */
+  --focus-ring: 3px solid var(--blue);
+  --focus-offset: 3px;
+
+  /* Layout */
+  --column-max: 480px;
+  --nav-height: 72px;
+}

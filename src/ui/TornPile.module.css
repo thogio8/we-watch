@@ -1,0 +1,37 @@
+.pile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.stack {
+  display: flex;
+}
+
+/* Small pink ticket with a torn bottom edge. */
+.torn {
+  width: 26px;
+  height: 16px;
+  border: var(--border-thin);
+  background: var(--pink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 70%,
+    85% 100%,
+    70% 70%,
+    55% 100%,
+    40% 70%,
+    25% 100%,
+    10% 70%,
+    0 100%
+  );
+}
+
+.torn + .torn {
+  margin-left: -18px;
+}

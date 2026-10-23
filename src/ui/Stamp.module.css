@@ -1,0 +1,23 @@
+.stamp {
+  display: inline-block;
+  border: var(--border);
+  color: var(--ink);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* « ADMIT 2 », platform stamps. */
+.paper {
+  padding: 3px 8px;
+  background: var(--paper);
+  font-size: 12px;
+}
+
+/* « FINI À 23H12 », « DURÉE INCONNUE ». */
+.yellow {
+  padding: 4px 8px;
+  background: var(--yellow);
+  box-shadow: var(--shadow-offset-sm);
+  font-size: 13px;
+}

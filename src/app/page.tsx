@@ -1,3 +1,7 @@
-export default function Home() {
-  return <main />;
+export default function DrawPage() {
+  return (
+    <main>
+      <h1>TIRER</h1>
+    </main>
+  );
 }

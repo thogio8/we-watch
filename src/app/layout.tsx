@@ -1,26 +1,37 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Archivo_Black, Space_Mono } from "next/font/google";
+import { BottomNav } from "@/ui/BottomNav";
+import "@/styles/tokens.css";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const display = Archivo_Black({
+  weight: "400",
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-display",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const mono = Space_Mono({
+  weight: ["400", "700"],
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: "WE WATCH",
+  title: "we-watch",
   description: "Swipe des films, tirage de la soirée",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#fff4d6",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+    <html lang="fr" className={`${display.variable} ${mono.variable}`}>
+      <body>
+        <div className="shell">{children}</div>
+        <BottomNav />
+      </body>
     </html>
   );
 }

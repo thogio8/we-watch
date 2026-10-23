@@ -8,6 +8,8 @@ import {
   tmdbSearchSchema,
 } from "./schemas";
 
+export { posterUrl } from "./images";
+
 const MAX_TMDB_PAGES = 500;
 const MAX_SEARCH_RESULTS = 8;
 const DETAILS_REVALIDATE_SECONDS = 86400;
@@ -15,10 +17,6 @@ const DETAILS_REVALIDATE_SECONDS = 86400;
 export interface DiscoverPage {
   ids: number[];
   totalPages: number;
-}
-
-export function posterUrl(path: string, size: "w92" | "w342" | "w500"): string {
-  return `https://image.tmdb.org/t/p/${size}${path}`;
 }
 
 export function toSnapshot(details: TmdbMovieDetails): MovieSnapshot {
@@ -34,11 +32,18 @@ export function toSnapshot(details: TmdbMovieDetails): MovieSnapshot {
     voteAverage: details.vote_average,
     providers: [...flatrate]
       .sort((a, b) => a.display_priority - b.display_priority)
-      .map((p) => ({ id: p.provider_id, name: p.provider_name, logoPath: p.logo_path })),
+      .map((p) => ({
+        id: p.provider_id,
+        name: p.provider_name,
+        logoPath: p.logo_path,
+      })),
   };
 }
 
-export async function discoverTopRated(client: TmdbClient, page: number): Promise<DiscoverPage> {
+export async function discoverTopRated(
+  client: TmdbClient,
+  page: number,
+): Promise<DiscoverPage> {
   const data = await client.get(
     "/discover/movie",
     {
@@ -55,7 +60,10 @@ export async function discoverTopRated(client: TmdbClient, page: number): Promis
   };
 }
 
-export async function getMovieSnapshot(client: TmdbClient, tmdbId: number): Promise<MovieSnapshot> {
+export async function getMovieSnapshot(
+  client: TmdbClient,
+  tmdbId: number,
+): Promise<MovieSnapshot> {
   const details = await client.get(
     `/movie/${tmdbId}`,
     { append_to_response: "watch/providers" },
@@ -65,7 +73,10 @@ export async function getMovieSnapshot(client: TmdbClient, tmdbId: number): Prom
   return toSnapshot(details);
 }
 
-export async function searchMovies(client: TmdbClient, query: string): Promise<MovieSnapshot[]> {
+export async function searchMovies(
+  client: TmdbClient,
+  query: string,
+): Promise<MovieSnapshot[]> {
   const trimmed = query.trim();
   if (trimmed === "") return [];
   const data = await client.get(
@@ -74,6 +85,8 @@ export async function searchMovies(client: TmdbClient, query: string): Promise<M
     tmdbSearchSchema,
   );
   return Promise.all(
-    data.results.slice(0, MAX_SEARCH_RESULTS).map((r) => getMovieSnapshot(client, r.id)),
+    data.results
+      .slice(0, MAX_SEARCH_RESULTS)
+      .map((r) => getMovieSnapshot(client, r.id)),
   );
 }

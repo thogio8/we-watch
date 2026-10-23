@@ -1,0 +1,27 @@
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 5px;
+  border: var(--border-thin);
+  border-radius: var(--radius-pill);
+  background: var(--yellow);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.off {
+  border: var(--border-thin-dashed);
+  background: var(--white);
+  opacity: 0.8;
+}

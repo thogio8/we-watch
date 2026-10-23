@@ -1,0 +1,38 @@
+.ticket {
+  position: relative;
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius-ticket);
+  background: var(--pink);
+  box-shadow: var(--shadow-ticket), var(--glow-ticket);
+}
+
+/* Perforation between the poster and the stub. */
+.poster {
+  position: relative;
+  border-bottom: var(--border-dashed);
+}
+
+/* Punched notches on both sides of the perforation. */
+.stub {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: var(--border);
+  border-radius: var(--radius-round);
+  background: var(--paper);
+  transform: translateY(-50%);
+}
+
+.stubLeft {
+  left: -15px;
+}
+
+.stubRight {
+  right: -15px;
+}
+
+.info {
+  padding: 10px 12px;
+  color: var(--white);
+}
