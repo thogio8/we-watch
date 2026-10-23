@@ -87,6 +87,8 @@ describe("discoverTopRated", () => {
     expect(url.searchParams.get("language")).toBe("fr-FR");
     expect(url.searchParams.get("page")).toBe("3");
     expect(page.ids).toEqual([129, 278]);
+    const init = fetchImpl.mock.calls[0]![1] as { next?: unknown };
+    expect(init.next).toEqual({ revalidate: 3600 });
   });
 
   it("plafonne totalPages à 500", async () => {

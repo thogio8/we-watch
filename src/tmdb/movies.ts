@@ -13,6 +13,7 @@ export { posterUrl } from "./images";
 const MAX_TMDB_PAGES = 500;
 const MAX_SEARCH_RESULTS = 8;
 const DETAILS_REVALIDATE_SECONDS = 86400;
+const DISCOVER_REVALIDATE_SECONDS = 3600;
 
 export interface DiscoverPage {
   ids: number[];
@@ -53,6 +54,7 @@ export async function discoverTopRated(
       page,
     },
     tmdbDiscoverSchema,
+    { revalidateSeconds: DISCOVER_REVALIDATE_SECONDS },
   );
   return {
     ids: data.results.map((r) => r.id),
