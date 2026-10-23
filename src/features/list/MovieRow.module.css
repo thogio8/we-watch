@@ -1,0 +1,113 @@
+/* Mockup screens 5-7 rows, scaled ~1.3x from the 290 px frames (see tokens.css). */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 13px;
+  padding: 8px;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--white);
+  transition: opacity 120ms ease-out;
+}
+
+.muted {
+  opacity: 0.85;
+}
+
+.busy {
+  opacity: 0.5;
+}
+
+/* w92 posters are 2:3. */
+.thumb {
+  flex: none;
+  width: 48px;
+  height: 72px;
+  overflow: hidden;
+  border: var(--border-thin);
+  border-radius: var(--radius-thumb);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--text-md);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 4px 0 0;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.action {
+  flex: none;
+  align-self: center;
+}
+
+/* ✕, ↺ À VOIR, + AJOUTER, ✓ À VOIR: a small chip, at least a full touch target. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: 5px 9px;
+  border: var(--border-thin);
+  border-radius: var(--radius-chip);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+button.chip {
+  cursor: pointer;
+  transition:
+    transform 80ms ease-out,
+    box-shadow 80ms ease-out;
+}
+
+button.chip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+button.chip:disabled {
+  cursor: not-allowed;
+}
+
+.paper {
+  background: var(--paper);
+}
+
+.yellow {
+  background: var(--yellow);
+  box-shadow: var(--shadow-offset-xs);
+}
+
+.yellow:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.done {
+  background: var(--paper);
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  button.chip {
+    transition: none;
+  }
+}
