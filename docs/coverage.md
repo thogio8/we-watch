@@ -10,11 +10,11 @@ Porte qualité avant le front (Task 8) : la couverture de la logique métier doi
 npm run test:coverage
 ```
 
-Code de sortie : 0 (84 tests, 8 fichiers de test).
+Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1).
 
 ## Périmètre
 
-`src/domain/**`, `src/db/**`, `src/tmdb/**`, `src/features/swipe/deck.ts`
+`src/access/**`, `src/domain/**`, `src/db/**`, `src/tmdb/**`, `src/features/swipe/deck.ts`, `src/features/unlock/actions.ts` (V1.1 : code d'accès)
 
 ## Seuils (vitest.config.ts)
 
@@ -26,28 +26,34 @@ Code de sortie : 0 (84 tests, 8 fichiers de test).
 
 Table générée depuis `coverage/coverage-summary.json` (reporter `json-summary`) : le reporter texte de vitest 5 n'affiche qu'un résumé global quand tous les fichiers sont couverts à 100 %.
 
-| Fichier                     | Instr. | Branches | Fonctions | Lignes |
-| --------------------------- | ------ | -------- | --------- | ------ |
-| **Total**                   | 100%   | 100%     | 100%      | 100%   |
-| src/db/create-database.ts   | 100%   | 100%     | 100%      | 100%   |
-| src/db/movies-repository.ts | 100%   | 100%     | 100%      | 100%   |
-| src/db/schema.ts            | 100%   | 100%     | 100%      | 100%   |
-| src/domain/draw-session.ts  | 100%   | 100%     | 100%      | 100%   |
-| src/domain/movie.ts         | 100%   | 100%     | 100%      | 100%   |
-| src/domain/time.ts          | 100%   | 100%     | 100%      | 100%   |
-| src/domain/transitions.ts   | 100%   | 100%     | 100%      | 100%   |
-| src/features/swipe/deck.ts  | 100%   | 100%     | 100%      | 100%   |
-| src/tmdb/client.ts          | 100%   | 100%     | 100%      | 100%   |
-| src/tmdb/movies.ts          | 100%   | 100%     | 100%      | 100%   |
-| src/tmdb/schemas.ts         | 100%   | 100%     | 100%      | 100%   |
+| Fichier                        | Instr. | Branches | Fonctions | Lignes |
+| ------------------------------ | ------ | -------- | --------- | ------ |
+| **Total**                      | 100%   | 100%     | 100%      | 100%   |
+| src/access/cookie.ts           | 100%   | 100%     | 100%      | 100%   |
+| src/access/decision.ts         | 100%   | 100%     | 100%      | 100%   |
+| src/access/paths.ts            | 100%   | 100%     | 100%      | 100%   |
+| src/access/token.ts            | 100%   | 100%     | 100%      | 100%   |
+| src/db/create-database.ts      | 100%   | 100%     | 100%      | 100%   |
+| src/db/movies-repository.ts    | 100%   | 100%     | 100%      | 100%   |
+| src/db/schema.ts               | 100%   | 100%     | 100%      | 100%   |
+| src/domain/draw-session.ts     | 100%   | 100%     | 100%      | 100%   |
+| src/domain/movie.ts            | 100%   | 100%     | 100%      | 100%   |
+| src/domain/time.ts             | 100%   | 100%     | 100%      | 100%   |
+| src/domain/transitions.ts      | 100%   | 100%     | 100%      | 100%   |
+| src/features/swipe/deck.ts     | 100%   | 100%     | 100%      | 100%   |
+| src/features/unlock/actions.ts | 100%   | 100%     | 100%      | 100%   |
+| src/tmdb/client.ts             | 100%   | 100%     | 100%      | 100%   |
+| src/tmdb/images.ts             | 100%   | 100%     | 100%      | 100%   |
+| src/tmdb/movies.ts             | 100%   | 100%     | 100%      | 100%   |
+| src/tmdb/schemas.ts            | 100%   | 100%     | 100%      | 100%   |
 
 Résumé texte global :
 
 ```
-Statements   : 100% ( 132/132 )
-Branches     : 100% ( 85/85 )
-Functions    : 100% ( 38/38 )
-Lines        : 100% ( 119/119 )
+Statements   : 100% ( 182/182 )
+Branches     : 100% ( 113/113 )
+Functions    : 100% ( 50/50 )
+Lines        : 100% ( 165/165 )
 ```
 
 ## Preuve que la porte échoue en cas de manque

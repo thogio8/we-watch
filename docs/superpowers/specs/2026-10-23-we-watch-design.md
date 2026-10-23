@@ -124,7 +124,7 @@ Direction choisie par Thomas parmi plusieurs pistes. Ce qu'il aime : **ça sort 
 | ORM / migrations | **Drizzle** + drizzle-kit |
 | Hébergement | **Vercel Hobby** |
 | Données films | **TMDB API**, appelée uniquement côté serveur |
-| Auth | Aucune |
+| Auth | Aucun compte ; code d'accès partagé depuis la V1.1 (§10) |
 
 ## 7. Données
 
@@ -168,3 +168,23 @@ Les films refusés peuvent ne garder que le strict nécessaire, mais une seule t
 - Outillage qualité : lint, format, tests. Attendu au minimum : **tests unitaires sur la logique métier** (tirage avec pile d'exclusion, calcul de l'heure de fin, filtrage de la pile de swipe, transitions de statut).
 - Gestion des erreurs TMDB et réseau, dans la DA.
 - Conventions de commit : `type(scope): description`, header seul. **Thomas commite lui-même.**
+
+## 10. V1.1 — code d'accès et app iPhone (décidé avec Thomas le 2026-10-23)
+
+### 10.1 Code d'accès partagé
+
+L'URL de prod est publique : un code partagé, saisi une fois par appareil, tient les inconnus dehors. Toujours pas de comptes.
+
+- Variable serveur **`ACCESS_CODE`** obligatoire (4 caractères minimum), validée avec les autres dans `src/env.ts`.
+- **Jeton** = HMAC-SHA256 (clé `ACCESS_CODE`, message `we-watch-access-v1`), en hexadécimal, calculé avec Web Crypto et comparé en temps constant. Changer `ACCESS_CODE` déconnecte tous les appareils.
+- **Cookie `ww_access`** : httpOnly, `Secure` en production (pas en dev http local / LAN), SameSite=Lax, Path=/, un an.
+- **`src/proxy.ts`** (le `middleware` renommé de Next 16) protège toutes les requêtes, pages et POST de Server Actions, sauf `/unlock`, `/_next/*`, les fichiers statiques (polices, images, `/tmdb-logo.svg`), le manifest et les icônes (iOS les charge sans cookie). Sans cookie valide : une page est redirigée vers `/unlock`, un POST reçoit un 401. La décision est une fonction pure testée (`accessDecision`).
+- **Écran `/unlock`** dans la DA : titre « CE SOIR ON REGARDE », ticket « ENTREZ LE CODE », un champ masqué, bouton « ENTRER », sans barre de navigation. Bon code → cookie posé puis retour à `/`. Mauvais code → « MAUVAIS CODE », sans détail, champ vidé, après une pause fixe d'environ 500 ms (frein simple aux essais en série, sans stockage).
+
+### 10.2 « Ajouter à l'écran d'accueil » (iPhone d'abord)
+
+- **Manifest** `src/app/manifest.ts` : nom et nom court « we-watch », `start_url` `/`, `display: standalone`, fond et thème `#fff4d6` (papier), `lang: fr`, icônes 192 et 512, plus une icône maskable.
+- **Icônes générées en code** (`next/og`, aucun binaire dans git) : ticket rose à contour marine, ombre décalée bleue, encoches et « WW » massif, sur papier crème. `icon` (32, 192, 512), `apple-icon` (180) et `/maskable-icon` (512, ticket réduit dans la zone sûre). Le `favicon.ico` du scaffold est supprimé.
+- **Métadonnées iOS** : `appleWebApp` (capable, titre « we-watch », barre d'état `default`, claire avec texte foncé, adaptée au fond crème), `applicationName`.
+- **Viewport** `viewport-fit=cover` : la colonne, la barre de navigation fixe et `/unlock` respectent les `env(safe-area-inset-*)` pour ne rien cacher sous l'encoche ni l'indicateur d'accueil.
+- **Pas de service worker** ni de mode hors ligne.
