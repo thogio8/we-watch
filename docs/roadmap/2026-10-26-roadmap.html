@@ -1,0 +1,496 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>we-watch — roadmap & vision (26/10/2026)</title><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"><style>:root{--paper:#fff4d6;--ink:#1b1b6b;--pink:#ff3fa4;--yel:#ffe600;--blue:#2f6bff}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Space Mono',monospace;color:var(--ink);background:var(--paper);background-image:radial-gradient(rgba(27,27,107,.09) 1px,transparent 1px);background-size:6px 6px;font-size:15px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding:40px 24px 80px}
+h1,h2,h3,.logo,.t,.t2,.b,.nav div,.stamp,.end,.code,.kpi .n{font-family:'Archivo Black',sans-serif}
+.hero{text-align:center;padding:30px 0 10px}
+.hero h1{font-size:clamp(44px,8vw,92px);line-height:.9;margin:0;color:var(--pink);text-shadow:6px 6px 0 var(--blue);letter-spacing:-2px}
+.hero .sub{font-size:14px;text-transform:uppercase;margin-top:18px;letter-spacing:1px}
+.pitch{max-width:760px;margin:28px auto 0;border:3px solid var(--ink);border-radius:16px;background:#fff;padding:18px 22px;box-shadow:7px 7px 0 var(--blue),0 0 40px rgba(255,63,164,.25);font-size:15px}
+.pitch b{background:var(--yel);padding:0 3px}
+section{margin-top:64px}
+.sh{font-size:clamp(24px,3.4vw,36px);margin:0 0 6px;text-transform:uppercase;display:flex;align-items:center;gap:14px}
+.sh span{display:inline-block;background:var(--pink);color:#fff;border:3px solid var(--ink);border-radius:10px;padding:2px 10px;font-size:.7em;box-shadow:3px 3px 0 var(--ink)}
+.lead{max-width:820px;margin:6px 0 22px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.box{border:3px solid var(--ink);border-radius:14px;background:#fff;padding:14px 16px;box-shadow:4px 4px 0 var(--ink)}
+.box h3{margin:0 0 6px;font-size:17px;text-transform:uppercase}
+.box.y{background:var(--yel)} .box.p{background:var(--pink);color:#fff} .box.bl{background:var(--blue);color:#fff}
+.box ul{margin:6px 0 0;padding-left:18px} .box li{margin:3px 0}
+.box small{opacity:.75}
+table{width:100%;border-collapse:separate;border-spacing:0;border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff;box-shadow:4px 4px 0 var(--ink);font-size:13px}
+th{background:var(--ink);color:#fff;text-align:left;padding:8px 10px;font-family:'Archivo Black';font-weight:400;text-transform:uppercase;font-size:12px}
+td{padding:7px 10px;border-top:2px solid rgba(27,27,107,.15);vertical-align:top}
+tr.grp td{background:var(--yel);font-family:'Archivo Black';text-transform:uppercase;font-size:12px}
+.pill{display:inline-block;border:2px solid var(--ink);border-radius:99px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap}
+.pill.s{background:#fff}.pill.m{background:var(--yel)}.pill.l{background:var(--pink);color:#fff}
+.pill.v{background:var(--blue);color:#fff}
+.src{font-size:11px;opacity:.75;word-break:break-word}
+.src a{color:var(--ink)}
+/* matrix */
+.matrix{display:grid;grid-template-columns:110px repeat(3,1fr);gap:8px}
+.matrix .ax{font-family:'Archivo Black';font-size:12px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;text-align:center}
+.matrix .cell{border:3px solid var(--ink);border-radius:12px;background:#fff;padding:8px;min-height:96px;display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start}
+.matrix .cell.hot{background:var(--yel);box-shadow:4px 4px 0 var(--ink),0 0 22px rgba(255,230,0,.8)}
+.matrix .cell.warm{background:#fff8c2}
+.ft{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:2px 6px;font-size:11px;font-weight:700}
+.ft.pk{background:var(--pink);color:#fff}
+/* roadmap */
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;position:relative}
+.stop{border:3px solid var(--ink);border-radius:16px;background:#fff;padding:0;box-shadow:7px 7px 0 var(--blue);overflow:hidden}
+.stop .hd{background:var(--pink);color:#fff;padding:10px 14px;border-bottom:3px dashed var(--ink)}
+.stop .hd b{font-family:'Archivo Black';font-size:22px;display:block}
+.stop .hd i{font-style:normal;font-size:12px;text-transform:uppercase}
+.stop:nth-child(2) .hd{background:var(--yel);color:var(--ink)}
+.stop:nth-child(3) .hd{background:var(--blue)}
+.stop:nth-child(4) .hd{background:var(--ink)}
+.stop ul{margin:0;padding:12px 14px 14px 30px;font-size:13px}
+.stop li{margin:4px 0}
+.stop .why{padding:0 14px 14px;font-size:12px;opacity:.8}
+.verdict-box{border:4px solid var(--ink);border-radius:16px;background:var(--yel);padding:18px 22px;box-shadow:8px 8px 0 var(--ink),0 0 60px rgba(255,230,0,.6)}
+.verdict-box h3{margin:0 0 8px;font-size:22px}
+.decide{counter-reset:d;list-style:none;padding:0}
+.decide li{counter-increment:d;border:3px solid var(--ink);border-radius:12px;background:#fff;padding:10px 14px 10px 54px;margin:10px 0;position:relative;box-shadow:3px 3px 0 var(--ink)}
+.decide li::before{content:counter(d);position:absolute;left:12px;top:10px;width:30px;height:30px;border-radius:50%;background:var(--pink);color:#fff;border:2px solid var(--ink);font-family:'Archivo Black';display:flex;align-items:center;justify-content:center}
+/* ---------- phones (repris de la maquette V1) ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:36px 20px}
+figure{margin:0}
+.phone{width:290px;height:600px;margin:0 auto;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(27,27,107,.35);padding:20px 18px 0;font-family:'Space Mono',monospace;color:var(--ink);background:var(--paper);background-image:radial-gradient(rgba(27,27,107,.09) 1px,transparent 1px);background-size:6px 6px;border:3px solid var(--ink);font-size:12px;line-height:1.35}
+.logo{font-size:26px;line-height:.95;text-align:center;letter-spacing:-1px;color:var(--pink);text-shadow:3px 3px 0 var(--blue)}
+.small{font-size:10px;text-transform:uppercase;text-align:center;margin-top:6px;opacity:.75}
+.nav{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px 14px 16px;background:var(--paper);border-top:3px solid var(--ink)}
+.nav div{flex:1;text-align:center;font-size:12px;padding:8px 0;border:3px solid var(--ink);border-radius:10px;background:#fff}
+.nav .on{background:var(--yel);box-shadow:3px 3px 0 var(--ink)}
+.ticket{border:3px solid var(--ink);border-radius:16px;background:var(--pink);position:relative;overflow:hidden;box-shadow:7px 7px 0 var(--blue),0 0 40px rgba(255,63,164,.45)}
+.poster{border-bottom:3px dashed var(--ink);position:relative;background:linear-gradient(135deg,var(--yel) 0 40%,var(--blue) 40% 70%,var(--pink) 70%)}
+.stub{position:absolute;width:24px;height:24px;border-radius:50%;background:var(--paper);border:3px solid var(--ink);transform:translateY(-50%)}
+.stamp{position:absolute;border:3px solid var(--ink);background:var(--paper);padding:3px 8px;font-size:12px}
+.stamp.veto{top:70px;left:40px;transform:rotate(-14deg);font-size:26px;background:var(--pink);color:#fff;box-shadow:4px 4px 0 var(--ink);padding:4px 14px}
+.info{padding:10px 12px;color:#fff}
+.t{font-size:18px;line-height:1.05;text-transform:uppercase}
+.t2{font-family:'Archivo Black';font-size:22px;text-align:center;line-height:1;margin-top:14px}
+.meta{font-size:10px;margin-top:5px;text-transform:uppercase}
+.meta2{font-size:10px;text-transform:uppercase;margin-top:4px;opacity:.8}
+.btns{display:flex;justify-content:center;gap:12px;margin-top:16px}
+.b{padding:10px 14px;border:3px solid var(--ink);border-radius:12px;font-size:12px;background:#fff;box-shadow:4px 4px 0 var(--ink)}
+.b.y{background:var(--yel);box-shadow:4px 4px 0 var(--ink),0 0 22px rgba(255,230,0,.85)}
+.b.p{background:var(--pink);color:#fff;box-shadow:4px 4px 0 var(--ink),0 0 22px rgba(255,63,164,.7)}
+.big{margin:22px auto 0;width:150px;height:150px;border-radius:50%;border:4px solid var(--ink);background:var(--yel);box-shadow:6px 6px 0 var(--ink),0 0 50px rgba(255,230,0,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'Archivo Black';font-size:26px;line-height:1}
+.big small{font-family:'Space Mono';font-size:10px;font-weight:700;margin-top:6px}
+.end{position:absolute;top:12px;right:10px;transform:rotate(7deg);background:var(--yel);border:3px solid var(--ink);padding:4px 8px;font-size:12px;box-shadow:3px 3px 0 var(--ink)}
+.panel{margin-top:14px;border:3px solid var(--ink);border-radius:14px;background:#fff;padding:8px 10px 10px;box-shadow:4px 4px 0 var(--ink)}
+.plabel{font-size:10px;font-weight:700;text-transform:uppercase;margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.chip{border:2px solid var(--ink);border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;background:#fff}
+.chip.on{background:var(--pink);color:#fff;box-shadow:2px 2px 0 var(--ink)}
+.chip.off{border-style:dashed;opacity:.7}
+.slider{display:flex;align-items:center;gap:8px;margin-top:6px}
+.track{flex:1;height:10px;border:2px solid var(--ink);border-radius:99px;background:var(--paper);position:relative}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--blue);border-radius:99px}
+.knob{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;background:var(--yel);border:3px solid var(--ink);transform:translate(-50%,-50%)}
+.sval{font-family:'Archivo Black';font-size:14px;background:var(--yel);border:2px solid var(--ink);padding:0 5px;transform:rotate(4deg)}
+.jokers{display:flex;justify-content:center;gap:40px;margin-top:16px;text-align:center;font-size:10px;font-weight:700}
+.jk{display:inline-flex;width:26px;height:26px;margin:0 2px 4px;align-items:center;justify-content:center;border:2px solid var(--ink);border-radius:50%;background:var(--pink);color:#fff;font-weight:700;box-shadow:2px 2px 0 var(--ink)}
+.jk.used{background:#fff;color:var(--ink);opacity:.4;box-shadow:none;text-decoration:line-through}
+.match{background-color:var(--yel)}
+.burst{position:absolute;inset:-60px;background:repeating-conic-gradient(rgba(255,63,164,.22) 0 10deg,transparent 10deg 20deg);pointer-events:none}
+.match>*{position:relative}
+.match .nav{position:absolute}
+.duo{display:flex;justify-content:center;gap:10px;margin-top:22px}
+.mini-t{width:96px;border:3px solid var(--ink);border-radius:10px;background:#fff;text-align:center;font-family:'Archivo Black';font-size:12px;padding-bottom:5px;box-shadow:4px 4px 0 var(--ink)}
+.mp{height:110px;border-bottom:3px dashed var(--ink);margin-bottom:5px;border-radius:7px 7px 0 0}
+.reveal{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px}
+.card{width:100px;border:3px solid var(--ink);border-radius:12px;background:var(--yel);text-align:center;padding:8px 4px;box-shadow:4px 4px 0 var(--ink)}
+.card.pink{background:var(--pink);color:#fff}
+.card .who{font-family:'Archivo Black';font-size:12px}
+.card .stars{font-size:13px;letter-spacing:-1px;margin-top:4px}
+.card .sc{font-family:'Archivo Black';font-size:40px;line-height:1;margin-top:4px}
+.vs{font-family:'Archivo Black';font-size:14px}
+.verdict{margin:18px auto 0;text-align:center;font-family:'Archivo Black';font-size:16px;background:#fff;border:3px dashed var(--ink);border-radius:12px;padding:8px}
+.verdict span{font-family:'Space Mono';font-size:10px;font-weight:700}
+.search{display:flex;align-items:center;gap:8px;border:3px solid var(--ink);border-radius:12px;background:#fff;padding:8px 10px;box-shadow:4px 4px 0 var(--ink),0 0 22px rgba(255,63,164,.5);font-size:12px}
+.search .q{font-weight:700}
+.caret{display:inline-block;width:2px;height:14px;background:var(--pink)}
+.story{background:linear-gradient(170deg,var(--blue),var(--pink));padding-top:28px}
+.souvenir{margin-top:14px;transform:rotate(-2deg)}
+.row2{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-top:8px;background:rgba(27,27,107,.35);padding:3px 6px;border-radius:6px}
+.perf{border-top:3px dotted #fff;margin:8px 0 2px;opacity:.7}
+.wrapped{background:var(--ink);color:#fff;background-image:radial-gradient(rgba(255,255,255,.1) 1px,transparent 1px);padding-top:24px}
+.wrapped .logo{text-shadow:3px 3px 0 var(--pink)}
+.kpi{text-align:center;margin-top:12px}
+.kpi .n{font-size:84px;line-height:1;color:var(--pink);text-shadow:4px 4px 0 var(--yel)}
+.kpi .l,.kpis .l{font-size:10px;font-weight:700;text-transform:uppercase}
+.kpis{display:flex;justify-content:space-around;text-align:center;margin-top:10px}
+.kpis .n.s{font-family:'Archivo Black';font-size:30px;color:var(--yel)}
+.wline{display:flex;justify-content:space-between;border-top:2px dashed rgba(255,255,255,.35);padding:6px 2px;font-size:10px;text-transform:uppercase;margin-top:2px}
+.wline b{font-family:'Archivo Black';font-weight:400;color:var(--yel)}
+.dots{position:absolute;top:10px;left:18px;right:18px;display:flex;gap:4px}
+.dots i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3)}
+.dots i.on{background:#fff}
+.trailer{height:160px;border:3px solid var(--ink);border-radius:14px;background:linear-gradient(135deg,#1b1b6b,#2f6bff 60%,#ff3fa4);position:relative;box-shadow:4px 4px 0 var(--ink)}
+.play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:var(--yel);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 30px rgba(255,230,0,.9)}
+.tl{position:absolute;left:8px;bottom:8px;font-size:9px;font-weight:700;color:#fff}
+.recos{display:flex;gap:7px;margin-top:6px}
+.rc{width:56px;height:80px;border:2px solid var(--ink);border-radius:6px;flex:none}
+.lock{background:linear-gradient(180deg,#2f6bff,#1b1b6b 70%);color:#fff;padding-top:40px}
+.clock{font-family:'Archivo Black';font-size:64px;text-align:center;line-height:1}
+.date{text-align:center;font-size:12px;margin-top:2px;opacity:.85}
+.notif{display:flex;gap:9px;background:rgba(255,244,214,.93);color:var(--ink);border-radius:16px;padding:9px 10px;margin-top:12px;font-size:11px;line-height:1.35}
+.notif:first-of-type{margin-top:34px}
+.notif span{float:right;opacity:.6;font-size:10px}
+.ni{flex:none;width:32px;height:32px;border-radius:8px;background:var(--pink);border:2px solid var(--ink);font-family:'Archivo Black';font-size:12px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:2px 2px 0 var(--blue)}
+.code{font-size:34px;margin:8px 0;letter-spacing:1px;text-shadow:3px 3px 0 var(--blue)}
+figcaption{margin:16px auto 0;max-width:300px;font-size:13px;line-height:1.45}
+figcaption b{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:var(--pink);color:#fff;border:2px solid var(--ink);font-family:'Archivo Black';margin-right:6px;font-weight:400}
+figcaption span{display:block;margin-top:4px;font-family:system-ui,sans-serif;opacity:.85}
+@media (prefers-reduced-motion:no-preference){.verdict-box{animation:glow 3s ease-in-out infinite alternate}@keyframes glow{to{box-shadow:8px 8px 0 var(--ink),0 0 90px rgba(255,63,164,.6)}}}</style></head><body><div class="wrap"><header class="hero">
+  <h1>WE-WATCH<br>ROADMAP</h1>
+  <div class="sub">Dossier d'arbitrage · 26 octobre 2026 · après la V1.1 en prod</div>
+  <div class="pitch">
+    <b>Mon pitch en trois phrases.</b> La V1 règle le « quoi ». La suite doit régler le <b>« ce soir »</b> (un film qu'on peut finir, sur nos plateformes, qui colle à l'humeur) et le <b>« ensemble »</b> (chacun son téléphone, des notes à deux, des souvenirs). C'est aussi exactement ce qui pourrait en faire un produit : pas un énième Tinder du film, mais <b>le rituel ciné du couple</b>, en français, sans compte.
+  </div>
+</header>
+
+<section>
+<h2 class="sh"><span>01</span> LE PROBLÈME EST RÉEL (ET FRANÇAIS)</h2>
+<p class="lead">On n'est pas les seuls à perdre la soirée sur l'écran d'accueil de Netflix. Les chiffres disent même que la France est le pire élève.</p>
+<div class="cards">
+  <div class="box p"><h3 style="font-size:44px;line-height:1">26 MIN</h3>pour choisir quoi regarder en France, plus du double des autres pays (14 min en moyenne).<br><small>Gracenote/Nielsen, State of Play 2025</small></div>
+  <div class="box y"><h3 style="font-size:44px;line-height:1">19 %</h3>abandonnent et ne regardent rien quand ils ne trouvent pas.<br><small>Gracenote/Nielsen 2025</small></div>
+  <div class="box bl"><h3 style="font-size:44px;line-height:1">58 %</h3>des Français abonnés à au moins une SVOD (record, T1 2025). Prime Video : 32 %.<br><small>NPA Conseil via avcesar</small></div>
+  <div class="box"><h3 style="font-size:44px;line-height:1">38 %</h3>des couples se disputent sur le choix du programme.<br><small>Sondage Roku UK (sponsorisé, à prendre avec des pincettes)</small></div>
+</div>
+<p class="src">Sources : <a href="https://informitv.com/2025/11/05/it-is-becoming-harder-to-decide-what-to-watch/">informitv</a> · <a href="https://www.tvbeurope.com/media-consumption/too-much-of-a-good-thing-streaming-audiences-are-still-struggling-to-find-what-they-want-to-watch">TVBEurope</a> · <a href="https://www.avcesar.com/la-svod-continue-de-progresser-en-france-45074">avcesar</a> · <a href="https://www.roku.com/blog/pass-the-remote-the-8-things-couples-argue-about-most-when-watching-tv">Roku</a></p>
+</section>
+
+<section>
+<h2 class="sh"><span>02</span> CE QUE LE MARCHÉ NOUS APPREND</h2>
+<p class="lead">J'ai passé en revue une trentaine d'apps. Trois leçons, une bonne et deux douloureuses.</p>
+<table>
+<tr><th>Acteur</th><th>Ce qu'il fait</th><th>Modèle</th><th>Ce qu'on en retient</th></tr>
+<tr><td><b>Matched</b> (US)</td><td>Swipe à deux, match si double ♥</td><td>2,99 $/mois · 19,99 $/an</td><td>Leader de fait… avec 285 notes App Store, rien publié pendant 2 ans, matchs iPhone↔Android cassés.</td></tr>
+<tr><td><b>Netflix Play Something</b></td><td>Lecture au hasard sur tout le catalogue</td><td>Inclus</td><td>Tué en 2023 faute d'usage. <b>Le hasard sur tout ne marche pas</b> ; sur une liste choisie ensemble, c'est autre chose.</td></tr>
+<tr><td><b>decide</b> (open source)</td><td>PWA, code à 6 caractères, ticket imprimé à chaque match, score de compatibilité, duel final</td><td>Gratuit</td><td>Quasi jumeau de we-watch : la métaphore du ticket tombe juste. Idées à reprendre.</td></tr>
+<tr><td><b>Letterboxd</b> (NZ)</td><td>Journal + notes + Year in Review</td><td>Pub + Pro 18,99 $/an</td><td>30 M de membres, en vente autour de 250 M$. <b>Le journal et le récap annuel font l'habitude.</b></td></tr>
+<tr><td><b>TV Time</b> (US)</td><td>Suivi de séries</td><td>Gratuit + revente de data</td><td>Fermé le 15/07/2026 malgré 26 M d'installs : pas assez de payants.</td></tr>
+<tr><td><b>Trakt</b> (US)</td><td>Suivi films/séries</td><td>VIP 60 $/an</td><td>A dû doubler ses prix et brider le gratuit en 2025 : colère des utilisateurs.</td></tr>
+<tr><td><b>JustWatch</b> (DE)</td><td>Où regarder, alertes</td><td>B2B : pub studios + CPA</td><td>40-60 M d'utilisateurs, mais alertes « dispo » jugées faibles. Gagne de l'argent sur les studios, pas sur les gens.</td></tr>
+<tr><td><b>Une dizaine de clones</b></td><td>ReelMatch, MatchFlix, KiSwipe, FlickPicker, Netflip…</td><td>Freemium</td><td>Aucune traction visible. <b>Et aucune app française.</b></td></tr>
+</table>
+<div class="cards" style="margin-top:18px">
+  <div class="box y"><h3>✓ La bonne nouvelle</h3>Personne n'occupe le créneau « couple + France + ce soir ». Les apps US ignorent Canal+, Arte, france.tv, et personne n'exploite l'heure de fin.</div>
+  <div class="box"><h3>✕ Douloureux n°1</h3>Le swipe à deux est une <b>feature commoditisée</b> : des dizaines de clones, aucun gagnant. Ce n'est pas un produit à lui seul.</div>
+  <div class="box"><h3>✕ Douloureux n°2</h3>On ne paie pas pour gagner 15 min un soir sur deux. Les seuls gagnants (Letterboxd, JustWatch) monétisent une <b>communauté ou des données</b> à des dizaines de millions d'utilisateurs.</div>
+</div>
+</section><!-- PHONES -->
+<section id="maquettes">
+<h2 class="sh"><span>03</span> LES FEATURES EN MAQUETTES</h2>
+<p class="lead">Huit écrans, dans la DA « Ticket d'entrée » de la V1. Chacun répond à un vrai moment de la soirée : <b>avant</b> (choisir), <b>pendant</b> (lancer), <b>après</b> (garder une trace).</p>
+<div class="grid">
+
+  <!-- A. CE SOIR -->
+  <figure>
+    <div class="phone">
+      <div class="logo">CE SOIR<br>ON REGARDE</div>
+      <div class="small">23 films à regarder · il est 21h07</div>
+      <div class="panel">
+        <div class="plabel">FINI AVANT</div>
+        <div class="slider"><div class="track"><div class="fill" style="width:62%"></div><div class="knob" style="left:62%"></div></div><div class="sval">23H30</div></div>
+        <div class="plabel">ON A ENVIE DE…</div>
+        <div class="chips"><span class="chip on">RIRE</span><span class="chip">FRISSONNER</span><span class="chip on">S'ÉMOUVOIR</span><span class="chip">RÉFLÉCHIR</span></div>
+        <div class="plabel">DISPO CHEZ NOUS</div>
+        <div class="chips"><span class="chip on">NETFLIX</span><span class="chip on">PRIME</span><span class="chip off">TOUT</span></div>
+      </div>
+      <div class="big sm">TIRER<br><small>PARMI 9</small></div>
+      <div class="nav"><div class="on">TIRER</div><div>SWIPER</div><div>LISTE</div></div>
+    </div>
+    <figcaption><b>A</b> FILTRES « CE SOIR » <span>Heure de coucher, humeur, plateformes : le tirage ne pioche que dans ce qui colle à la soirée. Tout optionnel, la liste reste la vérité.</span></figcaption>
+  </figure>
+
+  <!-- B. VETO -->
+  <figure>
+    <div class="phone">
+      <div class="small" style="margin-top:0">Ce soir, ce sera…</div>
+      <div class="ticket" style="margin-top:8px">
+        <div class="poster" style="height:190px"><div class="end">FINI À 23H12</div><div class="stamp veto">VETO !</div></div>
+        <div class="stub" style="left:-15px;top:190px"></div><div class="stub" style="right:-15px;top:190px"></div>
+        <div class="info"><div class="t">Requiem for a Dream</div><div class="meta">2000 · 1h42 · ★8,0 · Prime</div></div>
+      </div>
+      <div class="jokers"><div><span class="jk used">✕</span><span class="jk">✕</span><br>TOI</div><div><span class="jk">✕</span><span class="jk">✕</span><br>MOI</div></div>
+      <div class="btns"><div class="b">RETIRER</div><div class="b y">ON LE REGARDE</div></div>
+      <div class="small">2 vetos chacun par semaine · un veto = le film sort du tirage 30 jours</div>
+      <div class="nav"><div class="on">TIRER</div><div>SWIPER</div><div>LISTE</div></div>
+    </div>
+    <figcaption><b>B</b> JOKERS VETO <span>Fini le « non, pas celui-là » à l'infini : chacun a un nombre limité de vetos. Le tirage reste un jeu, avec une règle.</span></figcaption>
+  </figure>
+
+  <!-- C. MATCH -->
+  <figure>
+    <div class="phone match">
+      <div class="burst"></div>
+      <div class="logo" style="margin-top:34px;font-size:30px">C'EST UN<br>MATCH !</div>
+      <div class="small">Vous l'avez swipé tous les deux</div>
+      <div class="duo">
+        <div class="mini-t" style="transform:rotate(-8deg)"><div class="mp" style="background:linear-gradient(135deg,#ffe600 45%,#2f6bff 45%)"></div>TOI ♥</div>
+        <div class="mini-t" style="transform:rotate(7deg)"><div class="mp" style="background:linear-gradient(135deg,#ffe600 45%,#2f6bff 45%)"></div>MOI ♥</div>
+      </div>
+      <div class="t2">LA LA LAND</div>
+      <div class="small" style="margin-top:2px">2016 · 2h08 · ★7,9</div>
+      <div class="btns"><div class="b y">AJOUTÉ À LA LISTE</div></div>
+      <div class="nav"><div>TIRER</div><div class="on">SWIPER</div><div>LISTE</div></div>
+    </div>
+    <figcaption><b>C</b> SWIPE À DEUX, CHACUN SON TÉLÉPHONE <span>Chacun swipe de son côté (même dans le métro) ; un film n'entre dans la liste que si les deux ♥. Le moteur de croissance n°1 du genre.</span></figcaption>
+  </figure>
+
+  <!-- D. NOTE A DEUX -->
+  <figure>
+    <div class="phone">
+      <div class="logo" style="font-size:24px;margin-top:6px">ALORS,<br>CE FILM ?</div>
+      <div class="small">Notez chacun en secret · révélation à deux</div>
+      <div class="reveal">
+        <div class="card"><div class="who">TOI</div><div class="stars">★★★★★</div><div class="sc">5</div></div>
+        <div class="vs">VS</div>
+        <div class="card pink"><div class="who">MOI</div><div class="stars">★★☆☆☆</div><div class="sc">2</div></div>
+      </div>
+      <div class="verdict">ÉCART DE 3 ★<br><span>FILM À DÉBAT N°4 DE L'ANNÉE</span></div>
+      <div class="plabel" style="margin-top:14px;text-align:center">UN MOT POUR S'EN SOUVENIR</div>
+      <div class="search" style="margin-top:6px"><span class="q">« la scène du dîner »</span><span class="caret"></span></div>
+      <div class="nav"><div class="on">TIRER</div><div>SWIPER</div><div>LISTE</div></div>
+    </div>
+    <figcaption><b>D</b> NOTE À DEUX, À L'AVEUGLE <span>Après « On le regarde », le lendemain : chacun note en secret, puis on révèle. Ça nourrit le match de goûts, les recos et le Wrapped.</span></figcaption>
+  </figure>
+
+  <!-- E. TICKET SOUVENIR -->
+  <figure>
+    <div class="phone story">
+      <div class="small" style="margin-top:0;color:#fff;opacity:.9">PARTAGER EN STORY</div>
+      <div class="ticket souvenir">
+        <div class="poster" style="height:200px"><div class="stamp" style="top:12px;left:10px;transform:rotate(-6deg)">ADMIT 2</div><div class="end">SÉANCE N°17</div></div>
+        <div class="stub" style="left:-15px;top:200px"></div><div class="stub" style="right:-15px;top:200px"></div>
+        <div class="info">
+          <div class="t">Le Voyage de Chihiro</div>
+          <div class="meta">SAM 24.10.2026 · 21H07 → 23H12</div>
+          <div class="row2"><span>TOI ★★★★★</span><span>MOI ★★★★☆</span></div>
+          <div class="perf"></div>
+          <div class="meta" style="opacity:.85">« le bain des esprits » · we-watch</div>
+        </div>
+      </div>
+      <div class="btns" style="margin-top:16px"><div class="b y">INSTAGRAM</div><div class="b">ENREGISTRER</div></div>
+    </div>
+    <figcaption><b>E</b> TICKET SOUVENIR PARTAGEABLE <span>Chaque film vu devient un ticket daté, avec vos notes. Image 9:16 prête pour la story : de la pub gratuite, à la Letterboxd / Spotify.</span></figcaption>
+  </figure>
+
+  <!-- F. WRAPPED -->
+  <figure>
+    <div class="phone wrapped">
+      <div class="logo" style="font-size:26px;color:#ffe600">NOTRE ANNÉE<br>CINÉ 2026</div>
+      <div class="kpi"><div class="n">47</div><div class="l">FILMS<br>ENSEMBLE</div></div>
+      <div class="kpis">
+        <div><div class="n s">96H</div><div class="l">DE CANAPÉ</div></div>
+        <div><div class="n s">61%</div><div class="l">D'ACCORD<br>SUR LA NOTE</div></div>
+      </div>
+      <div class="wline"><span>GENRE CHOUCHOU</span><b>ANIMATION</b></div>
+      <div class="wline"><span>LE PLUS DÉBATTU</span><b>REQUIEM…</b></div>
+      <div class="wline"><span>PLATEFORME MVP</span><b>NETFLIX</b></div>
+      <div class="wline"><span>VETOS GRILLÉS</span><b>TOI 31 · MOI 12</b></div>
+      <div class="btns" style="margin-top:22px"><div class="b y">PARTAGER NOTRE ANNÉE</div></div>
+      <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <figcaption><b>F</b> « NOTRE ANNÉE CINÉ » (WRAPPED) <span>En décembre, un récap en stories. Zéro coût de donnée (tout est déjà en base), énorme potentiel de partage et de rétention.</span></figcaption>
+  </figure>
+
+  <!-- G. FICHE + TRAILER -->
+  <figure>
+    <div class="phone">
+      <div class="trailer"><div class="play">▶</div><div class="tl">BANDE-ANNONCE · 2:31</div></div>
+      <div class="t2" style="margin-top:12px;text-align:left">WHIPLASH</div>
+      <div class="meta2">2014 · 1H47 · ★8,4 · DRAME, MUSIQUE</div>
+      <div class="chips" style="margin-top:8px"><span class="chip on">PRIME</span><span class="chip on">CANAL+</span></div>
+      <div class="plabel" style="margin-top:14px">PARCE QUE VOUS AVEZ ADORÉ <u>LA LA LAND</u></div>
+      <div class="recos">
+        <div class="rc" style="background:linear-gradient(135deg,#ff3fa4 50%,#ffe600 50%)"></div>
+        <div class="rc" style="background:linear-gradient(135deg,#2f6bff 50%,#ff3fa4 50%)"></div>
+        <div class="rc" style="background:linear-gradient(135deg,#ffe600 50%,#2f6bff 50%)"></div>
+        <div class="rc" style="background:linear-gradient(135deg,#ff3fa4 50%,#2f6bff 50%)"></div>
+      </div>
+      <div class="btns" style="margin-top:14px"><div class="b">✕ BOF</div><div class="b p">ON LE VEUT ♥</div></div>
+      <div class="nav"><div>TIRER</div><div class="on">SWIPER</div><div>LISTE</div></div>
+    </div>
+    <figcaption><b>G</b> FICHE FILM + BANDE-ANNONCE + RECOS <span>Taper sur une carte ouvre la fiche : trailer YouTube (endpoint TMDB videos) et un deck « parce que vous avez aimé » nourri par vos notes.</span></figcaption>
+  </figure>
+
+  <!-- H. NOTIFS -->
+  <figure>
+    <div class="phone lock">
+      <div class="clock">21:04</div>
+      <div class="date">vendredi 30 octobre</div>
+      <div class="notif"><div class="ni">WW</div><div><b>we-watch</b><span>maintenant</span><br>Whiplash arrive sur Netflix. Il est dans votre liste depuis 3 semaines.</div></div>
+      <div class="notif"><div class="ni">WW</div><div><b>we-watch</b><span>il y a 2 h</span><br>Ta moitié a swipé 12 films. 3 matchs vous attendent.</div></div>
+      <div class="notif"><div class="ni">WW</div><div><b>we-watch</b><span>hier</span><br>Alors, Chihiro ? Notez-le avant d'oublier.</div></div>
+    </div>
+    <figcaption><b>H</b> NOTIFICATIONS UTILES (WEB PUSH) <span>Possible sur iPhone pour une PWA installée. Trois déclencheurs seulement, jamais de spam : dispo, matchs, note du lendemain.</span></figcaption>
+  </figure>
+
+  <!-- I. ONBOARDING PUBLIC -->
+  <figure>
+    <div class="phone">
+      <div class="logo" style="margin-top:30px">WE-WATCH</div>
+      <div class="small">Le film de ce soir, sans débat</div>
+      <div class="ticket" style="margin-top:22px">
+        <div class="info" style="padding:16px 14px;text-align:center">
+          <div class="meta" style="margin-top:0">VOTRE SALLE</div>
+          <div class="code">4F7K·Q2</div>
+          <div class="meta">Envoyez ce ticket à votre moitié</div>
+        </div>
+      </div>
+      <div class="btns" style="margin-top:22px"><div class="b y">PARTAGER LE LIEN</div></div>
+      <div class="small" style="margin-top:16px">ou</div>
+      <div class="btns" style="margin-top:10px"><div class="b">J'AI UN CODE</div></div>
+      <div class="small" style="margin-top:20px;opacity:.55">Pas de compte, pas d'e-mail.<br>Votre salle = votre liste.</div>
+    </div>
+    <figcaption><b>I</b> « SALLES » : LE CODE D'ACCÈS DEVIENT UN PRODUIT <span>Le code partagé de la V1.1 généralisé : chaque couple crée sa salle, invite l'autre par lien. Pas de compte, prêt pour d'autres couples.</span></figcaption>
+  </figure>
+
+</div>
+</section><section>
+<h2 class="sh"><span>04</span> L'INVENTAIRE : 32 IDÉES, TRIÉES</h2>
+<p class="lead">Effort dans notre stack (S ≈ ½-1 jour, M ≈ quelques jours, L ≈ une semaine et +) croisé avec l'impact pour nous deux. En <span class="ft pk">rose</span> : fort potentiel business (≥ 4/5). La case jaune, c'est là qu'on gagne.</p>
+<div class="matrix">
+  <div></div><div class="ax">EFFORT S</div><div class="ax">EFFORT M</div><div class="ax">EFFORT L</div>
+  <div class="ax">IMPACT<br>★★★★★</div>
+  <div class="cell hot"><span class="ft pk">Sur nos plateformes</span><span class="ft">Fini avant le dodo</span><span class="ft">Note à l'aveugle</span></div>
+  <div class="cell warm"><span class="ft pk">Ticket souvenir</span><span class="ft pk">Wrapped du couple</span><span class="ft pk">Match à deux</span></div>
+  <div class="cell"></div>
+  <div class="ax">IMPACT<br>★★★★</div>
+  <div class="cell warm"><span class="ft pk">Match de goûts</span><span class="ft">Veto</span><span class="ft">Tirage pondéré</span><span class="ft">Duel final</span><span class="ft">Bande-annonce</span><span class="ft">Decks thématiques</span><span class="ft">Carnet de tickets</span></div>
+  <div class="cell"><span class="ft pk">Recos perso</span><span class="ft pk">Alerte « dispo »</span><span class="ft">Humeur du soir</span><span class="ft">Machine à tickets</span><span class="ft">Notif de match</span></div>
+  <div class="cell"><span class="ft pk">Séries</span></div>
+  <div class="ax">IMPACT<br>★★★ et –</div>
+  <div class="cell"><span class="ft">Annuler un swipe</span><span class="ft">Super-like</span><span class="ft">3 min chrono</span><span class="ft">Question du soir</span><span class="ft">« On a abandonné »</span><span class="ft">Série hebdo</span><span class="ft">Anniversaires</span><span class="ft">Pop-corn timer</span><span class="ft">Crédits + hors ligne</span></div>
+  <div class="cell"><span class="ft pk">Salles multi-couples</span><span class="ft pk">Mode soirée potes</span><span class="ft pk">Lien « swipe avec nous »</span><span class="ft">Défis / cycles</span></div>
+  <div class="cell"></div>
+</div>
+
+<details style="margin-top:20px"><summary class="box" style="cursor:pointer;font-family:'Archivo Black';display:inline-block">VOIR LES 32 IDÉES EN DÉTAIL ▾</summary>
+<table style="margin-top:14px">
+<tr><th>#</th><th>Idée</th><th>Effort</th><th>Impact</th><th>Business</th><th>Version</th></tr>
+<tr class="grp"><td colspan="6">A · Mieux choisir ce soir</td></tr>
+<tr><td>1</td><td><b>Fini avant le dodo</b> : heure de coucher réglée une fois, le tirage exclut ce qui finit trop tard</td><td><span class="pill s">S</span></td><td>5</td><td>3</td><td><span class="pill v">1.2</span></td></tr>
+<tr><td>2</td><td><b>Humeur du soir</b> (rire, frissons, émotion, cerveau off) via genres et mots-clés TMDB</td><td><span class="pill m">M</span></td><td>4</td><td>3</td><td><span class="pill v">1.2</span></td></tr>
+<tr><td>3</td><td><b>Sur nos plateformes</b> : filtre optionnel du tirage par nos abonnements</td><td><span class="pill s">S</span></td><td>5</td><td>4</td><td><span class="pill v">1.2</span></td></tr>
+<tr><td>4</td><td><b>Veto</b> : 2 jokers chacun par semaine, le film vetoé sort du tirage 30 jours</td><td><span class="pill s">S</span></td><td>4</td><td>2</td><td><span class="pill v">1.3</span></td></tr>
+<tr><td>5</td><td><b>Tirage pondéré</b> : ancienneté dans la liste, super-like, relances</td><td><span class="pill s">S</span></td><td>4</td><td>2</td><td><span class="pill v">1.3</span></td></tr>
+<tr><td>6</td><td><b>Machine à tickets animée</b> : le tirage devient un spectacle riso</td><td><span class="pill m">M</span></td><td>4</td><td>3</td><td><span class="pill v">1.4</span></td></tr>
+<tr><td>7</td><td><b>Duel final</b> : on tire 3 films, face-à-face jusqu'au vainqueur</td><td><span class="pill s">S</span></td><td>4</td><td>2</td><td><span class="pill v">1.3</span></td></tr>
+<tr><td>8</td><td><b>Bande-annonce</b> dans la carte (TMDB videos → YouTube)</td><td><span class="pill s">S</span></td><td>4</td><td>2</td><td><span class="pill v">1.2</span></td></tr>
+<tr><td>9</td><td><b>3 minutes chrono</b> : à zéro, le film affiché est imposé</td><td><span class="pill s">S</span></td><td>3</td><td>2</td><td>backlog</td></tr>
+<tr class="grp"><td colspan="6">B · Swipe à deux</td></tr>
+<tr><td>10</td><td><b>Match à deux</b> : chacun son téléphone, double ♥ = liste, simple ♥ = « peut-être »</td><td><span class="pill m">M</span></td><td>5</td><td>4</td><td><span class="pill v">2.0</span></td></tr>
+<tr><td>11</td><td><b>Decks thématiques</b> : années 90, Palmes d'or, &lt; 100 min, animation, coréen…</td><td><span class="pill s">S</span></td><td>4</td><td>3</td><td><span class="pill v">1.2</span></td></tr>
+<tr><td>12</td><td><b>Notif de match</b> (Web Push)</td><td><span class="pill m">M</span></td><td>4</td><td>3</td><td><span class="pill v">2.0</span></td></tr>
+<tr><td>13</td><td><b>Super-like</b> : un coup de cœur par jour, poids ×2 au tirage</td><td><span class="pill s">S</span></td><td>3</td><td>2</td><td>backlog</td></tr>
+<tr><td>14</td><td><b>Annuler le dernier swipe</b> (5 s)</td><td><span class="pill s">S</span></td><td>3</td><td>1</td><td><span class="pill v">1.2</span></td></tr>
+<tr class="grp"><td colspan="6">C · Après le film</td></tr>
+<tr><td>15</td><td><b>Note à l'aveugle</b> : chacun note en secret, révélation à deux</td><td><span class="pill s">S</span></td><td>5</td><td>3</td><td><span class="pill v">1.3</span></td></tr>
+<tr><td>16</td><td><b>Match de goûts</b> : % d'accord, pires désaccords, film qui vous a réunis</td><td><span class="pill s">S</span></td><td>4</td><td>4</td><td><span class="pill v">1.3</span></td></tr>
+<tr><td>17</td><td><b>Ticket souvenir partageable</b> : image 9:16 générée (next/og), prête pour la story</td><td><span class="pill m">M</span></td><td>5</td><td>5</td><td><span class="pill v">1.3</span></td></tr>
+<tr><td>18</td><td><b>Question du soir</b> après le film (« qui aurait survécu ? »)</td><td><span class="pill s">S</span></td><td>3</td><td>3</td><td>backlog</td></tr>
+<tr><td>19</td><td><b>« On a abandonné »</b> : statut distinct de « vu »</td><td><span class="pill s">S</span></td><td>2</td><td>1</td><td>backlog</td></tr>
+<tr class="grp"><td colspan="6">D · Souvenirs & stats</td></tr>
+<tr><td>20</td><td><b>« Notre année ciné »</b> (Wrapped) en décembre</td><td><span class="pill m">M</span></td><td>5</td><td>5</td><td><span class="pill v">1.4</span></td></tr>
+<tr><td>21</td><td><b>Carnet de tickets</b> : l'onglet « vus » devient un album</td><td><span class="pill s">S</span></td><td>4</td><td>3</td><td><span class="pill v">1.3</span></td></tr>
+<tr><td>22</td><td><b>Série hebdo</b> : « 5 vendredis ciné d'affilée » (pas de streak quotidien)</td><td><span class="pill s">S</span></td><td>3</td><td>3</td><td>backlog</td></tr>
+<tr><td>23</td><td><b>Anniversaires</b> : « il y a un an… », « votre 100e film »</td><td><span class="pill s">S</span></td><td>3</td><td>2</td><td>backlog</td></tr>
+<tr class="grp"><td colspan="6">E · Découverte</td></tr>
+<tr><td>24</td><td><b>Recos perso</b> : TMDB recommendations des films notés 4-5 par les deux, injectées dans le deck</td><td><span class="pill m">M</span></td><td>4</td><td>4</td><td><span class="pill v">1.4</span></td></tr>
+<tr><td>25</td><td><b>Alerte « dispo »</b> : un film de la liste arrive sur nos plateformes (cron quotidien + push)</td><td><span class="pill m">M</span></td><td>4</td><td>4</td><td><span class="pill v">1.4</span></td></tr>
+<tr><td>26</td><td><b>Séries</b> : liste séparée, épisode en cours</td><td><span class="pill l">L</span></td><td>4</td><td>4</td><td>backlog</td></tr>
+<tr><td>27</td><td><b>Défis</b> : « tour du monde en 12 films », filmo Miyazaki</td><td><span class="pill m">M</span></td><td>3</td><td>3</td><td>backlog</td></tr>
+<tr class="grp"><td colspan="6">F · Social & croissance</td></tr>
+<tr><td>28</td><td><b>Salles</b> : chaque couple sa liste, invitation par lien, sans compte</td><td><span class="pill m">M</span></td><td>3</td><td>5</td><td><span class="pill v">2.0</span></td></tr>
+<tr><td>29</td><td><b>Mode soirée potes</b> : session éphémère par QR, 2-8 personnes, majorité + duel</td><td><span class="pill m">M</span></td><td>3</td><td>5</td><td><span class="pill v">2.0</span></td></tr>
+<tr><td>30</td><td><b>« Swipe avec nous »</b> : un ami suggère des films à un couple</td><td><span class="pill m">M</span></td><td>2</td><td>4</td><td>backlog</td></tr>
+<tr class="grp"><td colspan="6">G · Qualité de vie</td></tr>
+<tr><td>31</td><td><b>Pop-corn timer</b> : « on lance », entracte suggéré si &gt; 2h30</td><td><span class="pill s">S</span></td><td>3</td><td>2</td><td>backlog</td></tr>
+<tr><td>32</td><td><b>Page crédits TMDB/JustWatch + cache hors ligne</b></td><td><span class="pill s">S</span></td><td>2</td><td>2</td><td><span class="pill v">1.2</span></td></tr>
+</table>
+</details>
+</section>
+
+<section>
+<h2 class="sh"><span>05</span> FAISABILITÉ : CE QUI PASSE, CE QUI COINCE</h2>
+<p class="lead">Tant qu'on reste <b>gratuit et non commercial</b>, tout le plan V1.2 → V1.4 tient dans la stack actuelle, à 0 €. Les vrais murs n'apparaissent qu'au moment de faire payer.</p>
+<table>
+<tr><th>Sujet</th><th>Verdict</th><th>Détail</th></tr>
+<tr><td><b>Données TMDB en plus</b></td><td><span class="pill s">✓ OK</span></td><td>Bandes-annonces, recommandations, mots-clés, classification FR, collections : tout en un appel via <code>append_to_response</code>.</td></tr>
+<tr><td><b>Ticket souvenir / Wrapped en image</b></td><td><span class="pill s">✓ OK</span></td><td>On a déjà <code>next/og</code> (icônes PWA). Partage via Web Share API, supporté sur iOS.</td></tr>
+<tr><td><b>Notifications iPhone</b></td><td><span class="pill m">~ CONTRAINTE</span></td><td>Web Push OK depuis iOS 16.4, <b>seulement si l'app est installée</b> sur l'écran d'accueil (c'est notre cas). Pastille sur l'icône possible. Pas de vibration sur iOS.</td></tr>
+<tr><td><b>Alerte « dispo »</b></td><td><span class="pill m">~ CONTRAINTE</span></td><td>TMDB n'a pas d'historique des dispos. On stocke un instantané chaque jour et on compare. Cron Vercel Hobby : <b>1 fois par jour max</b>, ça suffit.</td></tr>
+<tr><td><b>Swipe à deux en direct</b></td><td><span class="pill s">✓ OK</span></td><td>Pas besoin de temps réel : un swipe asynchrone + polling léger suffit à deux. Si un jour on veut du live : Ably (gratuit jusqu'à 6 M messages/mois) ou Cloudflare Durable Objects.</td></tr>
+<tr><td><b>Identité « toi / moi »</b></td><td><span class="pill s">✓ OK</span></td><td>Notes à l'aveugle et vetos demandent de savoir qui tient le téléphone. Sans compte : on choisit son prénom une fois par appareil (cookie).</td></tr>
+<tr><td><b>Faire payer avec TMDB</b></td><td><span class="pill l">✕ BLOQUANT</span></td><td>Usage commercial interdit sans contrat écrit (« charging users a fee » cité en toutes lettres). Prix non publié, ~149 $/mois selon des sources non officielles.</td></tr>
+<tr><td><b>Plateformes (JustWatch)</b></td><td><span class="pill l">✕ BLOQUANT</span></td><td>Attribution JustWatch obligatoire, pas de deep links, et rien ne dit que la licence TMDB couvre ces données. Alternative propre : <b>Streaming Availability API</b> (commercial autorisé dès le gratuit, France couverte, deep links vers l'app Netflix/Prime), 49 $/mois au-delà de 1 000 req.</td></tr>
+<tr><td><b>Vercel Hobby</b></td><td><span class="pill l">✕ BLOQUANT</span></td><td>« Non-commercial personal use only ». Les dons sont tolérés. Payant → Pro à 20 $/mois. Turso gratuit OK même en commercial.</td></tr>
+<tr><td><b>App Store</b></td><td><span class="pill m">~ CONTRAINTE</span></td><td>99 $/an, et un simple emballage de PWA est rejeté (règle 4.2). Achat intégré Apple obligatoire pour un abonnement. <b>À éviter</b> tant que la PWA suffit.</td></tr>
+</table>
+<p class="src">Sources : <a href="https://www.themoviedb.org/api-terms-of-use">TMDB Terms</a> · <a href="https://developer.themoviedb.org/docs/faq">TMDB FAQ</a> · <a href="https://www.movieofthenight.com/about/api/pricing">Streaming Availability</a> · <a href="https://vercel.com/docs/limits/fair-use-guidelines">Vercel fair use</a> · <a href="https://vercel.com/docs/cron-jobs/usage-and-pricing">Vercel cron</a> · <a href="https://turso.tech/pricing">Turso</a> · <a href="https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/">WebKit push</a> · <a href="https://ably.com/pricing">Ably</a> · <a href="https://developer.apple.com/app-store/review/guidelines/">App Review</a></p>
+</section>
+
+<section>
+<h2 class="sh"><span>06</span> LA ROADMAP</h2>
+<p class="lead">Quatre étapes. Les trois premières sont pour nous, gratuites, et chacune se livre seule. La quatrième n'existe que si on dit « go business ».</p>
+<div class="road">
+  <div class="stop"><div class="hd"><i>Novembre · ~1 semaine</i><b>V1.2 « CE SOIR »</b></div>
+    <ul><li>Fini avant le dodo (1)</li><li>Sur nos plateformes, en filtre optionnel (3)</li><li>Humeur du soir (2)</li><li>Bande-annonce dans la carte (8)</li><li>Decks thématiques (11)</li><li>Annuler le dernier swipe (14)</li><li>Page crédits TMDB / JustWatch (32)</li></ul>
+    <div class="why">Pourquoi d'abord : tout est S, les données sont déjà là, et ça attaque directement les 26 minutes. Maquette A.</div></div>
+  <div class="stop"><div class="hd"><i>Novembre · ~2 semaines</i><b>V1.3 « À DEUX »</b></div>
+    <ul><li>Identité toi / moi par appareil</li><li>Note à l'aveugle + match de goûts (15, 16)</li><li>Veto + tirage pondéré + duel (4, 5, 7)</li><li>Carnet de tickets (21)</li><li>Ticket souvenir partageable (17)</li></ul>
+    <div class="why">C'est ici que naissent les données de couple. Sans elles, ni Wrapped ni recos. Maquettes B, D, E.</div></div>
+  <div class="stop"><div class="hd"><i>Décembre · ~2 semaines</i><b>V1.4 « RITUEL »</b></div>
+    <ul><li><b>Notre année ciné 2026</b>, livré avant le 20/12 (20)</li><li>Machine à tickets animée (6)</li><li>Web Push : dispo + « notez Chihiro » (25)</li><li>Recos « parce que vous avez aimé » (24)</li></ul>
+    <div class="why">Date dure : le Wrapped n'a de sens qu'en décembre. Maquettes F, G, H.</div></div>
+  <div class="stop"><div class="hd"><i>T1 2027 · si go</i><b>V2 « SALLES »</b></div>
+    <ul><li>Salles multi-couples, invitation par lien (28)</li><li>Match à deux, chacun son téléphone (10)</li><li>Mode soirée potes (29)</li><li>Landing page + vidéo TikTok « on ne se dispute plus sur Netflix »</li></ul>
+    <div class="why">Le passage de « notre appli » à « un produit ». Maquettes C, I.</div></div>
+</div>
+</section>
+
+<section>
+<h2 class="sh"><span>07</span> ET LE BUSINESS, FRANCHEMENT ?</h2>
+<div class="verdict-box">
+  <h3>MON AVIS : PAS UNE BOÎTE. UN TEST À 0 € AVEC UN CRITÈRE D'ARRÊT.</h3>
+  Le swipe de films à deux est saturé et personne n'en vit : le leader plafonne à 285 avis, Netflix a tué son tirage au sort, TV Time a fermé avec 26 M d'installs. En revanche, <b>le couple + la France + le « ce soir »</b> est un créneau vide, et notre V1.3-1.4 a de vrais leviers de bouche-à-oreille (ticket souvenir, Wrapped). Le bon move : construire pour nous, ouvrir gratuitement, mesurer, et ne payer les licences que si les chiffres le justifient.
+</div>
+
+<div class="cards" style="margin-top:22px">
+  <div class="box"><h3>Ce que coûte le passage payant</h3>
+    <ul><li>Licence TMDB : ~149 $/mois <small>(non officiel)</small></li><li>Vercel Pro : 20 $/mois</li><li>Streaming Availability : 49 $/mois</li><li>Turso : 0-5 $/mois</li></ul>
+    <b>≈ 220 $/mois, soit ~2 400 €/an</b> avant le premier euro gagné.</div>
+  <div class="box y"><h3>Ce que ça rapporterait</h3>
+    Abonnement « Club » à 1,99 €/mois <b>par couple</b> (≈ 20 €/an). Conversion freemium médiane : 2,2 % (RevenueCat 2025).<br><br>
+    Point mort ≈ <b>6 000 couples actifs</b>.<br>10 000 couples → ~4 000 €/an.<br><small>Seules ~5 % des nouvelles apps atteignent 10 000 $ cumulés en 2 ans.</small></div>
+  <div class="box p"><h3>L'idée la plus « nous » : le poster riso</h3>
+    En janvier, le Wrapped imprimé : un poster riso typographique de nos films de l'année (titres, dates, notes, sans affiches donc sans droits TMDB). Impression à la demande, ~25 €. Marge réelle, achat cadeau, et parfaitement dans la DA.</div>
+</div>
+
+<h3 style="margin-top:26px;text-transform:uppercase">Le plan de validation</h3>
+<table>
+<tr><th>Phase</th><th>Quand</th><th>Quoi</th><th>Coût</th><th>On continue si…</th></tr>
+<tr><td><b>0 · Pour nous</b></td><td>Nov.-déc. 2026</td><td>V1.2 → V1.4. On vérifie qu'on l'utilise vraiment tous les deux, chaque semaine.</td><td>0 €</td><td>On a ouvert l'app au moins 1 soir sur 2 en décembre.</td></tr>
+<tr><td><b>1 · Test gratuit</b></td><td>Janv.-mars 2027</td><td>V2 « Salles » ouverte, gratuite (dons acceptés, donc OK pour Hobby et TMDB). 20 couples d'amis, puis TikTok/Reels.</td><td>0 €</td><td>≥ 500 couples actifs/semaine, ≥ 40 % actifs à S4, ≥ 1 ticket partagé sur 5 films vus.</td></tr>
+<tr><td><b>2 · Payant</b></td><td>Avril 2027 →</td><td>Licence TMDB écrite, Vercel Pro, Streaming Availability. Club à 1,99 €/mois + poster.</td><td>~220 $/mois</td><td>≥ 2 % de payants. Sinon : on reste gratuit, on garde l'app pour nous et la vitrine portfolio.</td></tr>
+</table>
+<p class="src">Sources : <a href="https://apps.apple.com/us/app/-/id1623287922">Matched App Store</a> · <a href="https://www.tomsguide.com/news/netflix-just-killed-a-feature-that-seemed-like-a-great-idea">Netflix Play Something</a> · <a href="https://techcrunch.com/2026/07/02/popular-tv-tracking-app-tv-time-is-shutting-down-as-company-focuses-on-ai">TV Time</a> · <a href="https://en.wikipedia.org/wiki/Letterboxd">Letterboxd</a> · <a href="https://www.thewrap.com/industry-news/deals-ma/letterboxd-sale-netflix-sony-paramount/">Letterboxd vente</a> · <a href="https://revenuecat.com/state-of-subscription-apps-2025">RevenueCat 2025</a> · <a href="https://github.com/hk21x/decide">decide</a></p>
+</section>
+
+<section>
+<h2 class="sh"><span>08</span> CE QUE TU DOIS ARBITRER</h2>
+<ol class="decide">
+  <li><b>On attaque la V1.2 « Ce soir » ?</b> Elle transforme les plateformes en <b>filtre optionnel</b>. Tu avais dit « info seulement, filtres en V2 » : le tirage par défaut ne change pas.</li>
+  <li><b>Identité « toi / moi » par appareil.</b> Nécessaire pour les notes à l'aveugle et les vetos. Un prénom choisi une fois, pas de compte. OK ?</li>
+  <li><b>Match à deux (chacun son téléphone)</b> : on avait choisi « on remplit la liste ensemble, KISS ». Je le range en V2. Tu confirmes, ou tu le veux plus tôt ?</li>
+  <li><b>Le Wrapped en décembre.</b> On s'engage sur la date du 20/12 ? Ça fixe tout le calendrier.</li>
+  <li><b>Business : test gratuit avec critères d'arrêt</b>, ou on reste 100 % perso ? Dans les deux cas, V1.2 → V1.4 sont identiques. La décision peut attendre janvier.</li>
+  <li><b>Push iPhone</b> : oui pour 3 déclencheurs max (dispo, matchs, note du lendemain), ou zéro notif ?</li>
+</ol>
+</section></div></body></html>
