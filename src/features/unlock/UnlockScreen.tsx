@@ -8,7 +8,8 @@ import { unlock } from "./actions";
 import { INITIAL_UNLOCK_STATE } from "./state";
 import styles from "./UnlockScreen.module.css";
 
-const POSTER_HEIGHT = 150;
+/** Shorter when the phone is held sideways (spec §12). */
+const POSTER_HEIGHT = "clamp(80px, calc(100dvh - 300px), 150px)";
 
 /** Shared access code form. React resets the field after each attempt. */
 export function UnlockScreen() {

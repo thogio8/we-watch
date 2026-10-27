@@ -79,7 +79,10 @@
   --focus-ring: 3px solid var(--blue);
   --focus-offset: 3px;
 
-  /* Layout */
+  /* Layout. Phones get one 480 px column; from 760 px wide (tablet, desktop,
+     phone held sideways) the column widens and the nav moves to the top. */
   --column-max: 480px;
+  --column-wide: 960px;
   --nav-height: 82px;
+  --nav-top-height: 64px;
 }

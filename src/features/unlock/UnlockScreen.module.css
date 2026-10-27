@@ -4,6 +4,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Narrow by nature, even in the wide column (spec §12). */
+  max-width: var(--column-max);
+  margin-inline: auto;
 }
 
 .logo {
@@ -75,4 +78,26 @@
 
 .enter {
   margin-top: 30px;
+}
+
+/* Phone held sideways: one-line title, tighter spacing. */
+@media (max-height: 520px) {
+  .logo :global(span) {
+    display: inline;
+  }
+
+  .form {
+    margin-top: 16px;
+  }
+
+  .enter {
+    margin-top: 16px;
+  }
+}
+
+/* Wide screens: no nav on this page, so no room kept for it at the top. */
+@media (min-width: 760px) {
+  .screen {
+    margin-top: calc(-1 * var(--nav-top-height));
+  }
 }

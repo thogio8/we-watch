@@ -421,6 +421,7 @@ function LoadingTicket() {
     <div className={styles.deck} aria-busy="true">
       <Ticket
         posterHeight={POSTER_HEIGHT}
+        adaptive
         poster={<div className={styles.blank} aria-hidden="true" />}
       >
         <p className={styles.waiting}>ON CHERCHE DES FILMS…</p>

@@ -44,7 +44,11 @@ export function decisionFromDrag(
 
 export type CardPosition = "top" | "behind";
 
-export const POSTER_HEIGHT = 320;
+/**
+ * Follows the screen height so BOF / ON LE VEUT stay in sight on small phones:
+ * 320 px from an 844 px tall screen, 120 px at least.
+ */
+export const POSTER_HEIGHT = "clamp(120px, calc(100dvh - 524px), 320px)";
 /** Drag distance (px) over which the card tilts to its maximum. */
 const TILT_DISTANCE = 300;
 const MAX_TILT = 14;
@@ -145,6 +149,7 @@ export function SwipeCard({
     >
       <Ticket
         posterHeight={POSTER_HEIGHT}
+        adaptive
         poster={
           <>
             <Poster path={movie.posterPath} title={movie.title} size="w500" />

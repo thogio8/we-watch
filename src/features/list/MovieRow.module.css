@@ -6,6 +6,15 @@
   list-style: none;
 }
 
+/* Wide column (spec §12): rows side by side rather than one long scroll. */
+@container shell (min-width: 640px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    column-gap: 16px;
+  }
+}
+
 .row {
   display: flex;
   align-items: center;

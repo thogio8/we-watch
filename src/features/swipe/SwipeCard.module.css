@@ -79,3 +79,44 @@
   -webkit-line-clamp: 3;
   line-clamp: 3;
 }
+
+/* Lying ticket (spec §12): a bigger title and more of the summary. */
+@container shell (min-width: 640px) {
+  .title {
+    font-size: var(--text-2xl);
+  }
+
+  .overview {
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+  }
+}
+
+/* Short screens (small phones, phones held sideways): the summary gives way
+   to the buttons. */
+@media (max-height: 700px) {
+  .info {
+    min-height: 0;
+  }
+
+  .overview {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
+
+/* Tiny screens (iPhone SE 1st gen): no summary at all. */
+@media (max-height: 620px) {
+  .overview {
+    display: none;
+  }
+}
+
+/* Lying ticket: the platform stamp starts on the poster and may run over the
+   perforation, rather than being cut by the ticket's left edge. */
+@container shell (min-width: 640px) {
+  .platform {
+    right: auto;
+    left: 10px;
+  }
+}

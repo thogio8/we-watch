@@ -28,6 +28,7 @@ export default defineConfig({
         "src/features/unlock/actions.ts",
         // V1.2 « ce soir »
         "src/features/draw/tonightStorage.ts",
+        "src/features/draw/tear.ts",
         "src/features/refresh/**",
         "src/app/api/cron/**",
       ],

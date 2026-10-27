@@ -25,6 +25,7 @@
 .deck {
   display: grid;
   width: 100%;
+  max-width: 760px;
   margin-top: 10px;
 }
 
@@ -92,7 +93,11 @@
   transform: translateX(-50%);
 }
 
-/* Themed decks: one scrolling row, edge to edge (spec §11.4). */
+/*
+ * Themed decks: one scrolling row, edge to edge (spec §11.4), fading out at
+ * the edge so it reads as « there is more » (the mask only uses the alpha). Wide screens: every theme in
+ * sight, on as many centred lines as needed.
+ */
 .decks {
   display: flex;
   gap: 8px;
@@ -101,6 +106,24 @@
   padding: 4px 18px 8px;
   overflow-x: auto;
   scrollbar-width: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    var(--ink) 18px,
+    var(--ink) calc(100% - 36px),
+    transparent
+  );
+}
+
+@container shell (min-width: 640px) {
+  .decks {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+    mask-image: none;
+  }
 }
 
 /*
@@ -152,4 +175,50 @@
 .undoButton:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+/* Wide screens: the nav is at the top, so the slips sit just below it. */
+@media (min-width: 760px) {
+  .toast {
+    top: calc(var(--nav-top-height) + 12px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+
+  .undo {
+    top: calc(var(--nav-top-height) + 12px + env(safe-area-inset-top));
+  }
+}
+
+/*
+ * Phone held sideways: the card needs the height. The heading is only read
+ * out, and the themes keep to one scrolling line.
+ */
+@media (min-width: 760px) and (max-height: 520px) {
+  .kicker {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .decks {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    margin-inline: -24px;
+    padding-inline: 24px;
+    overflow-x: auto;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      var(--ink) 18px,
+      var(--ink) calc(100% - 36px),
+      transparent
+    );
+  }
+
+  .actions {
+    margin-top: 14px;
+  }
 }

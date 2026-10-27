@@ -1,36 +1,49 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import styles from "./Ticket.module.css";
 
 interface TicketProps {
   poster: ReactNode;
   children: ReactNode;
-  posterHeight?: number;
+  /** px, or any CSS length (e.g. a clamp() following the screen height). */
+  posterHeight?: number | string;
+  /**
+   * Lies down in a wide column (spec §12): poster on the left, a vertical
+   * perforation, the stub on the right.
+   */
+  adaptive?: boolean;
   className?: string;
 }
 
 const DEFAULT_POSTER_HEIGHT = 330;
 
+/** The poster part, for code that needs its live size (the torn ticket). */
+export const TICKET_POSTER_ATTR = "data-ticket-poster";
+
 export function Ticket({
   poster,
   children,
   posterHeight = DEFAULT_POSTER_HEIGHT,
+  adaptive = false,
   className,
 }: TicketProps) {
+  const classes = [styles.ticket, adaptive && styles.adaptive, className]
+    .filter(Boolean)
+    .join(" ");
+  const style = {
+    "--poster-h":
+      typeof posterHeight === "number" ? `${posterHeight}px` : posterHeight,
+  } as CSSProperties;
   return (
-    <article
-      className={className ? `${styles.ticket} ${className}` : styles.ticket}
-    >
-      <div className={styles.poster} style={{ height: posterHeight }}>
+    <article className={classes} style={style}>
+      <div className={styles.poster} {...{ [TICKET_POSTER_ATTR]: "" }}>
         {poster}
       </div>
       <span
         className={`${styles.stub} ${styles.stubLeft}`}
-        style={{ top: posterHeight }}
         aria-hidden="true"
       />
       <span
         className={`${styles.stub} ${styles.stubRight}`}
-        style={{ top: posterHeight }}
         aria-hidden="true"
       />
       <div className={styles.info}>{children}</div>

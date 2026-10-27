@@ -1,4 +1,7 @@
 .page {
+  /* Narrow by nature, even in the wide column (spec §12). */
+  max-width: var(--column-max);
+  margin-inline: auto;
   padding-top: 24px;
 }
 

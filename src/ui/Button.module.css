@@ -59,6 +59,14 @@
   background: var(--white);
 }
 
+/* Narrowest phones (320 px): two buttons side by side keep one-line labels. */
+@media (max-width: 359px) {
+  .button {
+    padding: 12px 13px;
+    font-size: var(--text-md);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .button {
     transition: none;

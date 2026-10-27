@@ -1,6 +1,7 @@
 /* Mockup A's panel: a white slip, folded to one line by default. */
 .panel {
   width: 100%;
+  max-width: var(--column-max);
   margin-top: 18px;
   border: var(--border);
   border-radius: var(--radius-button);

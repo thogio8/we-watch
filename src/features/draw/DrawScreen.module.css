@@ -71,6 +71,7 @@
 
 .ticket {
   width: 100%;
+  max-width: 760px;
   margin-top: 10px;
 }
 
@@ -124,6 +125,102 @@
   margin-top: 18px;
 }
 
+/* Lying ticket (spec §12): room for a longer summary beside the poster. */
+@container shell (min-width: 640px) {
+  .title {
+    font-size: var(--text-2xl);
+  }
+
+  .overview {
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+  }
+}
+
+/* Home: title, then the « ce soir » panel and the draw button. */
+.home,
+.head,
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.side {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Wide column (spec §12): the panel on the left, the button on its right. */
+@container shell (min-width: 640px) {
+  .split {
+    display: grid;
+    grid-template-areas:
+      "head head"
+      "side main";
+    grid-template-columns: minmax(0, var(--column-max)) auto;
+    column-gap: 48px;
+    justify-content: center;
+    align-items: start;
+  }
+
+  .split .head {
+    grid-area: head;
+  }
+
+  .split .side {
+    grid-area: side;
+  }
+
+  .split .main {
+    grid-area: main;
+    width: auto;
+    padding-top: 18px;
+  }
+
+  .split .compact {
+    margin-top: 0;
+  }
+}
+
+/* Phone held sideways: one-line title, a smaller button, tighter spacing. */
+@media (min-width: 760px) and (max-height: 520px) {
+  .logo :global(span) {
+    display: inline;
+  }
+
+  .compact {
+    width: min(200px, calc(100dvh - 210px));
+    font-size: var(--text-2xl);
+  }
+
+  .clock {
+    margin-top: 14px;
+  }
+
+  .actions {
+    margin-top: 14px;
+  }
+}
+
+/* Short screens (small phones, phones held sideways): the summary gives way
+   to the buttons. */
+@media (max-height: 700px) {
+  .overview {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
+
+/* Tiny screens (iPhone SE 1st gen): no summary at all. */
+@media (max-height: 620px) {
+  .overview {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .big {
     transition: none;
@@ -145,4 +242,13 @@
   font-size: var(--text-xl);
   text-align: center;
   text-shadow: var(--shadow-offset-xs);
+}
+
+/* Lying ticket: the stamp starts on the poster and may run over the
+   perforation, rather than being cut by the ticket's left edge. */
+@container shell (min-width: 640px) {
+  .endStamp {
+    right: auto;
+    left: 10px;
+  }
 }

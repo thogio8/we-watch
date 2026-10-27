@@ -33,8 +33,12 @@ button {
   font: inherit;
 }
 
-/* Mobile-first column, centred on desktop, clear of the fixed bottom nav. */
+/*
+ * Mobile-first column, clear of the fixed bottom nav. A size container: the
+ * tickets and the list adapt to the column's width (container queries).
+ */
 .shell {
+  container: shell / inline-size;
   width: 100%;
   max-width: var(--column-max);
   margin: 0 auto;
@@ -43,6 +47,25 @@ button {
     calc(18px + env(safe-area-inset-right))
     calc(var(--nav-height) + 24px + env(safe-area-inset-bottom))
     calc(18px + env(safe-area-inset-left));
+}
+
+/* Wide screens: a wider column below the top nav (see BottomNav). */
+@media (min-width: 760px) {
+  .shell {
+    max-width: var(--column-wide);
+    padding: calc(var(--nav-top-height) + 28px + env(safe-area-inset-top))
+      calc(24px + env(safe-area-inset-right))
+      calc(40px + env(safe-area-inset-bottom))
+      calc(24px + env(safe-area-inset-left));
+  }
+}
+
+/* Phone held sideways: every pixel of height counts. */
+@media (min-width: 760px) and (max-height: 520px) {
+  .shell {
+    padding-top: calc(var(--nav-top-height) + 14px + env(safe-area-inset-top));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

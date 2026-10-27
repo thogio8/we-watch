@@ -10,12 +10,14 @@
 /* Perforation between the poster and the stub. */
 .poster {
   position: relative;
+  height: var(--poster-h);
   border-bottom: var(--border-dashed);
 }
 
 /* Punched notches on both sides of the perforation. */
 .stub {
   position: absolute;
+  top: var(--poster-h);
   width: 31px;
   height: 31px;
   border: var(--border);
@@ -35,4 +37,46 @@
 .info {
   padding: 13px 16px;
   color: var(--white);
+}
+
+/*
+ * Wide column: the ticket lies down. The poster keeps its 2:3 print, as tall
+ * as the screen allows; the perforation runs top to bottom, notched at both
+ * ends, and the stub holds the text.
+ */
+@container shell (min-width: 640px) {
+  .adaptive {
+    --poster-w: clamp(120px, min(30cqi, (100dvh - 250px) * 2 / 3), 300px);
+
+    display: grid;
+    grid-template-columns: var(--poster-w) 1fr;
+    align-items: center;
+  }
+
+  .adaptive .poster {
+    align-self: stretch;
+    height: auto;
+    min-height: calc(var(--poster-w) * 3 / 2);
+    border-right: var(--border-dashed);
+    border-bottom: 0;
+  }
+
+  .adaptive .stub {
+    left: calc(var(--poster-w) - 15.5px);
+    transform: none;
+  }
+
+  .adaptive .stubLeft {
+    top: -19px;
+  }
+
+  .adaptive .stubRight {
+    top: auto;
+    right: auto;
+    bottom: -19px;
+  }
+
+  .adaptive .info {
+    padding: 22px 26px 22px 30px;
+  }
 }

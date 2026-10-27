@@ -7,7 +7,13 @@ import {
   useReducedMotion,
   type Variants,
 } from "motion/react";
-import { type ReactNode, useEffect, useState, useTransition } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import type { DrawSessionState } from "@/domain/draw-session";
 import type { Movie } from "@/domain/movie";
 import { computeEndTime, formatClock } from "@/domain/time";
@@ -25,11 +31,12 @@ import { movieMeta } from "@/ui/movieMeta";
 import { Poster } from "@/ui/Poster";
 import { ProviderTags } from "@/ui/ProviderTags";
 import { Stamp } from "@/ui/Stamp";
-import { Ticket } from "@/ui/Ticket";
+import { Ticket, TICKET_POSTER_ATTR } from "@/ui/Ticket";
 import { TornPile } from "@/ui/TornPile";
 import { TrailerLink } from "@/ui/TrailerLink";
 import styles from "./DrawScreen.module.css";
 import { useDrawSession } from "./DrawSessionProvider";
+import { measureTear, tearClips } from "./tear";
 import { TonightPanel } from "./TonightPanel";
 import { useMinuteClock } from "./useMinuteClock";
 
@@ -75,36 +82,34 @@ function resolveView(
   }
 }
 
-/** How the current view leaves the screen: torn into the pile, or a plain fade. */
-type Exit = "tear" | "fade";
+/**
+ * How the current view leaves the screen: torn into the pile along the
+ * ticket's perforation (measured on RETIRER), or a plain fade.
+ */
+type Exit =
+  { kind: "tear"; clips: { intact: string; torn: string } } | { kind: "fade" };
+
+const FADE: Exit = { kind: "fade" };
 
 const plural = (n: number, singular: string, pluralForm: string) =>
   `${n} ${n > 1 ? pluralForm : singular}`;
 
-const POSTER_HEIGHT = 290;
+/**
+ * Follows the screen height so RETIRER / ON LE REGARDE stay in sight on small
+ * phones: 290 px from an 844 px tall screen, 120 px at least.
+ */
+const POSTER_HEIGHT = "clamp(120px, calc(100dvh - 554px), 290px)";
 
-/** Tear-line x positions (%) and their depth (px) around the perforation. */
-const TEAR_POINTS = [
-  [115, -4],
-  [85, 6],
-  [70, -6],
-  [55, 8],
-  [40, -4],
-  [25, 7],
-  [10, -5],
-  [-15, 5],
-] as const;
-
-/** Clip path whose bottom edge zigzags around `y(offset)` px from the top. */
-const clipAt = (y: (offset: number) => number) =>
-  `polygon(-15% -60px, 115% -60px, ${TEAR_POINTS.map(
-    ([x, offset]) => `${x}% ${y(offset)}px`,
-  ).join(", ")})`;
-
-// Same points in px, so motion can tween between them. The intact clip leaves
-// room for the offset shadow and glow; the torn one rips along the perforation.
-const INTACT = clipAt(() => 600);
-const TORN = clipAt((offset) => POSTER_HEIGHT + offset);
+/** The perforation of the ticket on screen, read when it is torn. */
+function tearOf(wrapper: HTMLElement | null): { intact: string; torn: string } {
+  const poster = wrapper?.querySelector(`[${TICKET_POSTER_ATTR}]`);
+  if (!wrapper || !poster) return tearClips("horizontal", 290, 540);
+  const { axis, at, extent } = measureTear(
+    wrapper.getBoundingClientRect(),
+    poster.getBoundingClientRect(),
+  );
+  return tearClips(axis, at, extent);
+}
 
 function viewVariants(reduce: boolean): Variants {
   if (reduce) return { hidden: {}, shown: {}, exit: {} };
@@ -113,7 +118,9 @@ function viewVariants(reduce: boolean): Variants {
     shown: { opacity: 1, transition: { duration: 0.2 } },
     // A torn ticket needs the screen to stay put while it falls onto the pile.
     exit: (exit: Exit) =>
-      exit === "tear" ? {} : { opacity: 0, transition: { duration: 0.15 } },
+      exit.kind === "tear"
+        ? {}
+        : { opacity: 0, transition: { duration: 0.15 } },
   };
 }
 
@@ -129,17 +136,20 @@ function ticketVariants(reduce: boolean): Variants {
       transition: { type: "spring", stiffness: 260, damping: 22 },
     },
     // « RETIRER »: torn along the perforation, then dropped onto the pile.
-    exit: (exit: Exit) =>
-      exit === "tear"
-        ? {
-            clipPath: [INTACT, TORN, TORN],
-            rotate: [0, -4, -14],
-            y: [0, 6, 220],
-            scale: [1, 1, 0.2],
-            opacity: [1, 1, 0],
-            transition: { duration: 0.6, times: [0, 0.35, 1], ease: "easeIn" },
-          }
-        : { opacity: 0, transition: { duration: 0.15 } },
+    exit: (exit: Exit) => {
+      if (exit.kind !== "tear") {
+        return { opacity: 0, transition: { duration: 0.15 } };
+      }
+      const { intact, torn } = exit.clips;
+      return {
+        clipPath: [intact, torn, torn],
+        rotate: [0, -4, -14],
+        y: [0, 6, 220],
+        scale: [1, 1, 0.2],
+        opacity: [1, 1, 0],
+        transition: { duration: 0.6, times: [0, 0.35, 1], ease: "easeIn" },
+      };
+    },
   };
 }
 
@@ -209,8 +219,9 @@ function Screen({
 export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
   const { state, dispatch, filters: chosen, setFilters } = useDrawSession();
   const reduce = useReducedMotion() ?? false;
+  const ticketRef = useRef<HTMLDivElement>(null);
   const now = useMinuteClock();
-  const [exit, setExit] = useState<Exit>("fade");
+  const [exit, setExit] = useState<Exit>(FADE);
   const [isWatching, startWatching] = useTransition();
 
   const platforms = tonightPlatforms(toWatch);
@@ -232,13 +243,18 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
   const pileCount = state.pile.filter((id) => candidateIds.includes(id)).length;
 
   const draw = (type: "draw" | "reject" | "reset_pile") => {
-    setExit(type === "reject" ? "tear" : "fade");
+    // The ticket stands or lies depending on the screen: measure it now.
+    setExit(
+      type === "reject"
+        ? { kind: "tear", clips: tearOf(ticketRef.current) }
+        : FADE,
+    );
     dispatch({ type, candidateIds, roll: Math.random() });
   };
 
   const clearFilters = () => {
     setFilters({ ...NO_FILTERS });
-    setExit("fade");
+    setExit(FADE);
     dispatch({ type: "back_home" });
   };
 
@@ -246,7 +262,7 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
     startWatching(async () => {
       await onWatched(tmdbId);
       startWatching(() => {
-        setExit("fade");
+        setExit(FADE);
         dispatch({ type: "watched" });
       });
     });
@@ -259,53 +275,66 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
     <AnimatePresence mode="wait" custom={exit} initial={false}>
       <Screen key={key} reduce={reduce}>
         {view.phase === "home" && (
-          <>
-            <h1 className={styles.logo}>
-              <Lines lines={["CE SOIR", "ON REGARDE"]} />
-            </h1>
-            <p className={styles.small}>
-              {plural(counts.toWatch, "film", "films")} à regarder ·{" "}
-              {plural(counts.watched, "vu", "vus")}
-            </p>
+          // Wide column: title on top, the panel and the button side by side.
+          <div
+            className={
+              toWatch.length > 0
+                ? `${styles.home} ${styles.split}`
+                : styles.home
+            }
+          >
+            <div className={styles.head}>
+              <h1 className={styles.logo}>
+                <Lines lines={["CE SOIR", "ON REGARDE"]} />
+              </h1>
+              <p className={styles.small}>
+                {plural(counts.toWatch, "film", "films")} à regarder ·{" "}
+                {plural(counts.watched, "vu", "vus")}
+              </p>
+            </div>
             {toWatch.length > 0 && (
-              <TonightPanel
-                filters={filters}
-                platforms={platforms}
-                onChange={setFilters}
-              />
-            )}
-            {filtering && eligible.length === 0 ? (
-              <>
-                <p className={styles.nothing}>AUCUN FILM NE COLLE</p>
-                <div className={styles.actions}>
-                  <Button variant="primary" onClick={clearFilters}>
-                    ENLEVER LES FILTRES
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <button
-                type="button"
-                className={
-                  toWatch.length > 0
-                    ? `${styles.big} ${styles.compact}`
-                    : styles.big
-                }
-                onClick={() => draw("draw")}
-              >
-                <Lines
-                  lines={
-                    filtering
-                      ? ["TIRER", `PARMI ${eligible.length}`]
-                      : ["TIRER", "UN", "FILM"]
-                  }
+              <div className={styles.side}>
+                <TonightPanel
+                  filters={filters}
+                  platforms={platforms}
+                  onChange={setFilters}
                 />
-              </button>
+              </div>
             )}
-            <p className={`${styles.small} ${styles.clock}`}>
-              {now === null ? " " : `Il est ${formatClock(now)}`}
-            </p>
-          </>
+            <div className={styles.main}>
+              {filtering && eligible.length === 0 ? (
+                <>
+                  <p className={styles.nothing}>AUCUN FILM NE COLLE</p>
+                  <div className={styles.actions}>
+                    <Button variant="primary" onClick={clearFilters}>
+                      ENLEVER LES FILTRES
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className={
+                    toWatch.length > 0
+                      ? `${styles.big} ${styles.compact}`
+                      : styles.big
+                  }
+                  onClick={() => draw("draw")}
+                >
+                  <Lines
+                    lines={
+                      filtering
+                        ? ["TIRER", `PARMI ${eligible.length}`]
+                        : ["TIRER", "UN", "FILM"]
+                    }
+                  />
+                </button>
+              )}
+              <p className={`${styles.small} ${styles.clock}`}>
+                {now === null ? " " : `Il est ${formatClock(now)}`}
+              </p>
+            </div>
+          </div>
         )}
 
         {view.phase === "result" && (
@@ -314,11 +343,13 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
               Ce soir, ce sera…
             </p>
             <motion.div
+              ref={ticketRef}
               className={styles.ticket}
               variants={ticketVariants(reduce)}
             >
               <Ticket
                 posterHeight={POSTER_HEIGHT}
+                adaptive
                 poster={
                   <>
                     <Poster

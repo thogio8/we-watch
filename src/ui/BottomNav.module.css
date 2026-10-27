@@ -41,3 +41,26 @@
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
+
+/* Wide screens: a compact bar across the top, tabs kept to the phone width. */
+@media (min-width: 760px) {
+  .nav {
+    top: 0;
+    bottom: auto;
+    left: 0;
+    justify-content: center;
+    max-width: none;
+    padding: calc(10px + env(safe-area-inset-top))
+      calc(24px + env(safe-area-inset-right)) 10px
+      calc(24px + env(safe-area-inset-left));
+    border-top: 0;
+    border-bottom: var(--border);
+    transform: none;
+  }
+
+  .tab {
+    flex: 0 1 150px;
+    min-height: 40px;
+    padding: 8px 0;
+  }
+}
