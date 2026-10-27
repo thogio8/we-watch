@@ -20,19 +20,18 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       // Business scope gated before the front-end work (see global constraints).
-      include: [
-        "src/access/**",
-        "src/domain/**",
-        "src/db/**",
-        "src/tmdb/**",
-        "src/features/swipe/deck.ts",
-        "src/features/unlock/actions.ts",
-        // V1.2 « ce soir »
-        "src/features/draw/tonightStorage.ts",
-        "src/features/draw/tear.ts",
-        "src/server/validate.ts",
-        "src/features/refresh/**",
-        "src/app/api/cron/**",
+      // Every non-UI module: domain, data, server code, and the pure logic
+      // and Server Actions of each feature. Components and hooks are
+      // covered by the UI and end-to-end tests instead.
+      include: ["src/**/*.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/**/__mocks__/**",
+        "src/**/use*.ts",
+        "src/server/container.ts",
+        "src/proxy.ts",
+        "src/app/manifest.ts",
+        "src/features/pwa/brand.ts",
       ],
       thresholds: { lines: 95, functions: 95, statements: 95, branches: 90 },
     },

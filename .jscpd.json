@@ -1,0 +1,10 @@
+{
+  "path": ["src", "tests", "e2e"],
+  "minLines": 6,
+  "minTokens": 60,
+  "threshold": 0,
+  "reporters": ["console"],
+  "ignore": ["**/*.json", "**/drizzle/**"],
+  "gitignore": true,
+  "absolute": false
+}
