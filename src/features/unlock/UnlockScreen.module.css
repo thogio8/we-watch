@@ -42,12 +42,6 @@
   text-shadow: var(--shadow-offset-sm);
 }
 
-.admit {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-}
-
 .input {
   width: 100%;
   min-height: var(--touch-min);

@@ -7,7 +7,7 @@ interface StampProps {
   /** Rotation in degrees. */
   tilt: number;
   className?: string;
-  /** Set for purely decorative stamps (e.g. « ADMIT 2 »). */
+  /** Set for purely decorative stamps (hidden from assistive technologies). */
   "aria-hidden"?: boolean;
 }
 

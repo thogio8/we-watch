@@ -3,7 +3,6 @@
 import { useActionState } from "react";
 import { Button } from "@/ui/Button";
 import { Lines } from "@/ui/Lines";
-import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
 import { unlock } from "./actions";
 import { INITIAL_UNLOCK_STATE } from "./state";
@@ -31,14 +30,6 @@ export function UnlockScreen() {
               <h2 className={styles.title}>
                 <Lines lines={["ENTREZ", "LE CODE"]} />
               </h2>
-              <Stamp
-                tone="paper"
-                tilt={-5}
-                className={styles.admit}
-                aria-hidden
-              >
-                ADMIT 2
-              </Stamp>
             </div>
           }
         >

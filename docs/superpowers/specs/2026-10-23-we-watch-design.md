@@ -107,7 +107,7 @@ Direction choisie par Thomas parmi plusieurs pistes. Ce qu'il aime : **ça sort 
 - **Encres** : marine `#1b1b6b` (texte, contours, ombres), rose fluo `#ff3fa4`, jaune fluo `#ffe600`, bleu `#2f6bff`.
 - **Typo** : **Archivo Black** pour les titres, boutons et titres de films, toujours en MAJUSCULES. **Space Mono** pour les méta et le texte courant.
 - **Formes** : contours épais (3 px) à l'encre marine ; **ombres décalées pleines** (pas floues) ; un léger **halo coloré** (rose ou jaune) sur les éléments clés, pour le côté « glowy ».
-- **Ticket** : carte rose, affiche en haut, bordure pointillée, **encoches** de part et d'autre, tampons inclinés (« ADMIT 2 », plateforme, « FINI À … »).
+- **Ticket** : carte rose, affiche en haut, bordure pointillée, **encoches** de part et d'autre, tampons inclinés (plateforme, « FINI À … »). Le tampon « ADMIT 2 » a été retiré en V1.2 à la demande de Thomas.
 - **Pile « Pas ce soir »** : petits tickets déchirés empilés.
 - **Boutons** : rectangles arrondis à contour épais et ombre décalée. Action principale en jaune (ou rose pour « ON LE VEUT »), secondaire en blanc.
 - Les vraies affiches TMDB remplacent les aplats de couleur de la maquette.

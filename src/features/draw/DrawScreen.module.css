@@ -80,12 +80,6 @@
   right: 12px;
 }
 
-.admit {
-  position: absolute;
-  bottom: 14px;
-  left: 12px;
-}
-
 .title {
   font-size: var(--text-xl);
   line-height: 1.05;

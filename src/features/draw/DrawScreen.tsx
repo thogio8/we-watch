@@ -335,14 +335,6 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
                         now={now}
                       />
                     </motion.div>
-                    <Stamp
-                      tone="paper"
-                      tilt={-5}
-                      className={styles.admit}
-                      aria-hidden
-                    >
-                      ADMIT 2
-                    </Stamp>
                   </>
                 }
               >
