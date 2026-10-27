@@ -11,6 +11,13 @@ import { type ReactNode, useEffect, useState, useTransition } from "react";
 import type { DrawSessionState } from "@/domain/draw-session";
 import type { Movie } from "@/domain/movie";
 import { computeEndTime, formatClock } from "@/domain/time";
+import {
+  filterTonight,
+  isFiltering,
+  NO_FILTERS,
+  sanitizeFilters,
+  tonightProviders,
+} from "@/domain/tonight";
 import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
 import { Lines } from "@/ui/Lines";
@@ -20,8 +27,10 @@ import { ProviderTags } from "@/ui/ProviderTags";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
 import { TornPile } from "@/ui/TornPile";
+import { TrailerLink } from "@/ui/TrailerLink";
 import styles from "./DrawScreen.module.css";
 import { useDrawSession } from "./DrawSessionProvider";
+import { TonightPanel } from "./TonightPanel";
 import { useMinuteClock } from "./useMinuteClock";
 
 interface DrawScreenProps {
@@ -37,12 +46,17 @@ type View =
   | { phase: "empty" };
 
 /**
- * What to show for the session, given the current list. The list may have
- * changed since the draw (other tab, other device): a vanished movie or newly
- * added ones send the screen back home, the pile being kept; an exhausted pile
- * whose list was emptied shows the empty-list screen.
+ * What to show for the session, given the current list and the movies that
+ * suit tonight's filters. The list may have changed since the draw (other tab,
+ * other device): a vanished movie or newly eligible ones send the screen back
+ * home, the pile being kept; an exhausted pile whose list was emptied shows
+ * the empty-list screen.
  */
-function resolveView(state: DrawSessionState, toWatch: Movie[]): View {
+function resolveView(
+  state: DrawSessionState,
+  toWatch: Movie[],
+  eligible: Movie[],
+): View {
   switch (state.phase) {
     case "result": {
       const movie = toWatch.find((m) => m.tmdbId === state.currentId);
@@ -50,7 +64,8 @@ function resolveView(state: DrawSessionState, toWatch: Movie[]): View {
     }
     case "exhausted":
       if (toWatch.length === 0) return { phase: "empty" };
-      return toWatch.every((m) => state.pile.includes(m.tmdbId))
+      return eligible.length > 0 &&
+        eligible.every((m) => state.pile.includes(m.tmdbId))
         ? { phase: "exhausted" }
         : { phase: "home" };
     case "empty":
@@ -192,13 +207,20 @@ function Screen({
 }
 
 export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
-  const { state, dispatch } = useDrawSession();
+  const { state, dispatch, filters: chosen, setFilters } = useDrawSession();
   const reduce = useReducedMotion() ?? false;
   const now = useMinuteClock();
   const [exit, setExit] = useState<Exit>("fade");
   const [isWatching, startWatching] = useTransition();
 
-  const view = resolveView(state, toWatch);
+  const providers = tonightProviders(toWatch);
+  const filters = sanitizeFilters(chosen, toWatch);
+  const filtering = isFiltering(filters);
+  // No clock before hydration: the bedtime cannot be checked yet.
+  const eligible =
+    now === null ? toWatch : filterTonight(toWatch, filters, now);
+
+  const view = resolveView(state, toWatch, eligible);
   // Keep the session in line with a fall back home, so a stale movie cannot
   // resurface. An exhausted session shown as « empty » is left as is.
   const stale = view.phase === "home" && state.phase !== "home";
@@ -206,12 +228,18 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
     if (stale) dispatch({ type: "back_home" });
   }, [stale, dispatch]);
 
-  const candidateIds = toWatch.map((m) => m.tmdbId);
+  const candidateIds = eligible.map((m) => m.tmdbId);
   const pileCount = state.pile.filter((id) => candidateIds.includes(id)).length;
 
   const draw = (type: "draw" | "reject" | "reset_pile") => {
     setExit(type === "reject" ? "tear" : "fade");
     dispatch({ type, candidateIds, roll: Math.random() });
+  };
+
+  const clearFilters = () => {
+    setFilters({ ...NO_FILTERS });
+    setExit("fade");
+    dispatch({ type: "back_home" });
   };
 
   const watch = (tmdbId: number) => {
@@ -239,13 +267,41 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
               {plural(counts.toWatch, "film", "films")} à regarder ·{" "}
               {plural(counts.watched, "vu", "vus")}
             </p>
-            <button
-              type="button"
-              className={styles.big}
-              onClick={() => draw("draw")}
-            >
-              <Lines lines={["TIRER", "UN", "FILM"]} />
-            </button>
+            {toWatch.length > 0 && (
+              <TonightPanel
+                filters={filters}
+                providers={providers}
+                onChange={setFilters}
+              />
+            )}
+            {filtering && eligible.length === 0 ? (
+              <>
+                <p className={styles.nothing}>AUCUN FILM NE COLLE</p>
+                <div className={styles.actions}>
+                  <Button variant="primary" onClick={clearFilters}>
+                    ENLEVER LES FILTRES
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={
+                  toWatch.length > 0
+                    ? `${styles.big} ${styles.compact}`
+                    : styles.big
+                }
+                onClick={() => draw("draw")}
+              >
+                <Lines
+                  lines={
+                    filtering
+                      ? ["TIRER", `PARMI ${eligible.length}`]
+                      : ["TIRER", "UN", "FILM"]
+                  }
+                />
+              </button>
+            )}
             <p className={`${styles.small} ${styles.clock}`}>
               {now === null ? " " : `Il est ${formatClock(now)}`}
             </p>
@@ -293,6 +349,10 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
                 <h2 className={styles.title}>{view.movie.title}</h2>
                 <p className={styles.meta}>{movieMeta(view.movie)}</p>
                 <ProviderTags providers={view.movie.providers} />
+                <TrailerLink
+                  trailerKey={view.movie.trailerKey}
+                  title={view.movie.title}
+                />
                 {view.movie.overview && (
                   <p className={styles.overview}>{view.movie.overview}</p>
                 )}
@@ -325,9 +385,7 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
             </h1>
             <TornPile count={pileCount} label="PAS CE SOIR" />
             <p className={styles.small}>
-              {toWatch.length === 1
-                ? "Le seul film de la liste est passé à la trappe"
-                : `Les ${toWatch.length} films sont passés à la trappe`}
+              {exhaustedText(eligible.length, filtering)}
             </p>
             <div className={`${styles.actions} ${styles.spaced}`}>
               <Button variant="primary" onClick={() => draw("reset_pile")}>
@@ -336,9 +394,15 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
             </div>
             <p className={`${styles.small} ${styles.or}`}>ou</p>
             <div className={styles.actions}>
-              <ButtonLink href="/swipe" variant="secondary">
-                ALLER SWIPER
-              </ButtonLink>
+              {filtering ? (
+                <Button variant="secondary" onClick={clearFilters}>
+                  ENLEVER LES FILTRES
+                </Button>
+              ) : (
+                <ButtonLink href="/swipe" variant="secondary">
+                  ALLER SWIPER
+                </ButtonLink>
+              )}
             </div>
           </>
         )}
@@ -361,6 +425,17 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
       </Screen>
     </AnimatePresence>
   );
+}
+
+function exhaustedText(count: number, filtering: boolean): string {
+  if (filtering) {
+    return count === 1
+      ? "Le seul film qui collait est passé à la trappe"
+      : `Les ${count} films qui collaient sont passés à la trappe`;
+  }
+  return count === 1
+    ? "Le seul film de la liste est passé à la trappe"
+    : `Les ${count} films sont passés à la trappe`;
 }
 
 /** Shown while the list loads: the home title, without numbers nor button. */

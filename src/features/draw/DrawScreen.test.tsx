@@ -82,6 +82,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -284,6 +285,214 @@ describe("DrawScreen", () => {
     );
     expect(
       await screen.findByRole("heading", { name: "WHIPLASH" }),
+    ).toBeVisible();
+  });
+});
+
+describe("DrawScreen : filtres « ce soir »", () => {
+  const PRIME = { id: 119, name: "Amazon Prime Video", logoPath: null };
+  // 21:07 + 125 min = 23:12; 21:07 + 107 min = 22:54; 21:07 + 95 = 22:42.
+  const chihiro = movie(129, "LE VOYAGE DE CHIHIRO", { genreIds: [16, 14] });
+  const whiplash = movie(244786, "WHIPLASH", {
+    runtimeMinutes: 107,
+    genreIds: [18],
+  });
+  const parasite = movie(496243, "PARASITE", {
+    runtimeMinutes: 95,
+    genreIds: [35, 53, 18],
+    providers: [PRIME],
+  });
+  const list = [chihiro, whiplash, parasite];
+
+  const chip = (group: string, name: string) =>
+    within(screen.getByRole("group", { name: group })).getByRole("button", {
+      name,
+    });
+  const drawAmong = (n: number) =>
+    screen.getByRole("button", { name: `TIRER PARMI ${n}` });
+
+  it("le panneau propose heure, humeur et plateformes de la liste", () => {
+    renderDraw({ toWatch: list });
+
+    expect(chip("FINI AVANT", "PEU IMPORTE")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(chip("ON A ENVIE DE…", "RIRE")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    const platforms = within(
+      screen.getByRole("group", { name: "DISPO CHEZ NOUS" }),
+    );
+    expect(platforms.getAllByRole("button").map((b) => b.textContent)).toEqual([
+      "TOUT",
+      "Netflix",
+      "Amazon Prime Video",
+    ]);
+    expect(drawButton()).toBeEnabled();
+  });
+
+  it("FINI AVANT 23H ne tire que ce qui finit à temps", async () => {
+    const { user } = renderDraw({ toWatch: list });
+
+    await user.click(chip("FINI AVANT", "23H"));
+    expect(chip("FINI AVANT", "23H")).toHaveAttribute("aria-pressed", "true");
+    await user.click(drawAmong(2));
+
+    expect(
+      await screen.findByRole("heading", { name: "WHIPLASH" }),
+    ).toBeVisible();
+  });
+
+  it("les humeurs s'additionnent", async () => {
+    const { user } = renderDraw({ toWatch: list });
+
+    await user.click(chip("ON A ENVIE DE…", "RIRE"));
+    expect(drawAmong(1)).toBeVisible();
+    await user.click(chip("ON A ENVIE DE…", "S’ÉVADER"));
+    expect(drawAmong(2)).toBeVisible();
+    await user.click(chip("ON A ENVIE DE…", "RIRE"));
+    expect(drawAmong(1)).toBeVisible();
+  });
+
+  it("une plateforme choisie, puis TOUT pour revenir", async () => {
+    const { user } = renderDraw({ toWatch: list });
+
+    await user.click(chip("DISPO CHEZ NOUS", "Amazon Prime Video"));
+    expect(chip("DISPO CHEZ NOUS", "TOUT")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    await user.click(drawAmong(1));
+    expect(
+      await screen.findByRole("heading", { name: "PARASITE" }),
+    ).toBeVisible();
+  });
+
+  it("TOUT efface le choix des plateformes", async () => {
+    const { user } = renderDraw({ toWatch: list });
+
+    await user.click(chip("DISPO CHEZ NOUS", "Netflix"));
+    expect(drawAmong(2)).toBeVisible();
+    await user.click(chip("DISPO CHEZ NOUS", "TOUT"));
+
+    expect(drawButton()).toBeVisible();
+  });
+
+  it("aucun film ne colle → ENLEVER LES FILTRES", async () => {
+    const { user } = renderDraw({ toWatch: list });
+
+    await user.click(chip("FINI AVANT", "22H30"));
+
+    expect(screen.getByText("AUCUN FILM NE COLLE")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /^TIRER/ }),
+    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "ENLEVER LES FILTRES" }),
+    );
+    expect(drawButton()).toBeVisible();
+  });
+
+  it("la pile épuisée ne compte que les films qui collent", async () => {
+    const { user } = renderDraw({ toWatch: list });
+    await user.click(chip("ON A ENVIE DE…", "RIRE"));
+    await user.click(drawAmong(1));
+    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "VOUS ÊTES DIFFICILES CE SOIR",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Le seul film qui collait est passé à la trappe"),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "ENLEVER LES FILTRES" }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "TIRER UN FILM" }),
+    ).toBeVisible();
+    expect(chip("ON A ENVIE DE…", "RIRE")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("plusieurs films qui collaient, tous retirés", async () => {
+    const { user } = renderDraw({ toWatch: list });
+    await user.click(chip("FINI AVANT", "23H"));
+    await user.click(drawAmong(2));
+    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
+    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
+
+    expect(
+      await screen.findByText(
+        "Les 2 films qui collaient sont passés à la trappe",
+      ),
+    ).toBeVisible();
+  });
+
+  it("l'heure de coucher et les plateformes sont mémorisées, pas l'humeur", async () => {
+    const { user } = renderDraw({ toWatch: list });
+    await user.click(chip("FINI AVANT", "23H30"));
+    await user.click(chip("DISPO CHEZ NOUS", "Netflix"));
+    await user.click(chip("ON A ENVIE DE…", "RIRE"));
+
+    expect(JSON.parse(localStorage.getItem("ww-tonight-v1") ?? "")).toEqual({
+      bedtime: 23 * 60 + 30,
+      providerIds: [8],
+    });
+  });
+
+  it("relit les filtres mémorisés sur l'appareil", () => {
+    localStorage.setItem(
+      "ww-tonight-v1",
+      JSON.stringify({ bedtime: 23 * 60, providerIds: [119, 999] }),
+    );
+    renderDraw({ toWatch: list });
+
+    expect(chip("FINI AVANT", "23H")).toHaveAttribute("aria-pressed", "true");
+    // Prime only, and only what ends by 23:00. Unknown platform 999 is ignored.
+    expect(drawAmong(1)).toBeVisible();
+  });
+
+  it("un localStorage indisponible n'empêche pas de filtrer", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("SecurityError");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    const { user } = renderDraw({ toWatch: list });
+
+    await user.click(chip("FINI AVANT", "23H"));
+
+    expect(drawAmong(2)).toBeVisible();
+  });
+
+  it("pas de panneau quand la liste est vide", () => {
+    renderDraw({ toWatch: [] });
+
+    expect(
+      screen.queryByRole("region", { name: "La soirée" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("le ticket tiré propose la bande-annonce", async () => {
+    const { user } = renderDraw({
+      toWatch: [{ ...whiplash, trailerKey: "7d_jQycdQGo" }],
+    });
+
+    await user.click(drawButton());
+
+    expect(
+      await screen.findByRole("link", {
+        name: "Bande-annonce de WHIPLASH (YouTube)",
+      }),
     ).toBeVisible();
   });
 });

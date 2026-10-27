@@ -135,3 +135,20 @@
     transition: none;
   }
 }
+
+/* Below the « ce soir » panel, the draw button shrinks to keep the page short. */
+.compact {
+  width: min(200px, 54vw);
+  margin-top: 28px;
+  font-size: var(--text-3xl);
+}
+
+/* No movie suits the filters. */
+.nothing {
+  margin: 30px 0 0;
+  color: var(--pink);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  text-align: center;
+  text-shadow: var(--shadow-offset-xs);
+}

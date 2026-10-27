@@ -1,0 +1,28 @@
+/* Mockup A's panel: a white slip with three rows of chips. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px 12px 14px;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--white);
+  box-shadow: var(--shadow-offset);
+}
+
+.label {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  opacity: 0.75;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
