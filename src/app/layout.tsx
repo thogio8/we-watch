@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Archivo_Black, Space_Mono } from "next/font/google";
 import { DrawSessionProvider } from "@/features/draw/DrawSessionProvider";
 import { APP_DESCRIPTION, APP_NAME, BRAND } from "@/features/pwa/brand";
-import { BottomNav } from "@/ui/BottomNav";
+import { BottomNav, BottomNavFallback } from "@/ui/BottomNav";
 import "@/styles/tokens.css";
 import "./globals.css";
 
@@ -42,7 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <DrawSessionProvider>
           <div className="shell">{children}</div>
         </DrawSessionProvider>
-        <BottomNav />
+        <Suspense fallback={<BottomNavFallback />}>
+          <BottomNav />
+        </Suspense>
       </body>
     </html>
   );
