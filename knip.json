@@ -1,5 +1,4 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["tests/**/*.ts", "e2e/**/*.ts", "**/__mocks__/**/*.ts"],
-  "ignoreDependencies": ["@axe-core/playwright"]
+  "entry": ["tests/**/*.ts", "e2e/**/*.ts", "**/__mocks__/**/*.ts"]
 }

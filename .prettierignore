@@ -4,3 +4,6 @@ coverage/
 .next/
 package-lock.json
 .superpowers/
+e2e/.data/
+test-results/
+playwright-report/

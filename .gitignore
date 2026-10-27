@@ -50,3 +50,8 @@ next-env.d.ts
 
 # IDE
 .idea/
+
+# end-to-end tests
+/e2e/.data/
+/test-results/
+/playwright-report/

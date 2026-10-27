@@ -62,6 +62,12 @@ const eslintConfig = defineConfig([
     },
   },
 
+  // Playwright fixtures receive a `use` callback: not React's `use` hook.
+  {
+    files: ["e2e/**"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
+
   // Dependency direction: domain ← db/tmdb ← server ← features ← app.
   layer(
     ["src/domain/**"],

@@ -1,0 +1,18 @@
+# Local CI (CLAUDE.md « Qualité »). Installed by `npm install` (prepare).
+# Skip once in an emergency: LEFTHOOK=0 git push
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format
+      glob: "*.{ts,tsx,mjs,js,json,css,md,yml}"
+      run: npx prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+    - name: lint
+      glob: "*.{ts,tsx,mjs}"
+      run: npx eslint --max-warnings 0 {staged_files}
+
+pre-push:
+  jobs:
+    - name: ci
+      run: npm run ci
