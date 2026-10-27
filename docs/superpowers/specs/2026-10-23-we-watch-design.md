@@ -251,3 +251,4 @@ Règles retenues :
   - tests fonctionnels (actions serveur sur SQLite et faux TMDB) et e2e Playwright (build de prod, iPhone et desktop, 6 formats, axe) ;
   - CI locale `npm run ci` derrière des hooks git (lefthook), rejouée par GitHub Actions ;
   - `TMDB_API_URL` (facultatif) pour pointer l'appli vers le faux TMDB des tests.
+- **V1.2.5** (2026-10-27) : texte **encre marine sur le rose** (tickets, bouton ♥, onglet actif) au lieu du blanc, pour un contraste conforme WCAG AA (5:1 au lieu de 3,2:1), décidé avec Thomas ; le titre « ENTREZ LE CODE » garde son décalage riso, imprimé en papier. Mise en prod uniquement par GitHub Actions après CI verte (sauvegarde, migration, test de fumée, retour arrière) ; tests visuels par captures ; Dependabot.

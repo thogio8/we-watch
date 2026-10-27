@@ -77,7 +77,7 @@ Concrètement, sur ce repo :
 ## Conventions
 
 - **Langue** : interface en français (MAJUSCULES pour titres et boutons, typographie française : « », espaces insécables) ; code et commentaires en anglais ; noms de tests en français (ils se lisent comme la spec).
-- **DA « Ticket d'entrée » (riso fluo)** non négociable : papier `#fff4d6`, encre marine, rose, jaune et bleu fluo, Archivo Black + Space Mono, contours épais, ombres décalées pleines. Aucune couleur brute hors `src/styles/tokens.css` (exception documentée : `src/features/pwa/brand.ts` pour les icônes).
+- **DA « Ticket d'entrée » (riso fluo)** non négociable : papier `#fff4d6`, encre marine, rose, jaune et bleu fluo (texte encre sur le rose, pour le contraste), Archivo Black + Space Mono, contours épais, ombres décalées pleines. Aucune couleur brute hors `src/styles/tokens.css` (exception documentée : `src/features/pwa/brand.ts` pour les icônes).
 - **Responsive** (spec §12) : téléphone d'abord ; `@media (min-width: 760px)` = écrans larges (nav en haut) ; `@container shell (min-width: 640px)` = colonne large (ticket couché, grille) ; hauteurs `520px` (téléphone couché), `620px`/`700px` (petits écrans). Vérifier tout changement d'UI dans un vrai navigateur sur plusieurs formats.
 - Animations légères, `prefers-reduced-motion` respecté.
 - **Commits** : `type(scope): description`, header seul, en anglais. **Jamais de mention de Claude ni de `Co-Authored-By`.** Sur ce repo, Claude peut commiter et pousser seul (autorisation de Thomas) ; ailleurs non.
@@ -89,7 +89,7 @@ Concrètement, sur ce repo :
 - **Tests UI** : Testing Library, requêtes par rôle et texte visible, pas de détails d'implémentation.
 - **Tests fonctionnels** (`tests/functional/`) : `startServerStack()` donne une vraie base SQLite et le faux TMDB ; on appelle les vraies actions serveur.
 - **E2E** (`e2e/`, Playwright) : build de prod sur `e2e/.data/e2e.db` et le faux TMDB (`e2e/global-setup.ts`), ports 3217/3218, profils iPhone et desktop. La fixture `app` vide la base et déverrouille ; `swipe()` attend la fin des enregistrements (`settled`). Ne jamais supprimer la base e2e pendant qu'un serveur la tient (`SQLITE_READONLY_DBMOVED`).
-- **Accessibilité** : axe sans défaut grave, sauf le contraste blanc sur rose fluo de la DA (exception assumée dans `e2e/layout.spec.ts`, en attente d'arbitrage).
+- **Accessibilité** : axe sans aucun défaut grave, contraste compris (WCAG AA). Sur le rose, le texte est en encre (`--on-pink`), jamais en blanc.
 - Le faux TMDB (`tests/fake-tmdb/`) sert aux deux niveaux : un film utile à un test s'ajoute dans `catalog.ts`. L'appli le joint grâce à `TMDB_API_URL` (défaut : le vrai TMDB).
 
 ## Livrer une version

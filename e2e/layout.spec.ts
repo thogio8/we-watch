@@ -39,11 +39,7 @@ test.describe("mise en page et accessibilité", () => {
   test("aucun défaut d'accessibilité grave (axe)", async ({ app }) => {
     for (const path of PAGES) {
       await app.goto(path);
-      const { violations } = await new AxeBuilder({ page: app })
-        // Riso DA: white on fluo pink (3.2:1, WCAG AA wants 4.5:1) is a
-        // deliberate choice of the design, pending a decision (CLAUDE.md).
-        .disableRules(["color-contrast"])
-        .analyze();
+      const { violations } = await new AxeBuilder({ page: app }).analyze();
       const serious = violations
         .filter((v) => v.impact === "serious" || v.impact === "critical")
         .map((v) => `${path} ${v.id}: ${v.help}`);
