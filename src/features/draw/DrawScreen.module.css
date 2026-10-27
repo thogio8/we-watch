@@ -92,20 +92,6 @@
   margin-top: 0;
 }
 
-/* « ← RETOUR » and « ↺ RESSORTIR … »: quiet text buttons, big enough to tap. */
-.back,
-.untear {
-  min-height: var(--touch-min);
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
 /*
  * « ← RETOUR » on the kicker's line, adding no height. The kicker stays
  * centred, and slides aside rather than overlap on the narrowest phones.
@@ -119,6 +105,7 @@
 }
 
 .back {
+  composes: textAction from "../../ui/TextAction.module.css";
   justify-self: start;
   /* A full-size tap target that does not grow the line. */
   margin-block: -14px;
@@ -126,19 +113,10 @@
 }
 
 .untear {
+  composes: textAction from "../../ui/TextAction.module.css";
   margin-top: 4px;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.back:focus-visible,
-.untear:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-
-.back:disabled {
-  opacity: 0.5;
 }
 
 .ticket {
