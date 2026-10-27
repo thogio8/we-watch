@@ -188,3 +188,38 @@ L'URL de prod est publique : un code partagé, saisi une fois par appareil, tien
 - **Métadonnées iOS** : `appleWebApp` (capable, titre « we-watch », barre d'état `default`, claire avec texte foncé, adaptée au fond crème), `applicationName`.
 - **Viewport** `viewport-fit=cover` : la colonne, la barre de navigation fixe et `/unlock` respectent les `env(safe-area-inset-*)` pour ne rien cacher sous l'encoche ni l'indicateur d'accueil.
 - **Pas de service worker** ni de mode hors ligne.
+
+## 11. V1.2 « Ce soir » (décidé le 2026-10-27)
+
+Thomas : « on reste pour nous, on oublie la partie business ». Première étape de la roadmap du 2026-10-26 (`docs/roadmap/`), maquette A. Objectif : attaquer les 26 minutes de choix, sans changer le tirage par défaut. Arbitrages pris par Claude (Thomas a délégué) : les plateformes deviennent un **filtre optionnel** du tirage, jamais un filtre du swipe.
+
+### 11.1 Filtres « ce soir » (TIRER)
+
+Sur l'accueil du tirage, un panneau « LA SOIRÉE » au-dessus du bouton, trois rangées de puces, toutes optionnelles :
+
+- **FINI AVANT** (choix unique) : PEU IMPORTE · 22H30 · 23H · 23H30 · MINUIT · 1H. Un film est gardé si `maintenant + durée ≤ heure de coucher`. L'heure de coucher est la prochaine occurrence de cette heure ; si elle est passée de moins de 12 h (il est 23h50, coucher 23h30), plus rien ne rentre. Durée inconnue : exclu (on ne peut rien promettre).
+- **ON A ENVIE DE…** (choix multiple, « ou ») : RIRE (comédie) · FRISSONNER (horreur, thriller, mystère) · S'ÉMOUVOIR (drame, romance) · RÉFLÉCHIR (documentaire, histoire, guerre, SF) · S'ÉVADER (aventure, fantastique, animation, familial, action). Genres TMDB.
+- **DISPO CHEZ NOUS** (choix multiple, « ou ») : les plateformes présentes dans la liste « à voir », plus TOUT (aucun filtre, actif par défaut).
+- Le bouton devient **TIRER PARMI N** dès qu'un filtre est actif. Zéro film : « AUCUN FILM NE COLLE » et **ENLEVER LES FILTRES**. La pile « Pas ce soir » et l'écran « difficiles » raisonnent sur les films filtrés.
+- Les filtres vivent dans la session de tirage (survivent aux onglets). L'heure de coucher et les plateformes sont **mémorisées sur l'appareil** (localStorage) ; l'humeur repart de zéro à chaque ouverture.
+
+### 11.2 Données enrichies et rafraîchies
+
+- Instantané : **genres** (ids TMDB) et **clé YouTube de la bande-annonce** (vidéo `Trailer` YouTube, VF d'abord, sinon VO). Deux colonnes, migration additive.
+- **Rafraîchissement quotidien** (Vercel Cron, 1/jour, permis en Hobby) : les films « à voir » et « vus » reprennent leur instantané TMDB (plateformes, durée, genres, bande-annonce) ; statut et dates intacts. Le filtre plateformes ne ment donc pas plus d'un jour. Route `GET /api/cron/refresh-movies`, hors cookie d'accès, protégée par `Authorization: Bearer CRON_SECRET` (variable facultative, 16+ caractères ; absente → 401). Le premier appel manuel sert de remplissage des films existants.
+
+### 11.3 Bande-annonce
+
+Bouton « ▶ BANDE-ANNONCE » sur la carte de swipe et sur le ticket tiré, s'il y a une vidéo : lien `youtube.com/watch` dans un nouvel onglet (l'app YouTube s'ouvre sur iPhone). Pas d'iframe.
+
+### 11.4 Decks thématiques (SWIPER)
+
+Une rangée de puces défilante sous le titre : LES MIEUX NOTÉS (défaut) · ANNÉES 80 · ANNÉES 90 · MOINS DE 1H40 · ANIMATION · CINÉMA FRANÇAIS · CINÉMA CORÉEN. Le deck est dans l'URL (`/swipe?deck=…`), chaque deck est un `discover` TMDB trié par note avec son propre plancher de votes. Toujours aucun filtre de plateforme.
+
+### 11.5 Annuler le dernier swipe
+
+Après chaque décision, un bandeau « ↺ ANNULER » pendant 5 s. Annuler remet la carte en tête et efface la décision en base, **seulement si c'est bien ce swipe qui l'a créée** (suppression conditionnée au statut attendu ; un swipe « noop » ne s'annule pas).
+
+### 11.6 Hors périmètre V1.2
+
+Identité toi/moi, notes, vetos (V1.3) ; page crédits et hors ligne (les attributions restent en pied de LISTE).
