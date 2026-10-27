@@ -223,3 +223,19 @@ Après chaque décision, un bandeau « ↺ ANNULER » pendant 5 s. Annuler remet
 ### 11.6 Hors périmètre V1.2
 
 Identité toi/moi, notes, vetos (V1.3) ; page crédits et hors ligne (les attributions restent en pied de LISTE).
+
+## 12. V1.2.1 : responsive sur tous les appareils (2026-10-27)
+
+Thomas : « on ne se contente plus du mobile first ». Seul sujet de la version : que chaque écran rende bien du petit Android (360×640) au grand écran (1920×1080), téléphone couché compris. Aucune nouvelle fonctionnalité.
+
+Constat de l'audit (9 formats, 8 écrans) : aucun débordement horizontal, mais (1) sur les petits téléphones le ticket et la carte ont une affiche de hauteur fixe, les boutons passent sous la barre ; (2) téléphone couché inutilisable (barre du bas sur un quart de l'écran, on ne voit que l'affiche) ; (3) tablette et ordinateur : une colonne de 480 px perdue au milieu, barre en bas, liste interminable, rangée de thèmes coupée.
+
+Règles retenues :
+
+- **Téléphone portrait** : DA inchangée ; l'affiche du ticket tiré et de la carte de swipe suit la hauteur de l'écran (`clamp` sur `dvh`) pour que les boutons restent visibles dès 360×640.
+- **Dès 760 px de large** (tablette, ordinateur, téléphone couché) : barre de navigation **en haut**, compacte ; colonne élargie à 960 px.
+- **Ticket horizontal** dès que la colonne fait 640 px : affiche à gauche (2:3), perforation **verticale** avec ses encoches en haut et en bas, infos à droite, comme un vrai billet. Concerne le ticket tiré et les cartes de swipe ; le ticket du code d'accès et celui d'erreur restent verticaux. Le ticket déchiré (RETIRER) se déchire le long de la perforation, verticale ou horizontale.
+- **Éléments étroits par nature** (accueil du tirage, panneau « la soirée », code d'accès, erreur) : centrés, 480 px au plus.
+- **Liste et recherche** : grille de lignes (`auto-fill`, 300 px min) en large.
+- **Thèmes du swipe** : défilement avec fondu au bord sur téléphone, sur plusieurs lignes centrées en large.
+- Bandeaux (« ↺ ANNULER », erreurs) : hors des boutons dans chaque disposition.
