@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/thogio8/we-watch/compare/v1.3.0...v1.3.1) (2026-10-27)
+
+
+### Plus rapide
+
+* keep visited pages on the phone for 5 minutes, refreshed on every change ([da81938](https://github.com/thogio8/we-watch/commit/da81938d7d0ac0e9f519172facaf03c082c3896a))
+
 ## [1.3.0](https://github.com/thogio8/we-watch/compare/v1.2.5...v1.3.0) (2026-10-27)
 
 
