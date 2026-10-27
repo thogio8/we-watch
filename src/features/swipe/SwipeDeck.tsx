@@ -233,7 +233,7 @@ const deckHref = (id: DeckId) =>
   id === DEFAULT_DECK ? "/swipe" : `/swipe?deck=${id}`;
 
 /** Themed decks as a scrolling row of chips; the deck lives in the URL. */
-function DeckChips({ deck }: { deck: DeckId }) {
+function DeckChips({ deck }: { deck: DeckId | null }) {
   return (
     <nav className={styles.decks} aria-label="Thèmes">
       {DECKS.map(({ id, label }) => (
@@ -419,11 +419,14 @@ function LoadingTicket() {
   );
 }
 
-/** Shown while the first batch loads on the server. */
-export function SwipeDeckFallback({ deck }: { deck: DeckId }) {
+/**
+ * Shown while the first batch loads on the server. `deck` is null in the
+ * static shell, before the request's `?deck=` is read.
+ */
+export function SwipeDeckFallback({ deck }: { deck: DeckId | null }) {
   return (
     <main className={styles.screen}>
-      <h1 className={styles.kicker}>{deckLabel(deck)}</h1>
+      <h1 className={styles.kicker}>{deck === null ? " " : deckLabel(deck)}</h1>
       <DeckChips deck={deck} />
       <LoadingTicket />
     </main>

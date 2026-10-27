@@ -1,4 +1,5 @@
 import type { StreamingProvider } from "@/domain/movie";
+import { distinctPlatforms } from "@/domain/tonight";
 import styles from "./ProviderTags.module.css";
 
 interface ProviderTagsProps {
@@ -13,7 +14,8 @@ export function ProviderTags({ providers }: ProviderTagsProps) {
   }
   return (
     <ul className={styles.list} aria-label="Plateformes">
-      {providers.map((provider) => (
+      {/* One tag per platform, not per plan (« … with Ads »). */}
+      {distinctPlatforms(providers).map((provider) => (
         <li key={provider.id} className={styles.tag}>
           {provider.name}
         </li>

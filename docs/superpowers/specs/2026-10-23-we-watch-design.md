@@ -198,7 +198,7 @@ Thomas : « on reste pour nous, on oublie la partie business ». Première étap
 Sur l'accueil du tirage, un panneau « LA SOIRÉE » au-dessus du bouton, trois rangées de puces, toutes optionnelles :
 
 - **FINI AVANT** (choix unique) : PEU IMPORTE · 22H30 · 23H · 23H30 · MINUIT · 1H. Un film est gardé si `maintenant + durée ≤ heure de coucher`. L'heure de coucher est la prochaine occurrence de cette heure ; si elle est passée de moins de 12 h (il est 23h50, coucher 23h30), plus rien ne rentre. Durée inconnue : exclu (on ne peut rien promettre).
-- **ON A ENVIE DE…** (choix multiple, « ou ») : RIRE (comédie) · FRISSONNER (horreur, thriller, mystère) · S'ÉMOUVOIR (drame, romance) · RÉFLÉCHIR (documentaire, histoire, guerre, SF) · S'ÉVADER (aventure, fantastique, animation, familial, action). Genres TMDB.
+- **ON A ENVIE DE…** (choix multiple, « ou ») : RIRE (comédie) · FRISSONNER (horreur, thriller, mystère, policier) · S'ÉMOUVOIR (drame, romance) · RÉFLÉCHIR (documentaire, histoire, guerre, SF) · S'ÉVADER (aventure, fantastique, animation, familial, action, western). Genres TMDB.
 - **DISPO CHEZ NOUS** (choix multiple, « ou ») : les plateformes présentes dans la liste « à voir », plus TOUT (aucun filtre, actif par défaut).
 - Le bouton devient **TIRER PARMI N** dès qu'un filtre est actif. Zéro film : « AUCUN FILM NE COLLE » et **ENLEVER LES FILTRES**. La pile « Pas ce soir » et l'écran « difficiles » raisonnent sur les films filtrés.
 - Les filtres vivent dans la session de tirage (survivent aux onglets). L'heure de coucher et les plateformes sont **mémorisées sur l'appareil** (localStorage) ; l'humeur repart de zéro à chaque ouverture.

@@ -3,13 +3,15 @@ import type { MovieSnapshot, StreamingProvider } from "./movie";
 import {
   BEDTIMES,
   bedtimeDeadline,
+  distinctPlatforms,
   filterTonight,
   fitsBefore,
   isFiltering,
   MOODS,
   NO_FILTERS,
+  platformKey,
   sanitizeFilters,
-  tonightProviders,
+  tonightPlatforms,
 } from "./tonight";
 
 /** Local time on 2026-10-27 (or the next day with dayOffset 1). */
@@ -93,20 +95,54 @@ describe("fitsBefore", () => {
   });
 });
 
-describe("tonightProviders", () => {
-  it("plateformes de la liste, les plus fréquentes d'abord, sans doublon", () => {
+describe("platformKey", () => {
+  it.each([
+    ["Netflix", "netflix"],
+    ["Netflix Standard with Ads", "netflix"],
+    ["Amazon Prime Video with Ads", "amazon prime video"],
+    ["HBO Max Amazon Channel", "hbo max"],
+    ["Paramount Plus", "paramount+"],
+    ["Paramount Plus Premium", "paramount+"],
+    ["Paramount+ Amazon Channel", "paramount+"],
+    ["Disney Plus", "disney+"],
+    ["Canal+", "canal+"],
+    ["MGM Amazon Channel", "mgm"],
+    ["Paramount Plus Premium Amazon Channel", "paramount+"],
+    ["Plus Belle La Vie", "plus belle la vie"],
+  ])("%s → %s", (name, key) => {
+    expect(platformKey(name)).toBe(key);
+  });
+});
+
+describe("tonightPlatforms", () => {
+  it("une puce par plateforme, les plus fréquentes d'abord", () => {
+    const ads = { id: 1796, name: "Netflix Standard with Ads", logoPath: null };
     const list = [
       movie(1, { providers: [PRIME] }),
-      movie(2, { providers: [NETFLIX, PRIME] }),
+      movie(2, { providers: [ads, NETFLIX, PRIME] }),
       movie(3, { providers: [CANAL] }),
-      movie(4, { providers: [NETFLIX, PRIME] }),
+      movie(4, { providers: [ads, PRIME] }),
     ];
-    expect(tonightProviders(list)).toEqual([PRIME, NETFLIX, CANAL]);
+    expect(tonightPlatforms(list)).toEqual([
+      { key: "prime", name: "Prime" },
+      { key: "netflix", name: "Netflix" },
+      { key: "canal+", name: "Canal+" },
+    ]);
   });
 
   it("à égalité, ordre alphabétique", () => {
     const list = [movie(1, { providers: [PRIME, CANAL] })];
-    expect(tonightProviders(list)).toEqual([CANAL, PRIME]);
+    expect(tonightPlatforms(list).map((p) => p.name)).toEqual([
+      "Canal+",
+      "Prime",
+    ]);
+  });
+});
+
+describe("distinctPlatforms", () => {
+  it("garde la première offre de chaque plateforme", () => {
+    const ads = { id: 1796, name: "Netflix Standard with Ads", logoPath: null };
+    expect(distinctPlatforms([ads, PRIME, NETFLIX])).toEqual([ads, PRIME]);
   });
 });
 
@@ -135,7 +171,7 @@ describe("filterTonight", () => {
   });
 
   it("plateformes en « ou »", () => {
-    const filters = { ...NO_FILTERS, providerIds: [8, 119] };
+    const filters = { ...NO_FILTERS, platforms: ["netflix", "prime"] };
     expect(ids(filterTonight(list, filters, at(21)))).toEqual([1, 2, 4]);
   });
 
@@ -143,7 +179,7 @@ describe("filterTonight", () => {
     const filters = {
       bedtime: 24 * 60,
       moods: ["feel" as const],
-      providerIds: [119],
+      platforms: ["prime"],
     };
     expect(ids(filterTonight(list, filters, at(21)))).toEqual([4]);
   });
@@ -152,8 +188,8 @@ describe("filterTonight", () => {
 describe("sanitizeFilters", () => {
   it("oublie les plateformes absentes de la liste", () => {
     const list = [movie(1, { providers: [NETFLIX] })];
-    const filters = { ...NO_FILTERS, providerIds: [8, 381] };
-    expect(sanitizeFilters(filters, list).providerIds).toEqual([8]);
+    const filters = { ...NO_FILTERS, platforms: ["netflix", "canal+"] };
+    expect(sanitizeFilters(filters, list).platforms).toEqual(["netflix"]);
   });
 });
 
@@ -162,7 +198,7 @@ describe("isFiltering", () => {
     expect(isFiltering(NO_FILTERS)).toBe(false);
     expect(isFiltering({ ...NO_FILTERS, bedtime: 1380 })).toBe(true);
     expect(isFiltering({ ...NO_FILTERS, moods: ["think"] })).toBe(true);
-    expect(isFiltering({ ...NO_FILTERS, providerIds: [8] })).toBe(true);
+    expect(isFiltering({ ...NO_FILTERS, platforms: ["netflix"] })).toBe(true);
   });
 });
 

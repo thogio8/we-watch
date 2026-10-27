@@ -103,10 +103,13 @@
   scrollbar-width: none;
 }
 
-/* « ↺ ANNULER »: an ink slip above the bottom nav, after each swipe. */
+/*
+ * « ↺ ANNULER »: an ink slip at the top of the screen after each swipe, so
+ * the BOF / ON LE VEUT buttons stay free for the next card.
+ */
 .undo {
   position: fixed;
-  bottom: calc(var(--nav-height) + 16px + env(safe-area-inset-bottom));
+  top: calc(10px + env(safe-area-inset-top));
   left: 50%;
   z-index: 20;
   display: flex;

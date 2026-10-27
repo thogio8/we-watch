@@ -1,15 +1,63 @@
-/* Mockup A's panel: a white slip with three rows of chips. */
+/* Mockup A's panel: a white slip, folded to one line by default. */
 .panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   width: 100%;
   margin-top: 18px;
-  padding: 12px 12px 14px;
   border: var(--border);
   border-radius: var(--radius-button);
   background: var(--white);
   box-shadow: var(--shadow-offset);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.header:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.title {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+}
+
+.summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.caret {
+  flex: none;
+  font-size: var(--text-md);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 12px 14px;
+  border-top: var(--border-thin-dashed);
+  padding-top: 10px;
 }
 
 .label {

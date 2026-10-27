@@ -308,11 +308,32 @@ describe("DrawScreen : filtres « ce soir »", () => {
     within(screen.getByRole("group", { name: group })).getByRole("button", {
       name,
     });
+  const openPanel = (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole("button", { name: /^LA SOIRÉE/ }));
   const drawAmong = (n: number) =>
     screen.getByRole("button", { name: `TIRER PARMI ${n}` });
 
-  it("le panneau propose heure, humeur et plateformes de la liste", () => {
-    renderDraw({ toWatch: list });
+  it("le panneau, replié, résume les filtres et garde le bouton en vue", async () => {
+    const { user } = renderDraw({ toWatch: list });
+
+    const header = screen.getByRole("button", { name: /^LA SOIRÉE/ });
+    expect(header).toHaveAttribute("aria-expanded", "false");
+    expect(header).toHaveTextContent("AUCUN FILTRE");
+    expect(screen.queryByRole("group")).not.toBeInTheDocument();
+
+    await user.click(header);
+    await user.click(chip("FINI AVANT", "MINUIT"));
+    await user.click(chip("ON A ENVIE DE…", "RIRE"));
+    await user.click(chip("DISPO CHEZ NOUS", "Netflix"));
+    await user.click(header);
+
+    expect(header).toHaveAttribute("aria-expanded", "false");
+    expect(header).toHaveTextContent("AVANT MINUIT · RIRE · NETFLIX");
+  });
+
+  it("le panneau propose heure, humeur et plateformes de la liste", async () => {
+    const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
 
     expect(chip("FINI AVANT", "PEU IMPORTE")).toHaveAttribute(
       "aria-pressed",
@@ -335,6 +356,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("FINI AVANT 23H ne tire que ce qui finit à temps", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
 
     await user.click(chip("FINI AVANT", "23H"));
     expect(chip("FINI AVANT", "23H")).toHaveAttribute("aria-pressed", "true");
@@ -347,6 +369,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("les humeurs s'additionnent", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
 
     await user.click(chip("ON A ENVIE DE…", "RIRE"));
     expect(drawAmong(1)).toBeVisible();
@@ -358,6 +381,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("une plateforme choisie, puis TOUT pour revenir", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
 
     await user.click(chip("DISPO CHEZ NOUS", "Amazon Prime Video"));
     expect(chip("DISPO CHEZ NOUS", "TOUT")).toHaveAttribute(
@@ -372,6 +396,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("TOUT efface le choix des plateformes", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
 
     await user.click(chip("DISPO CHEZ NOUS", "Netflix"));
     expect(drawAmong(2)).toBeVisible();
@@ -382,6 +407,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("aucun film ne colle → ENLEVER LES FILTRES", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
 
     await user.click(chip("FINI AVANT", "22H30"));
 
@@ -397,6 +423,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("la pile épuisée ne compte que les films qui collent", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
     await user.click(chip("ON A ENVIE DE…", "RIRE"));
     await user.click(drawAmong(1));
     await user.click(await screen.findByRole("button", { name: "RETIRER" }));
@@ -416,14 +443,14 @@ describe("DrawScreen : filtres « ce soir »", () => {
     expect(
       await screen.findByRole("button", { name: "TIRER UN FILM" }),
     ).toBeVisible();
-    expect(chip("ON A ENVIE DE…", "RIRE")).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    expect(
+      screen.getByRole("button", { name: /^LA SOIRÉE/ }),
+    ).toHaveTextContent("AUCUN FILTRE");
   });
 
   it("plusieurs films qui collaient, tous retirés", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
     await user.click(chip("FINI AVANT", "23H"));
     await user.click(drawAmong(2));
     await user.click(await screen.findByRole("button", { name: "RETIRER" }));
@@ -438,25 +465,33 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("l'heure de coucher et les plateformes sont mémorisées, pas l'humeur", async () => {
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
     await user.click(chip("FINI AVANT", "23H30"));
     await user.click(chip("DISPO CHEZ NOUS", "Netflix"));
     await user.click(chip("ON A ENVIE DE…", "RIRE"));
 
     expect(JSON.parse(localStorage.getItem("ww-tonight-v1") ?? "")).toEqual({
       bedtime: 23 * 60 + 30,
-      providerIds: [8],
+      platforms: ["netflix"],
     });
   });
 
-  it("relit les filtres mémorisés sur l'appareil", () => {
+  it("relit les filtres mémorisés sur l'appareil", async () => {
     localStorage.setItem(
       "ww-tonight-v1",
-      JSON.stringify({ bedtime: 23 * 60, providerIds: [119, 999] }),
+      JSON.stringify({
+        bedtime: 23 * 60,
+        platforms: ["amazon prime video", "inconnue"],
+      }),
     );
-    renderDraw({ toWatch: list });
+    const { user } = renderDraw({ toWatch: list });
 
+    expect(
+      screen.getByRole("button", { name: /^LA SOIRÉE/ }),
+    ).toHaveTextContent("AVANT 23H · AMAZON PRIME VIDEO");
+    await openPanel(user);
     expect(chip("FINI AVANT", "23H")).toHaveAttribute("aria-pressed", "true");
-    // Prime only, and only what ends by 23:00. Unknown platform 999 is ignored.
+    // Prime only, and only what ends by 23:00. The unknown platform is ignored.
     expect(drawAmong(1)).toBeVisible();
   });
 
@@ -468,6 +503,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
       throw new Error("QuotaExceededError");
     });
     const { user } = renderDraw({ toWatch: list });
+    await openPanel(user);
 
     await user.click(chip("FINI AVANT", "23H"));
 

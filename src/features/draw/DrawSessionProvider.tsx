@@ -80,7 +80,7 @@ export function DrawSessionProvider({ children }: { children: ReactNode }) {
   };
 
   const setFilters = (next: TonightFilters) => {
-    setChosen({ bedtime: next.bedtime, providerIds: next.providerIds });
+    setChosen({ bedtime: next.bedtime, platforms: next.platforms });
     setMoods(next.moods);
     writeStorage(serializeTonight(next));
   };

@@ -16,7 +16,7 @@ import {
   isFiltering,
   NO_FILTERS,
   sanitizeFilters,
-  tonightProviders,
+  tonightPlatforms,
 } from "@/domain/tonight";
 import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
@@ -213,7 +213,7 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
   const [exit, setExit] = useState<Exit>("fade");
   const [isWatching, startWatching] = useTransition();
 
-  const providers = tonightProviders(toWatch);
+  const platforms = tonightPlatforms(toWatch);
   const filters = sanitizeFilters(chosen, toWatch);
   const filtering = isFiltering(filters);
   // No clock before hydration: the bedtime cannot be checked yet.
@@ -270,7 +270,7 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
             {toWatch.length > 0 && (
               <TonightPanel
                 filters={filters}
-                providers={providers}
+                platforms={platforms}
                 onChange={setFilters}
               />
             )}

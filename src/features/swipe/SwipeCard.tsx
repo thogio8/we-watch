@@ -10,6 +10,7 @@ import {
 } from "motion/react";
 import { useRef } from "react";
 import type { MovieSnapshot } from "@/domain/movie";
+import { distinctPlatforms } from "@/domain/tonight";
 import { movieMeta } from "@/ui/movieMeta";
 import { Poster } from "@/ui/Poster";
 import { ProviderTags } from "@/ui/ProviderTags";
@@ -175,7 +176,7 @@ export function SwipeCard({
           <h2 className={styles.title}>{movie.title}</h2>
           <p className={styles.meta}>{movieMeta(movie)}</p>
           {/* The first platform is the stamp; list them all when there are more. */}
-          {movie.providers.length > 1 && (
+          {distinctPlatforms(movie.providers).length > 1 && (
             <ProviderTags providers={movie.providers} />
           )}
           <TrailerLink trailerKey={movie.trailerKey} title={movie.title} />

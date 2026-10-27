@@ -24,7 +24,12 @@ async function SwipeData({ deck }: { deck: DeckId }) {
   );
 }
 
-export default async function SwipePage({ searchParams }: PageProps<"/swipe">) {
+/** The theme comes from `?deck=`, only known at request time. */
+async function SwipeTheme({
+  searchParams,
+}: {
+  searchParams: PageProps<"/swipe">["searchParams"];
+}) {
   const { deck: param } = await searchParams;
   // An unknown or repeated ?deck= falls back to the default deck.
   const deck = isDeckId(param) ? param : DEFAULT_DECK;
@@ -32,6 +37,14 @@ export default async function SwipePage({ searchParams }: PageProps<"/swipe">) {
     // Keyed by deck: switching theme starts a fresh deck and fallback.
     <Suspense key={deck} fallback={<SwipeDeckFallback deck={deck} />}>
       <SwipeData deck={deck} />
+    </Suspense>
+  );
+}
+
+export default function SwipePage({ searchParams }: PageProps<"/swipe">) {
+  return (
+    <Suspense fallback={<SwipeDeckFallback deck={null} />}>
+      <SwipeTheme searchParams={searchParams} />
     </Suspense>
   );
 }

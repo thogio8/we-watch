@@ -10,7 +10,7 @@ Porte qualité avant le front (Task 8) : la couverture de la logique métier doi
 npm run test:coverage
 ```
 
-Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1 ; 354 tests, 32 fichiers après la V1.2).
+Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1 ; 368 tests, 34 fichiers après la V1.2).
 
 ## Périmètre
 
@@ -57,10 +57,10 @@ Table générée depuis `coverage/coverage-summary.json` (reporter `json-summary
 Résumé texte global :
 
 ```
-Statements   : 100% ( 295/295 )
-Branches     : 100% ( 183/183 )
-Functions    : 100% ( 92/92 )
-Lines        : 100% ( 264/264 )
+Statements   : 100% ( 312/312 )
+Branches     : 100% ( 189/189 )
+Functions    : 100% ( 94/94 )
+Lines        : 100% ( 279/279 )
 ```
 
 ## Preuve que la porte échoue en cas de manque

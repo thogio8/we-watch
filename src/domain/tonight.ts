@@ -18,10 +18,10 @@ export const BEDTIMES: readonly { minutes: Bedtime; label: string }[] = [
 
 export const MOODS = [
   { id: "laugh", label: "RIRE", genreIds: [35] },
-  { id: "chills", label: "FRISSONNER", genreIds: [27, 53, 9648] },
+  { id: "chills", label: "FRISSONNER", genreIds: [27, 53, 9648, 80] },
   { id: "feel", label: "S’ÉMOUVOIR", genreIds: [18, 10749] },
   { id: "think", label: "RÉFLÉCHIR", genreIds: [99, 36, 10752, 878] },
-  { id: "escape", label: "S’ÉVADER", genreIds: [12, 14, 16, 10751, 28] },
+  { id: "escape", label: "S’ÉVADER", genreIds: [12, 14, 16, 10751, 28, 37] },
 ] as const;
 
 export type MoodId = (typeof MOODS)[number]["id"];
@@ -29,13 +29,14 @@ export type MoodId = (typeof MOODS)[number]["id"];
 export interface TonightFilters {
   bedtime: Bedtime | null;
   moods: readonly MoodId[];
-  providerIds: readonly number[];
+  /** Platform keys (see platformKey); empty means every platform. */
+  platforms: readonly string[];
 }
 
 export const NO_FILTERS: TonightFilters = {
   bedtime: null,
   moods: [],
-  providerIds: [],
+  platforms: [],
 };
 
 const HOUR_MS = 3_600_000;
@@ -66,19 +67,60 @@ export function fitsBefore(
   return end <= bedtimeDeadline(now, bedtime).getTime();
 }
 
+/**
+ * TMDB lists each offer apart (« Netflix Standard with Ads », « HBO Max
+ * Amazon Channel », « Paramount Plus Premium »): one key per platform, so the
+ * couple picks « Netflix », not one of its plans.
+ */
+const OFFER_SUFFIX =
+  / (?:standard with ads|with ads|amazon channel|apple tv channel|premium)$/;
+
+export function platformKey(providerName: string): string {
+  let key = providerName
+    .toLowerCase()
+    .trim()
+    .replace(/ plus\b/g, "+");
+  // « Paramount Plus Premium Amazon Channel » sheds every offer suffix.
+  while (OFFER_SUFFIX.test(key)) key = key.replace(OFFER_SUFFIX, "");
+  return key;
+}
+
+export interface Platform {
+  key: string;
+  /** Shortest offer name, e.g. « Netflix » rather than its plan with ads. */
+  name: string;
+}
+
 /** Platforms found in the list, most frequent first, then by name. */
-export function tonightProviders(
-  movies: readonly MovieSnapshot[],
-): StreamingProvider[] {
-  const counts = new Map<number, { provider: StreamingProvider; n: number }>();
-  for (const provider of movies.flatMap((m) => m.providers)) {
-    const entry = counts.get(provider.id);
-    if (entry) entry.n += 1;
-    else counts.set(provider.id, { provider, n: 1 });
+export function tonightPlatforms(movies: readonly MovieSnapshot[]): Platform[] {
+  const found = new Map<string, Platform & { movies: number }>();
+  for (const movie of movies) {
+    const keys = new Set<string>();
+    for (const { name } of movie.providers) {
+      const key = platformKey(name);
+      const entry = found.get(key) ?? { key, name, movies: 0 };
+      if (name.length < entry.name.length) entry.name = name;
+      if (!keys.has(key)) entry.movies += 1;
+      keys.add(key);
+      found.set(key, entry);
+    }
   }
-  return [...counts.values()]
-    .sort((a, b) => b.n - a.n || a.provider.name.localeCompare(b.provider.name))
-    .map((entry) => entry.provider);
+  return [...found.values()]
+    .sort((a, b) => b.movies - a.movies || a.name.localeCompare(b.name))
+    .map(({ key, name }) => ({ key, name }));
+}
+
+/** One provider per platform, in TMDB's order (ticket tags). */
+export function distinctPlatforms(
+  providers: readonly StreamingProvider[],
+): StreamingProvider[] {
+  const seen = new Set<string>();
+  return providers.filter(({ name }) => {
+    const key = platformKey(name);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -89,10 +131,10 @@ export function sanitizeFilters(
   filters: TonightFilters,
   movies: readonly MovieSnapshot[],
 ): TonightFilters {
-  const known = new Set(tonightProviders(movies).map((p) => p.id));
+  const known = new Set(tonightPlatforms(movies).map((p) => p.key));
   return {
     ...filters,
-    providerIds: filters.providerIds.filter((id) => known.has(id)),
+    platforms: filters.platforms.filter((key) => known.has(key)),
   };
 }
 
@@ -100,7 +142,7 @@ export function isFiltering(filters: TonightFilters): boolean {
   return (
     filters.bedtime !== null ||
     filters.moods.length > 0 ||
-    filters.providerIds.length > 0
+    filters.platforms.length > 0
   );
 }
 
@@ -115,13 +157,13 @@ export function filterTonight<M extends MovieSnapshot>(
       (m) => m.genreIds,
     ),
   );
-  const providers = new Set(filters.providerIds);
+  const platforms = new Set(filters.platforms);
   const { bedtime } = filters;
   return movies.filter(
     (movie) =>
       (bedtime === null || fitsBefore(movie.runtimeMinutes, now, bedtime)) &&
       (genres.size === 0 || movie.genreIds.some((id) => genres.has(id))) &&
-      (providers.size === 0 ||
-        movie.providers.some((p) => providers.has(p.id))),
+      (platforms.size === 0 ||
+        movie.providers.some((p) => platforms.has(platformKey(p.name)))),
   );
 }

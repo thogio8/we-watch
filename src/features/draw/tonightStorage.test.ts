@@ -7,12 +7,15 @@ describe("tonightStorage", () => {
     const raw = serializeTonight({
       bedtime: 1410,
       moods: ["laugh"],
-      providerIds: [8, 119],
+      platforms: ["netflix", "prime"],
     });
-    expect(JSON.parse(raw)).toEqual({ bedtime: 1410, providerIds: [8, 119] });
+    expect(JSON.parse(raw)).toEqual({
+      bedtime: 1410,
+      platforms: ["netflix", "prime"],
+    });
     expect(parseStoredTonight(raw)).toEqual({
       bedtime: 1410,
-      providerIds: [8, 119],
+      platforms: ["netflix", "prime"],
     });
   });
 
@@ -21,19 +24,19 @@ describe("tonightStorage", () => {
     (raw) => {
       expect(parseStoredTonight(raw)).toEqual({
         bedtime: NO_FILTERS.bedtime,
-        providerIds: [],
+        platforms: [],
       });
     },
   );
 
-  it("ignore une heure hors liste et les ids invalides", () => {
+  it("ignore une heure hors liste et les plateformes invalides", () => {
     expect(
       parseStoredTonight(
-        JSON.stringify({ bedtime: 1234, providerIds: [8, "9", 1.5, null] }),
+        JSON.stringify({ bedtime: 1234, platforms: ["netflix", 9, null] }),
       ),
-    ).toEqual({ bedtime: null, providerIds: [8] });
+    ).toEqual({ bedtime: null, platforms: ["netflix"] });
     expect(
-      parseStoredTonight(JSON.stringify({ bedtime: "1410", providerIds: 8 })),
-    ).toEqual({ bedtime: null, providerIds: [] });
+      parseStoredTonight(JSON.stringify({ bedtime: "1410", platforms: "x" })),
+    ).toEqual({ bedtime: null, platforms: [] });
   });
 });
