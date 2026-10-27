@@ -54,8 +54,8 @@ code{background:rgba(27,27,107,.08);padding:0 4px;border-radius:4px;font-size:.9
 
 <header class="hero">
   <h1>WE-WATCH<br>V1.2 « CE SOIR »</h1>
-  <div class="sub">Release note · 27 octobre 2026 · pour nous deux</div>
-  <div class="stamp">EN PROD · 27/10 · 11H15</div>
+  <div class="sub">Les nouveautés · pour nous deux</div>
+  <div class="stamp">NOUVELLE SÉANCE</div>
 </header>
 
 <div class="pitch">
@@ -64,7 +64,7 @@ code{background:rgba(27,27,107,.08);padding:0 4px;border-radius:4px;font-size:.9
 
 <section>
   <h2 class="sh"><span>01</span> CE QUI ARRIVE</h2>
-  <p class="lead">Cinq nouveautés, toutes testées dans un vrai navigateur au format iPhone, sur nos vrais films.</p>
+  <p class="lead">Cinq nouveautés pour choisir plus vite, et mieux, le soir.</p>
 
   <div class="feat">
     <div class="shot"><img src="v1.2/01-home.jpg" alt="Accueil du tirage avec le panneau « La soirée » replié"></div>
@@ -82,7 +82,7 @@ code{background:rgba(27,27,107,.08);padding:0 4px;border-radius:4px;font-size:.9
       <h3>Fini avant · Envie de · Dispo chez nous</h3>
       <ul>
         <li><b>FINI AVANT</b> 22H30 → 1H : seuls les films qui finissent à temps si on lance maintenant. Après minuit, « 1H » reste la nuit en cours.</li>
-        <li><b>ON A ENVIE DE…</b> RIRE, FRISSONNER, S'ÉMOUVOIR, RÉFLÉCHIR, S'ÉVADER (d'après les genres TMDB, on peut en cocher plusieurs).</li>
+        <li><b>ON A ENVIE DE…</b> RIRE, FRISSONNER, S'ÉMOUVOIR, RÉFLÉCHIR, S'ÉVADER (d'après le genre du film, on peut en cocher plusieurs).</li>
         <li><b>DISPO CHEZ NOUS</b> : les plateformes présentes dans notre liste, regroupées (« Netflix » et « Netflix Standard with Ads », c'est une seule puce).</li>
         <li>Le bouton devient <b>TIRER PARMI 4</b>. Si rien ne colle : « AUCUN FILM NE COLLE » et un bouton pour tout enlever.</li>
         <li>L'heure de coucher et les plateformes sont <b>mémorisées sur le téléphone</b>, l'humeur repart de zéro chaque soir.</li>
@@ -95,7 +95,7 @@ code{background:rgba(27,27,107,.08);padding:0 4px;border-radius:4px;font-size:.9
     <div class="txt">
       <span class="tag">TIRER + SWIPER</span>
       <h3>▶ Bande-annonce</h3>
-      <p>Sur le ticket tiré et sur chaque carte de swipe, quand TMDB en a une : la bande-annonce YouTube, en VF si elle existe, sinon en VO. Sur iPhone, ça ouvre l'app YouTube.</p>
+      <p>Sur le ticket tiré et sur chaque carte de swipe, quand il y en a une : la bande-annonce YouTube, en VF si elle existe, sinon en VO. Sur iPhone, ça ouvre l'app YouTube.</p>
     </div>
   </div>
 
@@ -118,39 +118,8 @@ code{background:rgba(27,27,107,.08);padding:0 4px;border-radius:4px;font-size:.9
   </div>
 </section>
 
-<section>
-  <h2 class="sh"><span>02</span> EN COULISSES</h2>
-  <div class="cards">
-    <div class="box y"><h3>Plateformes à jour chaque jour</h3>Jusqu'ici, les plateformes étaient figées au moment de l'ajout. Désormais, un robot (Vercel Cron, gratuit) repasse <b>tous les jours vers 15 h</b> sur nos films « à voir » et « vus » : plateformes, durée, genres, bande-annonce. Le filtre « dispo chez nous » ne ment donc jamais plus d'un jour.</div>
-    <div class="box"><h3>Nos films existants</h3>Remplis dès la mise en ligne : <b>74 films « à voir » sur 74</b> ont reçu leurs genres, leur bande-annonce et des plateformes à jour. La base a été sauvegardée juste avant (207 films).</div>
-    <div class="box bl"><h3>Toujours 0 €</h3>Vercel Hobby, Turso gratuit, TMDB gratuit. Le cron quotidien est permis par l'offre Hobby. Aucune pub, aucun compte.</div>
-  </div>
-</section>
 
-<section>
-  <h2 class="sh"><span>03</span> QUALITÉ</h2>
-  <div class="kpis">
-    <div class="kpi"><div class="n">369</div><small>tests verts (259 avant)</small></div>
-    <div class="kpi"><div class="n">100 %</div><small>couverture du métier, 4 axes</small></div>
-    <div class="kpi"><div class="n">0</div><small>erreur console sur le parcours complet</small></div>
-    <div class="kpi"><div class="n">74/74</div><small>films enrichis en prod</small></div>
-  </div>
-  <div class="cards" style="margin-top:18px">
-    <div class="box"><h3>Ce que les captures ont attrapé</h3><ul><li>15 puces de plateformes (chaque offre TMDB à part) → regroupées par marque.</li><li>Panneau trop haut : le bouton passait sous la ligne de flottaison → replié par défaut.</li><li>Le bandeau « annuler » cachait BOF / ON LE VEUT → déplacé en haut.</li></ul></div>
-    <div class="box"><h3>Ce que le build a attrapé</h3>La page de swipe lisait le thème hors d'une frontière <code>Suspense</code>, interdit par Next 16 : corrigé avant tout déploiement.</div>
-    <div class="box"><h3>Limites connues</h3><ul><li>Avec « fini avant », un film sans durée connue est écarté (on ne peut rien promettre).</li><li>Les chaînes Amazon (« MGM Amazon Channel ») restent des puces à part : ce sont d'autres abonnements.</li><li>Le panneau se replie à chaque visite, exprès.</li></ul></div>
-  </div>
-</section>
 
-<section>
-  <h2 class="sh"><span>04</span> MODE D'EMPLOI POUR CE SOIR</h2>
-  <ol class="steps">
-    <li>Ouvrir l'app, toucher <b>LA SOIRÉE</b>, choisir l'heure de coucher une fois pour toutes, et nos plateformes.</li>
-    <li>Cocher l'humeur du soir, puis <b>TIRER PARMI N</b>.</li>
-    <li>Pas convaincus ? <b>▶ BANDE-ANNONCE</b>, ou RETIRER comme avant.</li>
-    <li>Le week-end, swiper un thème (« ANNÉES 90 ») et utiliser <b>↺ ANNULER</b> sans stress.</li>
-  </ol>
-</section>
 
 
 <p class="foot">we-watch · données TMDB (This product uses the TMDB API but is not endorsed or certified by TMDB) · disponibilités JustWatch</p>
