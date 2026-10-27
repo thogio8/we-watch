@@ -5,7 +5,7 @@
 Appli perso de Thomas et sa copine : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installée sur iPhone, protégée par un code d'accès partagé, sans comptes. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
 
 - Prod : https://we-watch-lac.vercel.app (Vercel, fonctions en `dub1`) + base Turso `we-watch` (`aws-eu-west-1`).
-- Spec de référence, versions comprises : `docs/superpowers/specs/2026-10-23-we-watch-design.md` (§1-10 V1/V1.1, §11 V1.2, §12 V1.2.1). **La lire avant toute fonctionnalité** et y ajouter une section pour chaque nouvelle version.
+- Spec de référence, versions comprises : `docs/superpowers/specs/2026-10-23-we-watch-design.md` (§1-10 V1/V1.1, §11 V1.2, §12 V1.2.1, §13 V1.2.2+). **La lire avant toute fonctionnalité** et y ajouter une section pour chaque nouvelle version.
 
 ## Commandes
 
@@ -13,7 +13,9 @@ Appli perso de Thomas et sa copine : on swipe des films TMDB dans une liste « �
 | --------------------------------------------- | ----------------------------------------------- |
 | Dev (base locale `local.db`)                  | `npm run dev`                                   |
 | Tests / couverture du métier                  | `npm test` / `npm run test:coverage`            |
-| Qualité avant commit                          | `npm run lint && npm run typecheck && npm test` |
+| **CI locale complète** (= hook pre-push)      | `npm run ci`                                    |
+| Tests e2e seuls (build + Playwright)          | `npm run test:e2e`                              |
+| Doublons / code mort                          | `npm run dup` / `npm run deadcode`              |
 | Format                                        | `npm run format`                                |
 | Migration (après modif de `src/db/schema.ts`) | `npm run db:generate` puis `npm run db:migrate` |
 | Build de prod                                 | `npm run build`                                 |
@@ -49,6 +51,28 @@ Règles :
 - Modules serveur marqués `import "server-only"`.
 - **Server Actions** = endpoints publics : chacune commence par `assertUnlocked()` puis valide ses arguments. Convention d'erreur : une **lecture** qui dépend de TMDB renvoie `{ ok: false }` (panne attendue, affichée dans la DA) ; une **écriture** lève une exception (le client la rattrape et affiche un message).
 - Logique non triviale = fonction pure dans `domain/` ou `features/x/*.ts`, testée à part ; les composants restent de l'affichage.
+- Ces règles de couches sont **vérifiées par ESLint** (`eslint.config.mjs`, `no-restricted-imports`) : un import interdit casse la CI.
+
+## Code propre : SOLID, KISS, DRY (exigence de Thomas, non négociable)
+
+Concrètement, sur ce repo :
+
+- **Une responsabilité par fichier** (S). Un écran = un composant qui assemble ; l'état et les effets vont dans un hook `useX.ts`, la logique dans un `.ts` pur testé, chaque vue/morceau d'UI dans son composant. Modèles à suivre : `features/draw/` (`useDraw` + `drawView` + `DrawHome`/`DrawResult`…), `features/swipe/` (`deckState` reducer + hooks + sous-composants).
+- **Ouvert à l'extension** (O) : préférer une table de données à un `switch` qui grossit (`TRANSITIONS` dans `domain/transitions.ts`, `DECKS`, `MOODS`, handlers du reducer de `deckState.ts`).
+- **Dépendre d'interfaces** (D) : les features déclarent leurs ports (`DeckDeps`, `RefreshDeps`), `server/container.ts` les implémente ; les composants reçoivent les actions serveur en props.
+- **KISS** : pas d'abstraction « au cas où », pas de framework maison, pas de dépendance pour trois lignes. Le plus simple qui passe les tests.
+- **DRY** : avant d'écrire, chercher l'existant. Briques partagées :
+  - UI : `ui/Headline` (titres riso), `ui/cx` (classes), `ui/Tab.module.css` (onglets, via `composes`), `ui/Ticket`, `ui/TicketDetails`, `ui/Button`, `ui/Chip`, `ui/Stamp`, `ui/Lines`.
+  - Serveur : `server/validate.ts` (contrôles d'entrée), `SWIPES` (domain).
+  - Tests : `tests/helpers/movies.ts` (`aSnapshot`, `aMovie`, `NETFLIX`…), `tests/helpers/dom.ts` (`stubMatchMedia`), `tests/setup.ts` (nettoyage commun), mocks `vi.mock("@/access/assert-unlocked")` / `vi.mock("next/cache")` (dossiers `__mocks__`), `tests/helpers/functional.ts`, `tests/fake-tmdb/`, `e2e/fixtures.ts`.
+- **Garde-fous automatiques** (ESLint, erreur = CI rouge) : 200 lignes max par fichier, 80 par fonction, complexité 10, imbrication 3, 4 paramètres max (sinon un objet), `===`, pas de ternaire imbriqué. **jscpd** refuse tout bloc dupliqué (6 lignes / 60 tokens), **knip** tout export ou dépendance inutilisé. Ne jamais contourner une règle (`eslint-disable`, seuil relevé) sans l'accord de Thomas : découper plutôt.
+
+## Définition de « fini »
+
+1. Le comportement est testé au bon niveau : logique pure → test unitaire ; action serveur ou base → test fonctionnel (`tests/functional/`) ; parcours utilisateur → scénario e2e (`e2e/`).
+2. `npm run ci` passe en local (le hook pre-push le relance de toute façon).
+3. Tout changement d'UI est vérifié dans un vrai navigateur sur plusieurs formats ; un refactor ne doit **rien** changer à l'écran (comparer des captures avant/après).
+4. Le `CLAUDE.md` et la spec sont à jour si une règle ou une version change.
 
 ## Conventions
 
@@ -58,11 +82,15 @@ Règles :
 - Animations légères, `prefers-reduced-motion` respecté.
 - **Commits** : `type(scope): description`, header seul, en anglais. **Jamais de mention de Claude ni de `Co-Authored-By`.** Sur ce repo, Claude peut commiter et pousser seul (autorisation de Thomas) ; ailleurs non.
 
-## Qualité
+## Qualité et tests
 
-- Porte de couverture du métier (`vitest.config.ts`, seuils 95/95/95/90, actuellement 100 %) : tout nouveau module de logique pure y entre. `docs/coverage.md` est mis à jour à la main.
-- La CI GitHub (`.github/workflows/ci.yml`) lance lint, types et tests sur chaque push : ne jamais pousser au rouge.
-- Tests UI : Testing Library, requêtes par rôle et texte visible, pas de détails d'implémentation.
+- **CI locale** (lefthook, installé par `npm install`) : `pre-commit` formate et lint les fichiers indexés ; `pre-push` lance `npm run ci` (format, lint, types, doublons, code mort, tests + couverture, build + e2e, ~3 min). Ne jamais pousser au rouge ni contourner (`--no-verify`, `LEFTHOOK=0`) sans raison dite à Thomas. GitHub Actions rejoue `npm run ci` en filet.
+- **Couverture** (`vitest.config.ts`, seuils 95/95/95/90, actuellement 100 %) : tous les `.ts` de `src/` sauf hooks et câblage, donc tout nouveau module y entre seul. `docs/coverage.md` est mis à jour à la main.
+- **Tests UI** : Testing Library, requêtes par rôle et texte visible, pas de détails d'implémentation.
+- **Tests fonctionnels** (`tests/functional/`) : `startServerStack()` donne une vraie base SQLite et le faux TMDB ; on appelle les vraies actions serveur.
+- **E2E** (`e2e/`, Playwright) : build de prod sur `e2e/.data/e2e.db` et le faux TMDB (`e2e/global-setup.ts`), ports 3217/3218, profils iPhone et desktop. La fixture `app` vide la base et déverrouille ; `swipe()` attend la fin des enregistrements (`settled`). Ne jamais supprimer la base e2e pendant qu'un serveur la tient (`SQLITE_READONLY_DBMOVED`).
+- **Accessibilité** : axe sans défaut grave, sauf le contraste blanc sur rose fluo de la DA (exception assumée dans `e2e/layout.spec.ts`, en attente d'arbitrage).
+- Le faux TMDB (`tests/fake-tmdb/`) sert aux deux niveaux : un film utile à un test s'ajoute dans `catalog.ts`. L'appli le joint grâce à `TMDB_API_URL` (défaut : le vrai TMDB).
 
 ## Livrer une version
 

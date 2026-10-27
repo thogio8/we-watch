@@ -1,22 +1,26 @@
-# Couverture du métier
+# Couverture et tests
 
-Date : 2026-10-23 · mise à jour V1.2 : 2026-10-27
+Date : 2026-10-23 · mise à jour : 2026-10-27 (V1.2.4, qualité)
 
-Porte qualité avant le front (Task 8) : la couverture de la logique métier doit atteindre les seuils ci-dessous.
+## Les trois niveaux de tests
 
-## Commande
+| Niveau | Où | Ce qui est vrai | Ce qui est simulé | Commande |
+| --- | --- | --- | --- | --- |
+| Unitaires | `src/**/*.test.ts(x)` | une fonction, un composant (Testing Library) | ses dépendances | `npm test` |
+| Fonctionnels | `tests/functional/` | actions serveur → container → repository → SQLite, client TMDB → zod → mapping | TMDB (faux catalogue `tests/fake-tmdb/`), le cookie d'accès | `npm test` |
+| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe | TMDB (même faux catalogue, servi en HTTP) | `npm run test:e2e` |
 
-```bash
-npm run test:coverage
-```
+Tout tourne dans `npm run ci` (hook `pre-push`, et GitHub Actions en filet).
 
-Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1 ; 369 tests, 32 fichiers après la V1.2 ; 373 tests, 33 fichiers après la V1.2.1 ; 388 tests, 36 fichiers après la V1.2.3).
+## Porte de couverture
 
-## Périmètre
+`npm run test:coverage` : 454 tests, 47 fichiers, **100 %** partout (515/515 instructions, 287/287 branches, 178/178 fonctions, 459/459 lignes).
 
-`src/access/**`, `src/domain/**`, `src/db/**`, `src/tmdb/**`, `src/features/swipe/deck.ts`, `src/features/unlock/actions.ts` (V1.1 : code d'accès), `src/features/draw/tonightStorage.ts`, `src/features/refresh/**`, `src/app/api/cron/**` (V1.2 : filtres, rafraîchissement), `src/features/draw/tear.ts` (V1.2.1 : déchirure du ticket couché), `src/server/validate.ts` (V1.2.3 : contrôles des actions)
+Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
 
-## Seuils (vitest.config.ts)
+Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4.
+
+## Seuils
 
 | Instructions | Fonctions | Lignes | Branches |
 | ------------ | --------- | ------ | -------- |
@@ -24,11 +28,12 @@ Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tes
 
 ## Résultat par fichier
 
-Table générée depuis `coverage/coverage-summary.json` (reporter `json-summary`) : le reporter texte de vitest 5 n'affiche qu'un résumé global quand tous les fichiers sont couverts à 100 %.
+Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --coverage --coverage.reporter=json-summary`).
 
 | Fichier | Instr. | Branches | Fonctions | Lignes |
 | --- | --- | --- | --- | --- |
 | **Total** | 100% | 100% | 100% | 100% |
+| src/env.ts | 100% | 100% | 100% | 100% |
 | src/access/assert-unlocked.ts | 100% | 100% | 100% | 100% |
 | src/access/cookie.ts | 100% | 100% | 100% | 100% |
 | src/access/cron.ts | 100% | 100% | 100% | 100% |
@@ -44,42 +49,27 @@ Table générée depuis `coverage/coverage-summary.json` (reporter `json-summary
 | src/domain/time.ts | 100% | 100% | 100% | 100% |
 | src/domain/tonight.ts | 100% | 100% | 100% | 100% |
 | src/domain/transitions.ts | 100% | 100% | 100% | 100% |
+| src/features/draw/actions.ts | 100% | 100% | 100% | 100% |
+| src/features/draw/drawMotion.ts | 100% | 100% | 100% | 100% |
+| src/features/draw/drawView.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/tear.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/tonightStorage.ts | 100% | 100% | 100% | 100% |
+| src/features/draw/tonightSummary.ts | 100% | 100% | 100% | 100% |
+| src/features/list/actions.ts | 100% | 100% | 100% | 100% |
+| src/features/list/searchAnswer.ts | 100% | 100% | 100% | 100% |
+| src/features/list/tabs.ts | 100% | 100% | 100% | 100% |
+| src/features/list/toWatchMeta.ts | 100% | 100% | 100% | 100% |
 | src/features/refresh/refresh-movies.ts | 100% | 100% | 100% | 100% |
+| src/features/swipe/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/deck.ts | 100% | 100% | 100% | 100% |
+| src/features/swipe/deckState.ts | 100% | 100% | 100% | 100% |
 | src/features/unlock/actions.ts | 100% | 100% | 100% | 100% |
+| src/features/unlock/state.ts | 100% | 100% | 100% | 100% |
 | src/server/validate.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/client.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/decks.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/images.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/movies.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/schemas.ts | 100% | 100% | 100% | 100% |
-
-Résumé texte global :
-
-```
-Statements   : 100% ( 337/337 )
-Branches     : 100% ( 209/209 )
-Functions    : 100% ( 105/105 )
-Lines        : 100% ( 302/302 )
-```
-
-## Preuve que la porte échoue en cas de manque
-
-Les seuils sont globaux sur le périmètre. Ajout temporaire de `src/domain/scratch-uncovered.ts` (10 fonctions sans test), puis `npm run test:coverage` :
-
-```
-Statements   : 81.48% ( 132/162 )
-Branches     : 80.95% ( 85/105 )
-Functions    : 79.16% ( 38/48 )
-Lines        : 79.86% ( 119/149 )
-ERROR: Coverage for lines (79.86%) does not meet global threshold (95%)
-ERROR: Coverage for functions (79.16%) does not meet global threshold (95%)
-ERROR: Coverage for statements (81.48%) does not meet global threshold (95%)
-ERROR: Coverage for branches (80.95%) does not meet global threshold (90%)
-```
-
-Code de sortie : **1**. Le fichier a ensuite été supprimé (aucune trace dans git).
-
-Contre-épreuve avec un seuil relevé : `npm run test:coverage -- --coverage.thresholds.lines=101` donne `ERROR: Coverage for lines (100%) does not meet global threshold (101%)`, code de sortie **1**.
+| src/ui/cx.ts | 100% | 100% | 100% | 100% |
+| src/ui/movieMeta.ts | 100% | 100% | 100% | 100% |

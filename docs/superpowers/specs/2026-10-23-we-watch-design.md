@@ -245,3 +245,9 @@ Règles retenues :
 - **V1.2.2** : sur le ticket couché, l'affiche est trop petite pour porter le tampon « FINI À… » ; il passe sur la partie rose (en haut à droite), le titre lui laisse la place.
 - **V1.2.3** (audit du code, aucune fonctionnalité) : `CLAUDE.md` pour les agents, CI GitHub (lint, types, tests + couverture), `npm run start:local` (un build servi sur la base locale, `npm start` visant la prod), bouton TIRER enfin réduit en paysage (ordre CSS), texte du ticket partagé entre TIRER et SWIPER (`ui/TicketDetails`), règle des swipes et contrôles des actions définis une seule fois, échecs du rafraîchissement quotidien journalisés (500 si tout échoue), plateformes regroupées par marque aussi dans la liste, valeurs CSS nommées (`--gutter`, `--ticket-max`).
 - Versions taguées dans git (`v1.1.0` … `v1.2.3`) et numéro de `package.json` tenu à jour.
+- **V1.2.4** (qualité, aucune fonctionnalité, rendu identique au pixel près) :
+  - code découpé selon SOLID / KISS / DRY : écrans TIRER, SWIPER et LISTE en hooks + logique pure testée + un composant par vue ; transitions de statut en table ; briques partagées (`Headline`, `cx`, style d'onglet, helpers de test) ;
+  - garde-fous automatiques : taille et complexité (ESLint), sens des couches (ESLint), doublons (jscpd), code mort (knip), couverture de tous les modules non UI ;
+  - tests fonctionnels (actions serveur sur SQLite et faux TMDB) et e2e Playwright (build de prod, iPhone et desktop, 6 formats, axe) ;
+  - CI locale `npm run ci` derrière des hooks git (lefthook), rejouée par GitHub Actions ;
+  - `TMDB_API_URL` (facultatif) pour pointer l'appli vers le faux TMDB des tests.
