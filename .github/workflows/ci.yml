@@ -72,18 +72,21 @@ jobs:
       - name: Migrate the database (before the code that needs it)
         run: npm run db:migrate
 
+      - name: Remember the deployment in production
+        id: previous
+        run: echo "id=$(bash scripts/vercel-prod.sh current)" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Vercel
-        id: deploy
         run: |
           npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
           npx vercel@latest build --prod --token="$VERCEL_TOKEN"
           url="$(npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
           # Explicit: after a rollback, Vercel stops promoting new deploys.
-          npx vercel@latest promote "$url" --yes --token="$VERCEL_TOKEN"
+          bash scripts/vercel-prod.sh promote "$url"
 
       - name: Smoke test production
         run: bash scripts/smoke-prod.sh
 
       - name: Roll back if production is broken
-        if: failure() && steps.deploy.outcome == 'success'
-        run: npx vercel@latest rollback --yes --token="$VERCEL_TOKEN" || true
+        if: failure() && steps.previous.outputs.id != ''
+        run: bash scripts/vercel-prod.sh promote "${{ steps.previous.outputs.id }}"
