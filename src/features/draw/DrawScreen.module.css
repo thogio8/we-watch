@@ -6,16 +6,6 @@
   align-items: center;
 }
 
-/* « CE SOIR ON REGARDE », « VOUS ÊTES DIFFICILES CE SOIR ». */
-.logo {
-  color: var(--pink);
-  font-size: var(--text-3xl);
-  line-height: 0.95;
-  letter-spacing: -1px;
-  text-align: center;
-  text-shadow: var(--shadow-logo);
-}
-
 .dropped {
   margin-top: 52px;
 }
@@ -177,7 +167,7 @@
 
 /* Phone held sideways: one-line title, a smaller button, tighter spacing. */
 @media (min-width: 760px) and (max-height: 520px) {
-  .logo :global(span) {
+  .brand :global(span) {
     display: inline;
   }
 

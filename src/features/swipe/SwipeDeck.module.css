@@ -41,14 +41,8 @@
 }
 
 /* « VOUS AVEZ TOUT VU (OU PRESQUE) », « TMDB NE RÉPOND PAS ». */
-.logo {
+.dropped {
   margin-top: 52px;
-  color: var(--pink);
-  font-size: var(--text-3xl);
-  line-height: 0.95;
-  letter-spacing: -1px;
-  text-align: center;
-  text-shadow: var(--shadow-logo);
 }
 
 .small {

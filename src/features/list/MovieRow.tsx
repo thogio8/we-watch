@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Poster } from "@/ui/Poster";
 import styles from "./MovieRow.module.css";
+import { cx } from "@/ui/cx";
 
 interface MovieRowProps {
   title: string;
@@ -40,9 +41,7 @@ export function MovieRow({
   muted = false,
   busy = false,
 }: MovieRowProps) {
-  const classes = [styles.row, muted && styles.muted, busy && styles.busy]
-    .filter(Boolean)
-    .join(" ");
+  const classes = cx(styles.row, muted && styles.muted, busy && styles.busy);
   return (
     <li className={classes} aria-busy={busy || undefined} inert={busy}>
       <div className={styles.thumb}>

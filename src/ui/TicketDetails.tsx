@@ -4,6 +4,7 @@ import { movieMeta } from "./movieMeta";
 import { ProviderTags } from "./ProviderTags";
 import styles from "./TicketDetails.module.css";
 import { TrailerLink } from "./TrailerLink";
+import { cx } from "./cx";
 
 interface TicketDetailsProps {
   movie: MovieSnapshot;
@@ -26,13 +27,11 @@ export function TicketDetails({
   clampTitle = false,
   stampRoom = false,
 }: TicketDetailsProps) {
-  const titleClasses = [
+  const titleClasses = cx(
     styles.title,
     clampTitle && styles.clamped,
     stampRoom && styles.stampRoom,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  );
   const showTags =
     platforms === "all" || distinctPlatforms(movie.providers).length > 1;
   return (

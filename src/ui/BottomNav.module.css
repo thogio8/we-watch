@@ -16,30 +16,12 @@
 }
 
 .tab {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--touch-min);
-  padding: 10px 0;
-  border: var(--border);
-  border-radius: var(--radius-tab);
-  background: var(--white);
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-md);
-  text-align: center;
-  text-decoration: none;
+  composes: tab from "./Tab.module.css";
 }
 
 .on {
   background: var(--yellow);
   box-shadow: var(--shadow-offset-sm);
-}
-
-.tab:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
 }
 
 /* Wide screens: a compact bar across the top, tabs kept to the phone width. */

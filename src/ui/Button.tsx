@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import styles from "./Button.module.css";
+import { cx } from "./cx";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant: "primary" | "love" | "secondary";
@@ -13,9 +14,7 @@ export function Button({
   type = "button",
   ...rest
 }: ButtonProps) {
-  const classes = [styles.button, styles[variant], className]
-    .filter(Boolean)
-    .join(" ");
+  const classes = cx(styles.button, styles[variant], className);
   return (
     <button type={type} className={classes} {...rest}>
       {children}

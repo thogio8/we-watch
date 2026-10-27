@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import styles from "./Ticket.module.css";
+import { cx } from "./cx";
 
 interface TicketProps {
   poster: ReactNode;
@@ -33,9 +34,7 @@ export function Ticket({
   adaptive = false,
   className,
 }: TicketProps) {
-  const classes = [styles.ticket, adaptive && styles.adaptive, className]
-    .filter(Boolean)
-    .join(" ");
+  const classes = cx(styles.ticket, adaptive && styles.adaptive, className);
   const style = {
     "--poster-h":
       typeof posterHeight === "number" ? `${posterHeight}px` : posterHeight,

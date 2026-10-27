@@ -9,15 +9,6 @@
   margin-inline: auto;
 }
 
-.logo {
-  color: var(--pink);
-  font-size: var(--text-3xl);
-  line-height: 0.95;
-  letter-spacing: -1px;
-  text-align: center;
-  text-shadow: var(--shadow-logo);
-}
-
 .form {
   display: flex;
   flex-direction: column;
@@ -82,7 +73,7 @@
 
 /* Phone held sideways: one-line title, tighter spacing. */
 @media (max-height: 520px) {
-  .logo :global(span) {
+  .brand :global(span) {
     display: inline;
   }
 

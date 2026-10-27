@@ -8,7 +8,6 @@ import { DECKS, DEFAULT_DECK, type DeckId, deckLabel } from "@/tmdb/decks";
 import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
 import { ChipLink } from "@/ui/Chip";
-import { Lines } from "@/ui/Lines";
 import { Ticket } from "@/ui/Ticket";
 import type {
   decideSwipe,
@@ -20,6 +19,7 @@ import type {
 import type { DeckBatch } from "./deck";
 import { POSTER_HEIGHT, SwipeCard } from "./SwipeCard";
 import styles from "./SwipeDeck.module.css";
+import { Headline } from "@/ui/Headline";
 
 interface SwipeDeckProps {
   deck: DeckId;
@@ -359,9 +359,11 @@ export function SwipeDeck({
 
       {view === "end" && (
         <>
-          <h2 className={styles.logo}>
-            <Lines lines={["VOUS AVEZ", "TOUT VU", "(OU PRESQUE)"]} />
-          </h2>
+          <Headline
+            as="h2"
+            lines={["VOUS AVEZ", "TOUT VU", "(OU PRESQUE)"]}
+            className={styles.dropped}
+          />
           <p className={styles.small}>Plus aucun film de ce thème à trier</p>
           <div className={styles.actions}>
             <ButtonLink href="/" variant="primary">
@@ -373,9 +375,11 @@ export function SwipeDeck({
 
       {view === "error" && (
         <>
-          <h2 className={styles.logo}>
-            <Lines lines={["TMDB NE", "RÉPOND PAS"]} />
-          </h2>
+          <Headline
+            as="h2"
+            lines={["TMDB NE", "RÉPOND PAS"]}
+            className={styles.dropped}
+          />
           <p className={styles.small}>
             Impossible de charger les films pour l’instant
           </p>

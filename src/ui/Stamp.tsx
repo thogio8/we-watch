@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styles from "./Stamp.module.css";
+import { cx } from "./cx";
 
 interface StampProps {
   children: ReactNode;
@@ -10,9 +11,7 @@ interface StampProps {
 }
 
 export function Stamp({ children, tone, tilt, className }: StampProps) {
-  const classes = [styles.stamp, styles[tone], className]
-    .filter(Boolean)
-    .join(" ");
+  const classes = cx(styles.stamp, styles[tone], className);
   return (
     <span className={classes} style={{ transform: `rotate(${tilt}deg)` }}>
       {children}

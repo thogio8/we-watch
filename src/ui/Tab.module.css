@@ -1,0 +1,23 @@
+/* A pill tab: the bottom nav links and the « à voir / vus » switch. */
+.tab {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  padding: 10px 0;
+  border: var(--border);
+  border-radius: var(--radius-tab);
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}

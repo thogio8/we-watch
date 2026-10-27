@@ -5,16 +5,6 @@
   flex-direction: column;
 }
 
-/* « NOTRE LISTE »: the TIRER logo, one step smaller. */
-.logo {
-  color: var(--pink);
-  font-size: var(--text-2xl);
-  line-height: 0.95;
-  letter-spacing: -1px;
-  text-align: center;
-  text-shadow: var(--shadow-logo);
-}
-
 .tabs {
   display: flex;
   gap: 10px;
@@ -22,21 +12,7 @@
 }
 
 .tab {
-  flex: 1;
-  min-height: var(--touch-min);
-  padding: 9px 0;
-  border: var(--border);
-  border-radius: var(--radius-tab);
-  background: var(--white);
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-md);
-  cursor: pointer;
-}
-
-.tab:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
+  composes: tab from "../../ui/Tab.module.css";
 }
 
 .on {

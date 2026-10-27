@@ -7,6 +7,7 @@ import { Ticket } from "@/ui/Ticket";
 import { unlock } from "./actions";
 import { INITIAL_UNLOCK_STATE } from "./state";
 import styles from "./UnlockScreen.module.css";
+import { Headline } from "@/ui/Headline";
 
 /** Shorter when the phone is held sideways (spec §12). */
 const POSTER_HEIGHT = "clamp(80px, calc(100dvh - 300px), 150px)";
@@ -19,9 +20,7 @@ export function UnlockScreen() {
   );
   return (
     <main className={styles.screen}>
-      <h1 className={styles.logo}>
-        <Lines lines={["CE SOIR", "ON REGARDE"]} />
-      </h1>
+      <Headline lines={["CE SOIR", "ON REGARDE"]} className={styles.brand} />
       <form action={formAction} className={styles.form}>
         <Ticket
           className={styles.ticket}

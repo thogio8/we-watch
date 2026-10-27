@@ -22,6 +22,7 @@ import {
   RowMeta,
 } from "./MovieRow";
 import { type SearchActions, SearchPanel } from "./SearchPanel";
+import { Headline } from "@/ui/Headline";
 
 type ListAction = (tmdbId: number) => Promise<void>;
 
@@ -208,7 +209,7 @@ export function ListScreen({
 
   return (
     <main className={styles.screen}>
-      <h1 className={styles.logo}>NOTRE LISTE</h1>
+      <Headline lines={["NOTRE LISTE"]} size="medium" />
       {search ? <SearchPanel {...search}>{lists}</SearchPanel> : lists}
 
       <footer className={styles.footer}>
@@ -244,7 +245,7 @@ export function ListScreen({
 export function ListScreenFallback() {
   return (
     <main className={styles.screen} aria-busy="true">
-      <h1 className={styles.logo}>NOTRE LISTE</h1>
+      <Headline lines={["NOTRE LISTE"]} size="medium" />
     </main>
   );
 }

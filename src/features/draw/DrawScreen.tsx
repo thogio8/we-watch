@@ -37,6 +37,7 @@ import { useDrawSession } from "./DrawSessionProvider";
 import { measureTear, tearClips } from "./tear";
 import { TonightPanel } from "./TonightPanel";
 import { useMinuteClock } from "./useMinuteClock";
+import { Headline } from "@/ui/Headline";
 
 interface DrawScreenProps {
   toWatch: Movie[];
@@ -282,9 +283,10 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
             }
           >
             <div className={styles.head}>
-              <h1 className={styles.logo}>
-                <Lines lines={["CE SOIR", "ON REGARDE"]} />
-              </h1>
+              <Headline
+                lines={["CE SOIR", "ON REGARDE"]}
+                className={styles.brand}
+              />
               <p className={styles.small}>
                 {plural(counts.toWatch, "film", "films")} à regarder ·{" "}
                 {plural(counts.watched, "vu", "vus")}
@@ -394,9 +396,10 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
 
         {view.phase === "exhausted" && (
           <>
-            <h1 className={`${styles.logo} ${styles.dropped}`}>
-              <Lines lines={["VOUS ÊTES", "DIFFICILES", "CE SOIR"]} />
-            </h1>
+            <Headline
+              lines={["VOUS ÊTES", "DIFFICILES", "CE SOIR"]}
+              className={styles.dropped}
+            />
             <TornPile count={pileCount} label="PAS CE SOIR" />
             <p className={styles.small}>
               {exhaustedText(eligible.length, filtering)}
@@ -423,9 +426,10 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
 
         {view.phase === "empty" && (
           <>
-            <h1 className={`${styles.logo} ${styles.dropped}`}>
-              <Lines lines={["RIEN", "À TIRER", "CE SOIR"]} />
-            </h1>
+            <Headline
+              lines={["RIEN", "À TIRER", "CE SOIR"]}
+              className={styles.dropped}
+            />
             <p className={`${styles.small} ${styles.emptyText}`}>
               La liste « à voir » est vide : swipez quelques films d’abord
             </p>
@@ -456,9 +460,7 @@ function exhaustedText(count: number, filtering: boolean): string {
 export function DrawScreenFallback() {
   return (
     <main className={styles.screen} aria-busy="true">
-      <h1 className={styles.logo}>
-        <Lines lines={["CE SOIR", "ON REGARDE"]} />
-      </h1>
+      <Headline lines={["CE SOIR", "ON REGARDE"]} className={styles.brand} />
     </main>
   );
 }
