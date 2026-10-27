@@ -98,49 +98,53 @@ export function createMoviesRepository(db: Database): MoviesRepository {
     },
 
     async apply(action, tmdbId, snapshot, now = new Date()) {
-      return db.transaction(async (tx) => {
-        const [current] = await tx
-          .select({ status: movies.status })
-          .from(movies)
-          .where(eq(movies.tmdbId, tmdbId));
-        const target = nextStatus(current?.status ?? null, action);
-        if (target === null) return "noop";
-
-        if (current === undefined) {
-          if (snapshot === undefined) {
-            throw new Error(
-              `apply(${action}): snapshot required for new movie ${tmdbId}`,
-            );
-          }
-          await tx
-            .insert(movies)
-            .values({ ...snapshot, tmdbId, status: target, decidedAt: now });
-          return "applied";
-        }
-
-        if (target === "watched") {
-          await tx
-            .update(movies)
-            .set({ status: target, watchedAt: now })
-            .where(eq(movies.tmdbId, tmdbId));
-        } else if (action === "unwatch") {
-          await tx
-            .update(movies)
-            .set({ status: target, watchedAt: null })
-            .where(eq(movies.tmdbId, tmdbId));
-        } else {
-          await tx
-            .update(movies)
-            .set({
-              ...snapshot,
-              tmdbId,
-              status: target,
-              decidedAt: now,
-            })
-            .where(eq(movies.tmdbId, tmdbId));
-        }
-        return "applied";
-      });
+      return applyAction(db, { action, tmdbId, snapshot, now });
     },
   };
+}
+
+interface ApplyInput {
+  action: MovieAction;
+  tmdbId: number;
+  snapshot: MovieSnapshot | undefined;
+  now: Date;
+}
+
+/** The columns an action changes on a movie already in the database. */
+function changesFor(
+  { action, snapshot, now }: ApplyInput,
+  target: MovieStatus,
+) {
+  if (target === "watched") return { status: target, watchedAt: now };
+  if (action === "unwatch") return { status: target, watchedAt: null };
+  return { ...snapshot, status: target, decidedAt: now };
+}
+
+/** Reads the current status and writes the transition in one transaction. */
+function applyAction(db: Database, input: ApplyInput): Promise<ApplyResult> {
+  const { action, tmdbId, snapshot, now } = input;
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ status: movies.status })
+      .from(movies)
+      .where(eq(movies.tmdbId, tmdbId));
+    const target = nextStatus(current?.status ?? null, action);
+    if (target === null) return "noop";
+
+    if (current !== undefined) {
+      await tx
+        .update(movies)
+        .set(changesFor(input, target))
+        .where(eq(movies.tmdbId, tmdbId));
+    } else if (snapshot === undefined) {
+      throw new Error(
+        `apply(${action}): snapshot required for new movie ${tmdbId}`,
+      );
+    } else {
+      await tx
+        .insert(movies)
+        .values({ ...snapshot, tmdbId, status: target, decidedAt: now });
+    }
+    return "applied";
+  });
 }

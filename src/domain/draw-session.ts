@@ -11,7 +11,7 @@ export function pickMovieId(
   return eligible[Math.floor(roll * eligible.length)] ?? null;
 }
 
-export type DrawPhase = "home" | "result" | "exhausted" | "empty";
+type DrawPhase = "home" | "result" | "exhausted" | "empty";
 
 export interface DrawSessionState {
   phase: DrawPhase;

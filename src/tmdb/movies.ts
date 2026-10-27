@@ -1,5 +1,5 @@
 import "server-only";
-import type { MovieSnapshot } from "@/domain/movie";
+import type { MovieSnapshot, StreamingProvider } from "@/domain/movie";
 import type { TmdbClient } from "./client";
 import { type DeckId, deckParams } from "./decks";
 import {
@@ -34,24 +34,36 @@ function pickTrailerKey(videos: readonly TmdbVideo[]): string | null {
   return best?.video.key ?? null;
 }
 
+type TmdbProvider = NonNullable<
+  NonNullable<TmdbMovieDetails["watch/providers"]>["results"]["FR"]
+>["flatrate"];
+
+/** French subscription offers, in TMDB's display order. */
+function toProviders(flatrate: TmdbProvider = []): StreamingProvider[] {
+  return [...flatrate]
+    .sort((a, b) => a.display_priority - b.display_priority)
+    .map((p) => ({
+      id: p.provider_id,
+      name: p.provider_name,
+      logoPath: p.logo_path,
+    }));
+}
+
+function toReleaseYear(releaseDate: string | null | undefined): number | null {
+  const year = /^(\d{4})/.exec(releaseDate ?? "")?.[1];
+  return year === undefined ? null : Number(year);
+}
+
 export function toSnapshot(details: TmdbMovieDetails): MovieSnapshot {
-  const year = /^(\d{4})/.exec(details.release_date ?? "")?.[1];
-  const flatrate = details["watch/providers"]?.results.FR?.flatrate ?? [];
   return {
     tmdbId: details.id,
     title: details.title,
-    releaseYear: year === undefined ? null : Number(year),
-    runtimeMinutes: details.runtime ? details.runtime : null,
+    releaseYear: toReleaseYear(details.release_date),
+    runtimeMinutes: details.runtime || null,
     overview: details.overview ?? "",
     posterPath: details.poster_path ?? null,
     voteAverage: details.vote_average,
-    providers: [...flatrate]
-      .sort((a, b) => a.display_priority - b.display_priority)
-      .map((p) => ({
-        id: p.provider_id,
-        name: p.provider_name,
-        logoPath: p.logo_path,
-      })),
+    providers: toProviders(details["watch/providers"]?.results.FR?.flatrate),
     genreIds: (details.genres ?? []).map((g) => g.id),
     trailerKey: pickTrailerKey(details.videos?.results ?? []),
   };

@@ -14,6 +14,19 @@ export type MovieAction =
   | "mark_watched"
   | "unwatch";
 
+/** Where each action takes a movie; "new" = not in the database yet. */
+const TRANSITIONS: Record<
+  MovieAction,
+  Partial<Record<MovieStatus | "new", MovieStatus>>
+> = {
+  swipe_keep: { new: "to_watch" },
+  swipe_reject: { new: "rejected" },
+  search_add: { new: "to_watch", rejected: "to_watch" },
+  remove: { to_watch: "rejected" },
+  mark_watched: { to_watch: "watched" },
+  unwatch: { watched: "to_watch" },
+};
+
 /**
  * Target status, or null if the action is a no-op.
  * current = null means the movie is not in the database yet.
@@ -23,24 +36,13 @@ export function nextStatus(
   current: MovieStatus | null,
   action: MovieAction,
 ): MovieStatus | null {
-  switch (action) {
-    case "swipe_keep":
-      return current === null ? "to_watch" : null;
-    case "swipe_reject":
-      return current === null ? "rejected" : null;
-    case "search_add":
-      return current === null || current === "rejected" ? "to_watch" : null;
-    case "remove":
-      return current === "to_watch" ? "rejected" : null;
-    case "mark_watched":
-      return current === "to_watch" ? "watched" : null;
-    case "unwatch":
-      return current === "watched" ? "to_watch" : null;
-    default: {
-      const unhandled: never = action;
-      throw new Error(`Unhandled movie action: ${String(unhandled)}`);
-    }
+  const targets = TRANSITIONS[action] as
+    (typeof TRANSITIONS)[MovieAction] | undefined;
+  // Server Actions receive untyped input: an unknown action is a bug.
+  if (targets === undefined) {
+    throw new Error(`Unhandled movie action: ${String(action)}`);
   }
+  return targets[current ?? "new"] ?? null;
 }
 
 /**

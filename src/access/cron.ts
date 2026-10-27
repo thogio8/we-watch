@@ -11,6 +11,6 @@ export function isCronAuthorized(
   authorization: string | null | undefined,
   secret: string | undefined,
 ): boolean {
-  if (secret === undefined || authorization == null) return false;
+  if (secret === undefined || !authorization) return false;
   return constantTimeEqual(authorization, `Bearer ${secret}`);
 }
