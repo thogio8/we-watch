@@ -14,6 +14,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
+  expect: {
+    // Same Linux font rendering locally and on CI: a tiny tolerance absorbs
+    // antialiasing, a layout change moves far more pixels.
+    toHaveScreenshot: { maxDiffPixelRatio: 0.002, animations: "disabled" },
+  },
   use: {
     baseURL: `http://localhost:${E2E_PORT}`,
     locale: "fr-FR",
