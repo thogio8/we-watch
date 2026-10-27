@@ -88,7 +88,7 @@ Concrètement, sur ce repo :
 - **Couverture** (`vitest.config.ts`, seuils 95/95/95/90, actuellement 100 %) : tous les `.ts` de `src/` sauf hooks et câblage, donc tout nouveau module y entre seul. `docs/coverage.md` est mis à jour à la main.
 - **Tests UI** : Testing Library, requêtes par rôle et texte visible, pas de détails d'implémentation.
 - **Tests fonctionnels** (`tests/functional/`) : `startServerStack()` donne une vraie base SQLite et le faux TMDB ; on appelle les vraies actions serveur.
-- **E2E** (`e2e/`, Playwright) : build de prod sur `e2e/.data/e2e.db` et le faux TMDB (`e2e/global-setup.ts`), ports 3217/3218, profils iPhone et desktop. La fixture `app` vide la base et déverrouille ; `swipe()` attend la fin des enregistrements (`settled`). Ne jamais supprimer la base e2e pendant qu'un serveur la tient (`SQLITE_READONLY_DBMOVED`).
+- **E2E** (`e2e/`, Playwright) : toujours dans l'image Docker officielle Playwright (`scripts/e2e.sh`, Docker requis), pour que les captures soient identiques ici et sur GitHub ; build de prod sur `e2e/.data/e2e.db` et le faux TMDB (`e2e/global-setup.ts`), ports 3217/3218, profils iPhone et desktop. La fixture `app` vide la base et déverrouille ; `swipe()` attend la fin des enregistrements (`settled`). Ne jamais supprimer la base e2e pendant qu'un serveur la tient (`SQLITE_READONLY_DBMOVED`).
 - **Accessibilité** : axe sans aucun défaut grave, contraste compris (WCAG AA). Sur le rose, le texte est en encre (`--on-pink`), jamais en blanc.
 - Le faux TMDB (`tests/fake-tmdb/`) sert aux deux niveaux : un film utile à un test s'ajoute dans `catalog.ts`. L'appli le joint grâce à `TMDB_API_URL` (défaut : le vrai TMDB).
 

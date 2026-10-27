@@ -22,7 +22,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # End-to-end tests run in the Playwright Docker image (scripts/e2e.sh).
       - run: npm run ci
       - uses: actions/upload-artifact@v4
         if: failure()

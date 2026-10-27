@@ -1,5 +1,5 @@
 import { type Page } from "@playwright/test";
-import { expect, swipe, test } from "./fixtures";
+import { expect, listTitles, settled, swipe, test, topCard } from "./fixtures";
 
 /**
  * Visual regression: one reference image per screen and format
@@ -20,7 +20,9 @@ async function freeze(page: Page) {
   });
 }
 
+/** Captures once the screen is final: data loaded, fonts in, no request left. */
 async function shoot(page: Page, name: string) {
+  await settled(page);
   await page.evaluate(() => document.fonts.ready);
   await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
 }
@@ -46,9 +48,13 @@ test.describe("rendu visuel", () => {
       await shoot(app, `${format.name}-3-ticket`);
 
       await app.goto("/swipe");
+      await expect(topCard(app)).toHaveText(
+        "Le Fabuleux Destin d'Amélie Poulain",
+      );
       await shoot(app, `${format.name}-4-swipe`);
 
       await app.goto("/list");
+      await expect(listTitles(app)).toHaveCount(3);
       await shoot(app, `${format.name}-5-liste`);
 
       await app.context().clearCookies();
