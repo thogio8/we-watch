@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { revalidatePath } from "next/cache";
 import { assertUnlocked } from "@/access/assert-unlocked";
+import { revalidateListPages } from "@/server/revalidate";
 import { markWatched } from "./actions";
 
 const apply = vi.fn();
@@ -9,12 +9,12 @@ vi.mock("@/access/assert-unlocked");
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply }),
 }));
-vi.mock("next/cache");
+vi.mock("@/server/revalidate");
 
 beforeEach(() => {
   vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
   apply.mockReset().mockResolvedValue("applied");
-  vi.mocked(revalidatePath).mockReset();
+  vi.mocked(revalidateListPages).mockReset();
 });
 
 describe("markWatched", () => {
@@ -22,7 +22,7 @@ describe("markWatched", () => {
     await markWatched(129);
 
     expect(apply).toHaveBeenCalledWith("mark_watched", 129);
-    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+    expect(revalidateListPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "129" as unknown as number])(
@@ -40,6 +40,6 @@ describe("appareil verrouillé", () => {
 
     await expect(markWatched(129)).rejects.toThrow("device is locked");
     expect(apply).not.toHaveBeenCalled();
-    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateListPages).not.toHaveBeenCalled();
   });
 });

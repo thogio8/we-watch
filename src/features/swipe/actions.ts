@@ -6,6 +6,7 @@ import {
   getMoviesRepository,
   getTmdbClient,
 } from "@/server/container";
+import { revalidateListPages } from "@/server/revalidate";
 import { TmdbError } from "@/tmdb/client";
 import {
   type ApplyResult,
@@ -43,10 +44,9 @@ export async function decideSwipe(
     tmdbId,
     snapshot,
   );
-  // No revalidatePath (R10): in Next 16.4 it would re-render /swipe into every
-  // swipe's response (TMDB calls the client discards). TIRER and LISTE are
-  // dynamic (connection()) and staleTimes.dynamic is 0, so switching tabs
-  // already shows the new counts.
+  // TIRER and LISTE, kept on the phone, must show it; the deck on screen is
+  // not re-rendered (R10).
+  revalidateListPages();
   return result;
 }
 
@@ -58,7 +58,9 @@ export async function undoSwipe(
   await assertUnlocked();
   assertTmdbId("undoSwipe", tmdbId);
   assertSwipeDecision("undoSwipe", decision);
-  return getMoviesRepository().undoSwipe(tmdbId, decision);
+  const result = await getMoviesRepository().undoSwipe(tmdbId, decision);
+  revalidateListPages();
+  return result;
 }
 
 /** Next batch of `deck` from `page`. TMDB being down is expected: `{ ok: false }`. */

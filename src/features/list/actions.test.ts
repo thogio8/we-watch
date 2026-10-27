@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { revalidatePath } from "next/cache";
 import { assertUnlocked } from "@/access/assert-unlocked";
+import { revalidateListPages } from "@/server/revalidate";
 import { aSnapshot } from "@tests/helpers/movies";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
@@ -26,7 +26,7 @@ vi.mock("@/tmdb/movies", () => ({
   searchMovies: (...args: unknown[]) => searchMovies(...args),
   getMovieSnapshot: (...args: unknown[]) => getMovieSnapshot(...args),
 }));
-vi.mock("next/cache");
+vi.mock("@/server/revalidate");
 
 const snapshot = (tmdbId: number, title: string): MovieSnapshot =>
   aSnapshot(tmdbId, { title, releaseYear: 1984, runtimeMinutes: 137 });
@@ -39,7 +39,7 @@ beforeEach(() => {
   vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
   apply.mockReset().mockResolvedValue("applied");
   statusesOf.mockReset().mockResolvedValue(new Map());
-  vi.mocked(revalidatePath).mockReset();
+  vi.mocked(revalidateListPages).mockReset();
   searchMovies.mockReset().mockResolvedValue([]);
   getMovieSnapshot.mockReset().mockResolvedValue(DUNE_1984);
 });
@@ -52,7 +52,7 @@ describe.each([
     await action(129);
 
     expect(apply).toHaveBeenCalledExactlyOnceWith(movieAction, 129);
-    expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/list");
+    expect(revalidateListPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "129" as unknown as number])(
@@ -60,7 +60,7 @@ describe.each([
     async (tmdbId) => {
       await expect(action(tmdbId)).rejects.toThrow("invalid tmdbId");
       expect(apply).not.toHaveBeenCalled();
-      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateListPages).not.toHaveBeenCalled();
     },
   );
 });
@@ -85,7 +85,7 @@ describe("searchCatalog", () => {
     });
     expect(searchMovies).toHaveBeenCalledWith(client, "dune");
     expect(statusesOf).toHaveBeenCalledWith([438631, 693134, 841]);
-    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateListPages).not.toHaveBeenCalled();
   });
 
   it("requête vide ou d'espaces → aucun appel TMDB", async () => {
@@ -130,7 +130,7 @@ describe("addFromSearch", () => {
 
     expect(getMovieSnapshot).toHaveBeenCalledWith(client, 841);
     expect(apply).toHaveBeenCalledExactlyOnceWith("search_add", 841, DUNE_1984);
-    expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/list");
+    expect(revalidateListPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "841" as unknown as number])(
@@ -157,6 +157,6 @@ describe("appareil verrouillé", () => {
     expect(searchMovies).not.toHaveBeenCalled();
     expect(getMovieSnapshot).not.toHaveBeenCalled();
     expect(statusesOf).not.toHaveBeenCalled();
-    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidateListPages).not.toHaveBeenCalled();
   });
 });

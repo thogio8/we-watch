@@ -1,10 +1,10 @@
 "use server";
 
 import { assertUnlocked } from "@/access/assert-unlocked";
-import { revalidatePath } from "next/cache";
 import type { MovieSnapshot, MovieStatus } from "@/domain/movie";
 import type { MovieAction } from "@/domain/transitions";
 import { getMoviesRepository, getTmdbClient } from "@/server/container";
+import { revalidateListPages } from "@/server/revalidate";
 import { assertTmdbId } from "@/server/validate";
 import { TmdbError } from "@/tmdb/client";
 import { getMovieSnapshot, searchMovies } from "@/tmdb/movies";
@@ -18,19 +18,13 @@ export type SearchOutcome =
 /** Longer than any film title; anything above is not a search. */
 const MAX_QUERY_LENGTH = 100;
 
-/**
- * R10: re-renders the current page, /list, which only reads the database.
- * TIRER is dynamic (connection()), so switching tabs already shows the change.
- */
-const refreshList = () => revalidatePath("/list");
-
 async function applyFromList(
   action: MovieAction,
   tmdbId: number,
 ): Promise<void> {
   assertTmdbId(action, tmdbId);
   await getMoviesRepository().apply(action, tmdbId);
-  refreshList();
+  revalidateListPages();
 }
 
 /** ✕ on « à voir »: the movie becomes « refusé », so it never comes back to the swipe. */
@@ -81,5 +75,5 @@ export async function addFromSearch(tmdbId: number): Promise<void> {
   assertTmdbId("search_add", tmdbId);
   const snapshot = await getMovieSnapshot(getTmdbClient(), tmdbId);
   await getMoviesRepository().apply("search_add", tmdbId, snapshot);
-  refreshList();
+  revalidateListPages();
 }

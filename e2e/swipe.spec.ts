@@ -49,4 +49,20 @@ test.describe("swiper", () => {
       app.getByRole("heading", { name: "VOUS AVEZ TOUT VU (OU PRESQUE)" }),
     ).toBeVisible();
   });
+
+  test("une page déjà visitée montre tout de suite le film gardé", async ({
+    app,
+  }) => {
+    // TIRER and LISTE visited first: the phone keeps them for 5 minutes.
+    await app.goto("/list");
+    await expect(app.getByRole("tab", { name: /À VOIR · 0/ })).toBeVisible();
+    await app.getByRole("link", { name: "SWIPER", exact: true }).click();
+    await app.getByRole("button", { name: "ON LE VEUT ♥" }).click();
+    await settled(app);
+
+    await app.getByRole("link", { name: "LISTE", exact: true }).click();
+    await expect(listTitles(app)).toHaveText(["Whiplash"]);
+    await app.getByRole("link", { name: "TIRER", exact: true }).click();
+    await expect(app.getByText("1 film à regarder · 0 vu")).toBeVisible();
+  });
 });

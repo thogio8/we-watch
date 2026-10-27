@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { revalidatePath } from "next/cache";
 import { assertUnlocked } from "@/access/assert-unlocked";
+import { revalidateListPages } from "@/server/revalidate";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
 import type { DeckId } from "@/tmdb/decks";
@@ -31,7 +31,7 @@ vi.mock("@/tmdb/movies", () => ({
 vi.mock("./deck", () => ({
   loadDeckBatch: (...args: unknown[]) => loadDeckBatch(...args),
 }));
-vi.mock("next/cache");
+vi.mock("@/server/revalidate");
 
 const WHIPLASH: MovieSnapshot = {
   tmdbId: 244786,
@@ -51,7 +51,7 @@ beforeEach(() => {
   apply.mockReset().mockResolvedValue("applied");
   undo.mockReset().mockResolvedValue("applied");
   getDeckDeps.mockReset().mockReturnValue(deckDeps);
-  vi.mocked(revalidatePath).mockReset();
+  vi.mocked(revalidateListPages).mockReset();
   getMovieSnapshot.mockReset().mockResolvedValue(WHIPLASH);
   loadDeckBatch.mockReset();
 });
@@ -61,13 +61,13 @@ describe("decideSwipe", () => {
     ["keep", "swipe_keep"],
     ["reject", "swipe_reject"],
   ] as const)(
-    "%s enregistre le film avec son snapshot, sans re-rendre la page (R10)",
+    "%s enregistre le film avec son snapshot et périme TIRER et LISTE",
     async (decision, action) => {
       await expect(decideSwipe(244786, decision)).resolves.toBe("applied");
 
       expect(getMovieSnapshot).toHaveBeenCalledWith(client, 244786);
       expect(apply).toHaveBeenCalledWith(action, 244786, WHIPLASH);
-      expect(revalidatePath).not.toHaveBeenCalled();
+      expect(revalidateListPages).toHaveBeenCalledOnce();
     },
   );
 
@@ -100,10 +100,11 @@ describe("decideSwipe", () => {
 
 describe("undoSwipe", () => {
   it.each(["keep", "reject"] as const)(
-    "efface la décision %s",
+    "efface la décision %s et périme TIRER et LISTE",
     async (decision) => {
       await expect(undoSwipe(244786, decision)).resolves.toBe("applied");
       expect(undo).toHaveBeenCalledWith(244786, decision);
+      expect(revalidateListPages).toHaveBeenCalledOnce();
     },
   );
 
