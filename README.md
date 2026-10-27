@@ -45,7 +45,8 @@ Safari → Partager → « Sur l'écran d'accueil ». L'app s'ouvre en plein éc
 
 - `npm run dev` : serveur de développement
 - `npm run build` : build de production (`next build`, ne lance pas les migrations)
-- `npm start` : sert le build de production
+- `npm start` : sert le build de production — **attention, il lit `.env.production.local`, donc la base de prod**
+- `npm run start:local` : sert le build de production sur la base locale `local.db` (à utiliser pour tester)
 - `npm run lint` : ESLint
 - `npm run typecheck` : génération des types Next puis `tsc --noEmit`
 - `npm test` : tests unitaires (Vitest)
