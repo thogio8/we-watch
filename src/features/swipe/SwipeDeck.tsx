@@ -2,7 +2,7 @@
 
 import { AnimatePresence, useReducedMotion } from "motion/react";
 import { useEffect, useReducer, useRef, useState } from "react";
-import type { ApplyResult } from "@/db/movies-repository";
+import type { ApplyResult } from "@/domain/transitions";
 import type { MovieSnapshot } from "@/domain/movie";
 import { DECKS, DEFAULT_DECK, type DeckId, deckLabel } from "@/tmdb/decks";
 import { Button } from "@/ui/Button";

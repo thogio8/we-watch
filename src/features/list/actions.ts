@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { MovieSnapshot, MovieStatus } from "@/domain/movie";
 import type { MovieAction } from "@/domain/transitions";
 import { getMoviesRepository, getTmdbClient } from "@/server/container";
+import { assertTmdbId } from "@/server/validate";
 import { TmdbError } from "@/tmdb/client";
 import { getMovieSnapshot, searchMovies } from "@/tmdb/movies";
 
@@ -16,16 +17,6 @@ export type SearchOutcome =
 
 /** Longer than any film title; anything above is not a search. */
 const MAX_QUERY_LENGTH = 100;
-
-const isPositiveInt = (value: number) =>
-  Number.isSafeInteger(value) && value > 0;
-
-// Server Actions are public endpoints: never trust the arguments' types.
-function assertTmdbId(action: string, tmdbId: number): void {
-  if (!isPositiveInt(tmdbId)) {
-    throw new Error(`${action}: invalid tmdbId ${String(tmdbId)}`);
-  }
-}
 
 /**
  * R10: re-renders the current page, /list, which only reads the database.

@@ -1,13 +1,14 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Movie, MovieSnapshot, MovieStatus } from "@/domain/movie";
-import { type MovieAction, nextStatus } from "@/domain/transitions";
+import {
+  type ApplyResult,
+  type MovieAction,
+  nextStatus,
+  type SwipeDecision,
+  SWIPES,
+} from "@/domain/transitions";
 import type { Database } from "./create-database";
 import { movies } from "./schema";
-
-export type ApplyResult = "applied" | "noop";
-
-/** Status a swipe decision creates (see domain/transitions). */
-const SWIPED_STATUS = { keep: "to_watch", reject: "rejected" } as const;
 
 export interface MoviesRepository {
   /** to_watch: decidedAt desc; watched: watchedAt desc. */
@@ -23,7 +24,7 @@ export interface MoviesRepository {
    * Forgets a swipe, as if the card had never been decided: only while the
    * movie still has the status that decision gave it.
    */
-  undoSwipe(tmdbId: number, decision: "keep" | "reject"): Promise<ApplyResult>;
+  undoSwipe(tmdbId: number, decision: SwipeDecision): Promise<ApplyResult>;
   apply(
     action: MovieAction,
     tmdbId: number,
@@ -89,7 +90,7 @@ export function createMoviesRepository(db: Database): MoviesRepository {
         .where(
           and(
             eq(movies.tmdbId, tmdbId),
-            eq(movies.status, SWIPED_STATUS[decision]),
+            eq(movies.status, SWIPES[decision].status),
           ),
         )
         .returning({ id: movies.tmdbId });

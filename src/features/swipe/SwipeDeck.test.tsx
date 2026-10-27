@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApplyResult } from "@/db/movies-repository";
+import type { ApplyResult } from "@/domain/transitions";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { DeckId } from "@/tmdb/decks";
 import type { LoadMoreResult, SwipeDecision } from "./actions";

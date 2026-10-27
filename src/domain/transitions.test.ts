@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { MovieStatus } from "./movie";
-import { type MovieAction, nextStatus } from "./transitions";
+import {
+  isSwipeDecision,
+  type MovieAction,
+  nextStatus,
+  SWIPES,
+} from "./transitions";
 
 type Current = MovieStatus | null;
 
@@ -40,5 +45,22 @@ describe("nextStatus", () => {
     expect(() =>
       nextStatus("to_watch", "bogus" as unknown as MovieAction),
     ).toThrow("Unhandled movie action");
+  });
+});
+
+describe("SWIPES", () => {
+  it.each(["keep", "reject"] as const)(
+    "%s : le statut annoncé est bien celui de nextStatus",
+    (decision) => {
+      const { action, status } = SWIPES[decision];
+      expect(nextStatus(null, action)).toBe(status);
+    },
+  );
+
+  it("reconnaît les décisions de swipe, refuse le reste", () => {
+    expect(isSwipeDecision("keep")).toBe(true);
+    expect(isSwipeDecision("reject")).toBe(true);
+    expect(isSwipeDecision("watched")).toBe(false);
+    expect(isSwipeDecision(undefined)).toBe(false);
   });
 });

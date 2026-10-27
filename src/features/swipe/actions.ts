@@ -7,29 +7,23 @@ import {
   getTmdbClient,
 } from "@/server/container";
 import { TmdbError } from "@/tmdb/client";
+import {
+  type ApplyResult,
+  type SwipeDecision,
+  SWIPES,
+} from "@/domain/transitions";
+import {
+  assertSwipeDecision,
+  assertTmdbId,
+  isPositiveInt,
+} from "@/server/validate";
 import { type DeckId, isDeckId } from "@/tmdb/decks";
 import { getMovieSnapshot } from "@/tmdb/movies";
-import type { ApplyResult } from "@/db/movies-repository";
 import { type DeckBatch, loadDeckBatch } from "./deck";
 
-export type SwipeDecision = "keep" | "reject";
+export type { SwipeDecision };
 
 export type LoadMoreResult = { ok: true; batch: DeckBatch } | { ok: false };
-
-const ACTIONS = { keep: "swipe_keep", reject: "swipe_reject" } as const;
-
-const isPositiveInt = (value: number) =>
-  Number.isSafeInteger(value) && value > 0;
-
-// Server Actions are public endpoints: never trust the arguments' types.
-function checkSwipe(name: string, tmdbId: number, decision: SwipeDecision) {
-  if (!isPositiveInt(tmdbId)) {
-    throw new Error(`${name}: invalid tmdbId ${String(tmdbId)}`);
-  }
-  if (decision !== "keep" && decision !== "reject") {
-    throw new Error(`${name}: invalid decision ${String(decision)}`);
-  }
-}
 
 /**
  * « ON LE VEUT » / « BOF ». The snapshot is fetched again here (24 h cache)
@@ -41,10 +35,11 @@ export async function decideSwipe(
   decision: SwipeDecision,
 ): Promise<ApplyResult> {
   await assertUnlocked();
-  checkSwipe("decideSwipe", tmdbId, decision);
+  assertTmdbId("decideSwipe", tmdbId);
+  assertSwipeDecision("decideSwipe", decision);
   const snapshot = await getMovieSnapshot(getTmdbClient(), tmdbId);
   const result = await getMoviesRepository().apply(
-    ACTIONS[decision],
+    SWIPES[decision].action,
     tmdbId,
     snapshot,
   );
@@ -61,7 +56,8 @@ export async function undoSwipe(
   decision: SwipeDecision,
 ): Promise<ApplyResult> {
   await assertUnlocked();
-  checkSwipe("undoSwipe", tmdbId, decision);
+  assertTmdbId("undoSwipe", tmdbId);
+  assertSwipeDecision("undoSwipe", decision);
   return getMoviesRepository().undoSwipe(tmdbId, decision);
 }
 

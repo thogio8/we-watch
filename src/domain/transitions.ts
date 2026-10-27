@@ -1,5 +1,11 @@
 import type { MovieStatus } from "./movie";
 
+/** Did a change reach the database, or was it a no-op (see nextStatus)? */
+export type ApplyResult = "applied" | "noop";
+
+/** « ON LE VEUT » / « BOF ». */
+export type SwipeDecision = "keep" | "reject";
+
 export type MovieAction =
   | "swipe_keep"
   | "swipe_reject"
@@ -35,4 +41,20 @@ export function nextStatus(
       throw new Error(`Unhandled movie action: ${String(unhandled)}`);
     }
   }
+}
+
+/**
+ * What a swipe decision does: its action, and the status it gives a movie
+ * never decided before (the only movies a swipe applies to).
+ */
+export const SWIPES = {
+  keep: { action: "swipe_keep", status: "to_watch" },
+  reject: { action: "swipe_reject", status: "rejected" },
+} as const satisfies Record<
+  SwipeDecision,
+  { action: MovieAction; status: MovieStatus }
+>;
+
+export function isSwipeDecision(value: unknown): value is SwipeDecision {
+  return value === "keep" || value === "reject";
 }
