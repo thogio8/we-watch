@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { lastTornId } from "@/domain/draw-session";
 import type { Movie } from "@/domain/movie";
 import {
   filterTonight,
@@ -15,6 +16,9 @@ import { resolveView } from "./drawView";
 import { useMinuteClock } from "./useMinuteClock";
 
 export type DrawAction = "draw" | "reject" | "reset_pile";
+
+/** The dice of a draw, thrown from click handlers only (never in render). */
+const throwDice = () => Math.random();
 
 /**
  * The draw session as the screen sees it: tonight's filters applied to the
@@ -53,22 +57,25 @@ export function useDraw(
         ? { kind: "tear", clips: tearOf(ticketRef.current) }
         : FADE,
     );
-    dispatch({ type, candidateIds, roll: Math.random() });
+    dispatch({ type, candidateIds, roll: throwDice() });
+  };
+
+  // Plain screen changes: no ticket is torn.
+  const move = (action: Parameters<typeof dispatch>[0]) => {
+    setExit(FADE);
+    dispatch(action);
   };
 
   const clearFilters = () => {
     setFilters({ ...NO_FILTERS });
-    setExit(FADE);
-    dispatch({ type: "back_home" });
+    move({ type: "back_home" });
   };
+  const lastId = lastTornId(state.pile, candidateIds);
 
   const watch = (tmdbId: number) => {
     startWatching(async () => {
       await onWatched(tmdbId);
-      startWatching(() => {
-        setExit(FADE);
-        dispatch({ type: "watched" });
-      });
+      startWatching(() => move({ type: "watched" }));
     });
   };
 
@@ -82,8 +89,13 @@ export function useDraw(
     platforms: tonightPlatforms(toWatch),
     filtering: isFiltering(filters),
     eligibleCount: eligible.length,
-    pileCount,
+    pile: {
+      count: pileCount,
+      lastTorn: toWatch.find((m) => m.tmdbId === lastId) ?? null,
+      onUntear: () => move({ type: "unreject", candidateIds }),
+    },
     isWatching,
+    back: () => move({ type: "back_home" }),
     draw,
     clearFilters,
     watch,

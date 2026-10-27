@@ -2,12 +2,12 @@ import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
 import { cx } from "@/ui/cx";
 import { Headline } from "@/ui/Headline";
-import { TornPile } from "@/ui/TornPile";
 import styles from "./DrawScreen.module.css";
+import { DrawPile, type DrawPileProps } from "./DrawPile";
 import { exhaustedText } from "./drawView";
 
 interface DrawExhaustedProps {
-  pileCount: number;
+  pile: DrawPileProps;
   eligibleCount: number;
   filtering: boolean;
   onResetPile: () => void;
@@ -16,7 +16,7 @@ interface DrawExhaustedProps {
 
 /** Every eligible movie is on the pile: start over, or widen the choice. */
 export function DrawExhausted({
-  pileCount,
+  pile,
   eligibleCount,
   filtering,
   onResetPile,
@@ -28,7 +28,7 @@ export function DrawExhausted({
         lines={["VOUS ÊTES", "DIFFICILES", "CE SOIR"]}
         className={styles.dropped}
       />
-      <TornPile count={pileCount} label="PAS CE SOIR" />
+      <DrawPile {...pile} />
       <p className={styles.small}>{exhaustedText(eligibleCount, filtering)}</p>
       <div className={cx(styles.actions, styles.spaced)}>
         <Button variant="primary" onClick={onResetPile}>

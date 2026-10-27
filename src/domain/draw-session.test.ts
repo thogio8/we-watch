@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   drawSessionReducer,
   initialDrawSession,
+  lastTornId,
   pickMovieId,
 } from "./draw-session";
 
@@ -92,4 +93,46 @@ describe("drawSessionReducer", () => {
         { type: "back_home" },
       ),
     ).toEqual({ phase: "home", currentId: null, pile: [2] }));
+});
+
+describe("ressortir le dernier ticket déchiré", () => {
+  const torn = { phase: "result", currentId: 9, pile: [3, 5] } as const;
+
+  it("le dernier déchiré redevient le ticket tiré et quitte la pile", () =>
+    expect(
+      drawSessionReducer(torn, { type: "unreject", candidateIds: [3, 5, 9] }),
+    ).toEqual({ phase: "result", currentId: 5, pile: [3] }));
+
+  it("le ticket remplacé ne part pas dans la pile", () =>
+    expect(
+      drawSessionReducer(torn, { type: "unreject", candidateIds: [3, 5, 9] })
+        .pile,
+    ).not.toContain(9));
+
+  it("saute les déchirés qui ne collent plus aux filtres", () =>
+    expect(
+      drawSessionReducer(torn, { type: "unreject", candidateIds: [3, 9] }),
+    ).toEqual({ phase: "result", currentId: 3, pile: [5] }));
+
+  it("depuis « difficiles ce soir », ressort aussi", () =>
+    expect(
+      drawSessionReducer(
+        { phase: "exhausted", currentId: null, pile: [3, 5] },
+        { type: "unreject", candidateIds: [3, 5] },
+      ),
+    ).toEqual({ phase: "result", currentId: 5, pile: [3] }));
+
+  it("rien à ressortir : rien ne change", () => {
+    const state = { phase: "result", currentId: 9, pile: [3] } as const;
+    expect(
+      drawSessionReducer(state, { type: "unreject", candidateIds: [9] }),
+    ).toBe(state);
+  });
+
+  it("lastTornId : le dernier déchiré encore éligible, sinon null", () => {
+    expect(lastTornId([3, 5], [3, 5])).toBe(5);
+    expect(lastTornId([3, 5], [3])).toBe(3);
+    expect(lastTornId([3, 5], [9])).toBeNull();
+    expect(lastTornId([], [9])).toBeNull();
+  });
 });

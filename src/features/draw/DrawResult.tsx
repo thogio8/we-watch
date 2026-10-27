@@ -10,8 +10,8 @@ import { Poster } from "@/ui/Poster";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
 import { TicketDetails } from "@/ui/TicketDetails";
-import { TornPile } from "@/ui/TornPile";
 import { stampVariants, ticketVariants } from "./drawMotion";
+import { DrawPile, type DrawPileProps } from "./DrawPile";
 import styles from "./DrawScreen.module.css";
 
 /**
@@ -26,26 +26,38 @@ interface DrawResultProps {
   reduce: boolean;
   /** The ticket's wrapper, measured when it is torn. */
   ticketRef: Ref<HTMLDivElement>;
-  pileCount: number;
+  pile: DrawPileProps;
   isWatching: boolean;
+  onBack: () => void;
   onReject: () => void;
   onWatch: () => void;
 }
 
-/** The drawn movie's ticket, to reject (torn) or to watch. */
+/** The drawn movie's ticket, to reject (torn), to watch, or to leave. */
 export function DrawResult({
   movie,
   now,
   reduce,
   ticketRef,
-  pileCount,
+  pile,
   isWatching,
+  onBack,
   onReject,
   onWatch,
 }: DrawResultProps) {
   return (
     <>
-      <p className={cx(styles.small, styles.kicker)}>Ce soir, ce sera…</p>
+      <div className={styles.resultHead}>
+        <button
+          type="button"
+          className={styles.back}
+          disabled={isWatching}
+          onClick={onBack}
+        >
+          ← RETOUR
+        </button>
+        <p className={cx(styles.small, styles.kicker)}>Ce soir, ce sera…</p>
+      </div>
       <motion.div
         ref={ticketRef}
         className={styles.ticket}
@@ -77,7 +89,7 @@ export function DrawResult({
           ON LE REGARDE
         </Button>
       </div>
-      <TornPile count={pileCount} label="PAS CE SOIR" />
+      <DrawPile {...pile} />
     </>
   );
 }

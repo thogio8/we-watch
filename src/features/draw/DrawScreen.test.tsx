@@ -260,6 +260,54 @@ describe("DrawScreen", () => {
   });
 });
 
+describe("DrawScreen : revenir en arrière", () => {
+  it("← RETOUR ramène à l'accueil sans jeter le film dans la pile", async () => {
+    const { user } = renderDraw({ toWatch: [CHIHIRO, WHIPLASH] });
+    await user.click(drawButton());
+
+    await user.click(await screen.findByRole("button", { name: "← RETOUR" }));
+
+    expect(
+      await screen.findByRole("button", { name: "TIRER UN FILM" }),
+    ).toBeVisible();
+    expect(screen.queryByText(/PAS CE SOIR/)).not.toBeInTheDocument();
+    await user.click(drawButton());
+    expect(
+      await screen.findByRole("heading", { name: "LE VOYAGE DE CHIHIRO" }),
+    ).toBeVisible();
+  });
+
+  it("↺ RESSORTIR ramène le dernier ticket déchiré", async () => {
+    const { user } = renderDraw({ toWatch: [CHIHIRO, WHIPLASH] });
+    await user.click(drawButton());
+    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
+    await screen.findByRole("heading", { name: "WHIPLASH" });
+
+    await user.click(
+      screen.getByRole("button", { name: "↺ RESSORTIR LE VOYAGE DE CHIHIRO" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "LE VOYAGE DE CHIHIRO" }),
+    ).toBeVisible();
+    expect(screen.queryByText(/PAS CE SOIR/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /RESSORTIR/ })).toBeNull();
+  });
+
+  it("depuis « difficiles ce soir », on ressort le dernier ticket", async () => {
+    const { user } = renderDraw({ toWatch: [CHIHIRO] });
+    await exhaustPile(user);
+
+    await user.click(
+      screen.getByRole("button", { name: "↺ RESSORTIR LE VOYAGE DE CHIHIRO" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "LE VOYAGE DE CHIHIRO" }),
+    ).toBeVisible();
+  });
+});
+
 describe("DrawScreen : filtres « ce soir »", () => {
   const PRIME = { id: 119, name: "Amazon Prime Video", logoPath: null };
   // 21:07 + 125 min = 23:12; 21:07 + 107 min = 22:54; 21:07 + 95 = 22:42.

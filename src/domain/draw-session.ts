@@ -34,7 +34,28 @@ export type DrawSessionAction =
   /** Empties the pile and the current movie, back to home. */
   | { type: "watched" }
   /** Back to home; the pile is kept for the rest of the session. */
-  | { type: "back_home" };
+  | { type: "back_home" }
+  /** « ↺ RESSORTIR »: the last torn movie still eligible is drawn again. */
+  | { type: "unreject"; candidateIds: readonly number[] };
+
+/** The last torn movie that still suits tonight, or null. */
+export function lastTornId(
+  pile: readonly number[],
+  candidateIds: readonly number[],
+): number | null {
+  return pile.findLast((id) => candidateIds.includes(id)) ?? null;
+}
+
+function unreject(
+  state: DrawSessionState,
+  candidateIds: readonly number[],
+): DrawSessionState {
+  const id = lastTornId(state.pile, candidateIds);
+  if (id === null) return state;
+  // The movie it replaces was drawn by chance: it does not join the pile.
+  const pile = state.pile.filter((tornId) => tornId !== id);
+  return { phase: "result", currentId: id, pile };
+}
 
 function drawFrom(
   candidateIds: readonly number[],
@@ -70,5 +91,7 @@ export function drawSessionReducer(
       return initialDrawSession;
     case "back_home":
       return { phase: "home", currentId: null, pile: state.pile };
+    case "unreject":
+      return unreject(state, action.candidateIds);
   }
 }

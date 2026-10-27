@@ -7,6 +7,7 @@ import { expect, listTitles, settled, swipe, test, topCard } from "./fixtures";
  * intended change is accepted with `npm run test:e2e -- --update-snapshots`.
  */
 const FORMATS = [
+  { name: "se", width: 320, height: 568 },
   { name: "iphone", width: 390, height: 844 },
   { name: "paysage", width: 844, height: 390 },
   { name: "desktop", width: 1280, height: 800 },

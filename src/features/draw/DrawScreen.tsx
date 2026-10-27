@@ -78,15 +78,16 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
             now={draw.now}
             reduce={reduce}
             ticketRef={draw.ticketRef}
-            pileCount={draw.pileCount}
+            pile={draw.pile}
             isWatching={draw.isWatching}
+            onBack={draw.back}
             onReject={() => draw.draw("reject")}
             onWatch={() => draw.watch(view.movie.tmdbId)}
           />
         )}
         {view.phase === "exhausted" && (
           <DrawExhausted
-            pileCount={draw.pileCount}
+            pile={draw.pile}
             eligibleCount={draw.eligibleCount}
             filtering={draw.filtering}
             onResetPile={() => draw.draw("reset_pile")}

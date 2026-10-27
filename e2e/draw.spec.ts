@@ -42,4 +42,23 @@ test.describe("tirer", () => {
     await app.getByRole("button", { name: "TIRER PARMI 1" }).click();
     await expect(app.getByRole("heading", { level: 2 })).toHaveText("Parasite");
   });
+
+  test("← RETOUR et ↺ RESSORTIR : on peut revenir sur ses pas", async ({
+    app,
+  }) => {
+    await swipe(app, ["keep", "keep"]);
+    await app.goto("/");
+    await app.getByRole("button", { name: "TIRER UN FILM" }).click();
+    const first =
+      (await app.getByRole("heading", { level: 2 }).textContent()) ?? "";
+
+    await app.getByRole("button", { name: "RETIRER" }).click();
+    await app.getByRole("button", { name: `↺ RESSORTIR ${first}` }).click();
+    await expect(app.getByRole("heading", { level: 2 })).toHaveText(first);
+
+    await app.getByRole("button", { name: "← RETOUR" }).click();
+    await expect(
+      app.getByRole("button", { name: "TIRER UN FILM" }),
+    ).toBeVisible();
+  });
 });
