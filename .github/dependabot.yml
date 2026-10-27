@@ -8,7 +8,8 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     ignore:
-      # Types follow the Node actually run (22: package.json engines, CI).
+      # Types follow the Node that runs the app: 24 on Vercel and in CI
+      # (package.json engines). Bump them together when moving to Node 26.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
       # TypeScript 7 waits for typescript-eslint to support it (peer < 6.1).
