@@ -24,8 +24,8 @@ Appli perso de Thomas et sa copine : on swipe des films TMDB dans une liste « �
 ## Pièges connus (déjà mordus)
 
 - **`npm start` se branche sur la base de PROD** : en mode production, Next charge `.env.production.local` (secrets Turso). Pour tester un build en local, toujours `npm run start:local`.
-- **Migration avant push** : le build Vercel ne migre pas. Tout changement de schéma = `DATABASE_URL=… DATABASE_AUTH_TOKEN=… npm run db:migrate` (valeurs de `.env.production.local`) **avant** de pousser sur `main`, sinon la prod lit des colonnes absentes et tout casse. Sauvegarder la table avant (voir `docs/releases/v1.2/deliver.sh`).
-- **Push sur `main` = déploiement en prod** (auto-deploy Vercel). Pas de branche de preview configurée.
+- **Push sur `main` = mise en prod, mais seulement via GitHub Actions** (`.github/workflows/ci.yml`) : `npm run ci` vert, puis sauvegarde de la table (artefact 90 jours), migration Turso, déploiement Vercel, test de fumée (`scripts/smoke-prod.sh`), et retour arrière automatique si la fumée échoue. L'auto-deploy Git de Vercel est coupé (`vercel.json`). Ne jamais déployer à la main (`vercel --prod`) ni migrer la prod à la main.
+- **Migrations rétrocompatibles** : la migration passe _avant_ le nouveau code, pendant que l'ancien sert encore. Ajouter des colonnes (nullables ou avec défaut), jamais renommer ni supprimer dans la même version ; supprimer dans une version suivante.
 - **Next 16 ≠ ce que tu connais** (voir AGENTS.md) : `src/proxy.ts` remplace `middleware`, `cacheComponents` est actif (tout accès à `searchParams`, `cookies()`, `connection()` doit être sous un `<Suspense>`, sinon le build échoue), `PageProps<"/route">` est global.
 - **Le proxy valide l'environnement à chaque requête** : une variable invalide (ex. `CRON_SECRET` < 16 caractères) met **tout** en 500, `/unlock` compris.
 - Ne jamais afficher ni committer `ACCESS_CODE`, `CRON_SECRET`, les jetons TMDB / Turso.
@@ -71,7 +71,7 @@ Concrètement, sur ce repo :
 
 1. Le comportement est testé au bon niveau : logique pure → test unitaire ; action serveur ou base → test fonctionnel (`tests/functional/`) ; parcours utilisateur → scénario e2e (`e2e/`).
 2. `npm run ci` passe en local (le hook pre-push le relance de toute façon).
-3. Tout changement d'UI est vérifié dans un vrai navigateur sur plusieurs formats ; un refactor ne doit **rien** changer à l'écran (comparer des captures avant/après).
+3. Tout changement d'UI est vérifié dans un vrai navigateur sur plusieurs formats. Les captures de référence (`e2e/visual.spec.ts`) le font automatiquement : un refactor ne doit en casser aucune ; un changement voulu se valide avec `npm run test:e2e -- --update-snapshots` puis en **regardant** les nouvelles images avant de les commiter.
 4. Le `CLAUDE.md` et la spec sont à jour si une règle ou une version change.
 
 ## Conventions
@@ -84,7 +84,7 @@ Concrètement, sur ce repo :
 
 ## Qualité et tests
 
-- **CI locale** (lefthook, installé par `npm install`) : `pre-commit` formate et lint les fichiers indexés ; `pre-push` lance `npm run ci` (format, lint, types, doublons, code mort, tests + couverture, build + e2e, ~3 min). Ne jamais pousser au rouge ni contourner (`--no-verify`, `LEFTHOOK=0`) sans raison dite à Thomas. GitHub Actions rejoue `npm run ci` en filet.
+- **CI locale** (lefthook, installé par `npm install`) : `pre-commit` formate et lint les fichiers indexés ; `pre-push` lance `npm run ci` (format, lint, types, doublons, code mort, tests + couverture, build + e2e, ~3 min). Ne jamais pousser au rouge ni contourner (`--no-verify`, `LEFTHOOK=0`) sans raison dite à Thomas. GitHub Actions rejoue `npm run ci` puis déploie (voir « Pièges »). Dependabot ouvre chaque lundi une PR de mises à jour : la fusionner si la CI est verte.
 - **Couverture** (`vitest.config.ts`, seuils 95/95/95/90, actuellement 100 %) : tous les `.ts` de `src/` sauf hooks et câblage, donc tout nouveau module y entre seul. `docs/coverage.md` est mis à jour à la main.
 - **Tests UI** : Testing Library, requêtes par rôle et texte visible, pas de détails d'implémentation.
 - **Tests fonctionnels** (`tests/functional/`) : `startServerStack()` donne une vraie base SQLite et le faux TMDB ; on appelle les vraies actions serveur.
@@ -96,6 +96,6 @@ Concrètement, sur ce repo :
 
 1. Section de spec, puis code par petites étapes testées et commitées.
 2. Build local + vérification navigateur (`npm run start:local`).
-3. Si le schéma change : sauvegarde + migration de la prod **avant** le push.
-4. `npm version <x.y.z> --no-git-tag-version`, commit, tag `vX.Y.Z`, push `main` (+ `--tags`), vérifier la prod.
+3. Si le schéma change : `npm run db:generate`, migration rétrocompatible (voir plus haut) ; la CI la passera en prod.
+4. `npm version <x.y.z> --no-git-tag-version`, commit, tag `vX.Y.Z`, `git push origin main --tags`, puis suivre le run : `gh run watch`.
 5. Release note riso dans `docs/releases/` si Thomas en veut une (une image PNG à copier-coller marche le mieux).
