@@ -1,8 +1,6 @@
 import "server-only";
 import type { z } from "zod";
 
-const BASE_URL = "https://api.themoviedb.org/3";
-
 export class TmdbError extends Error {
   constructor(
     readonly status: number | null,
@@ -29,6 +27,7 @@ export interface TmdbClient {
 
 export function createTmdbClient(opts: {
   accessToken: string;
+  baseUrl: string;
   fetchImpl?: typeof fetch;
 }): TmdbClient {
   const fetchImpl = opts.fetchImpl ?? fetch;
@@ -51,7 +50,7 @@ export function createTmdbClient(opts: {
 
       let response: Response;
       try {
-        response = await fetchImpl(`${BASE_URL}${path}?${query}`, init);
+        response = await fetchImpl(`${opts.baseUrl}${path}?${query}`, init);
       } catch {
         throw new TmdbError(null, "TMDB request failed");
       }

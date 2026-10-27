@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { parseServerEnv } from "./env";
+import { describe, expect, it, vi } from "vitest";
+import { getServerEnv, parseServerEnv } from "./env";
 
 describe("parseServerEnv", () => {
   it("accepte une config locale sans auth token", () => {
@@ -11,9 +11,20 @@ describe("parseServerEnv", () => {
       }),
     ).toEqual({
       TMDB_ACCESS_TOKEN: "tok",
+      TMDB_API_URL: "https://api.themoviedb.org/3",
       DATABASE_URL: "file:local.db",
       ACCESS_CODE: "pop corn ce soir",
     });
+  });
+  it("accepte une autre adresse TMDB (faux TMDB des tests e2e)", () => {
+    expect(
+      parseServerEnv({
+        TMDB_ACCESS_TOKEN: "tok",
+        TMDB_API_URL: "http://127.0.0.1:3101/3",
+        DATABASE_URL: "file:e2e.db",
+        ACCESS_CODE: "pop corn ce soir",
+      }).TMDB_API_URL,
+    ).toBe("http://127.0.0.1:3101/3");
   });
   it("refuse un token TMDB manquant ou vide", () => {
     expect(() =>
@@ -54,7 +65,9 @@ describe("parseServerEnv", () => {
       DATABASE_URL: "file:local.db",
       ACCESS_CODE: "pop corn ce soir",
     };
-    expect(parseServerEnv({ ...base, CRON_SECRET: "" })).toEqual(base);
+    expect(parseServerEnv({ ...base, CRON_SECRET: "" })).not.toHaveProperty(
+      "CRON_SECRET",
+    );
     expect(
       parseServerEnv({ ...base, CRON_SECRET: "0123456789abcdef" }).CRON_SECRET,
     ).toBe("0123456789abcdef");
@@ -68,5 +81,19 @@ describe("parseServerEnv", () => {
         CRON_SECRET: "court",
       }),
     ).toThrow(/CRON_SECRET must be at least 16 characters/);
+  });
+});
+
+describe("getServerEnv", () => {
+  it("lit process.env une seule fois", () => {
+    vi.stubEnv("TMDB_ACCESS_TOKEN", "tok");
+    vi.stubEnv("DATABASE_URL", "file:local.db");
+    vi.stubEnv("ACCESS_CODE", "pop corn ce soir");
+    const first = getServerEnv();
+    vi.stubEnv("DATABASE_URL", "file:autre.db");
+
+    expect(getServerEnv()).toBe(first);
+    expect(first.DATABASE_URL).toBe("file:local.db");
+    vi.unstubAllEnvs();
   });
 });

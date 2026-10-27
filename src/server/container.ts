@@ -25,8 +25,10 @@ export function getMoviesRepository(): MoviesRepository {
 }
 
 export function getTmdbClient(): TmdbClient {
+  const env = getServerEnv();
   tmdbClient ??= createTmdbClient({
-    accessToken: getServerEnv().TMDB_ACCESS_TOKEN,
+    accessToken: env.TMDB_ACCESS_TOKEN,
+    baseUrl: env.TMDB_API_URL,
   });
   return tmdbClient;
 }

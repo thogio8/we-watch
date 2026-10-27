@@ -3,6 +3,8 @@ import { z } from "zod";
 
 const serverEnvSchema = z.object({
   TMDB_ACCESS_TOKEN: z.string().min(1, "TMDB_ACCESS_TOKEN is required"),
+  // Only the end-to-end tests change it, to point at a local fake TMDB.
+  TMDB_API_URL: z.url().default("https://api.themoviedb.org/3"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   // An empty value in .env files means "not set".
   DATABASE_AUTH_TOKEN: z

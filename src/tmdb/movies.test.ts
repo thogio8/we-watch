@@ -12,12 +12,14 @@ import {
 } from "./movies";
 import { tmdbMovieDetailsSchema } from "./schemas";
 
+const TMDB = "https://api.themoviedb.org/3";
+
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200 });
 }
 
 function clientWith(fetchImpl: typeof fetch) {
-  return createTmdbClient({ accessToken: "tok", fetchImpl });
+  return createTmdbClient({ accessToken: "tok", baseUrl: TMDB, fetchImpl });
 }
 
 describe("toSnapshot", () => {
