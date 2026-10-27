@@ -51,7 +51,7 @@
     "knip": "^6.43.0",
     "lefthook": "^2.2.2",
     "prettier": "^3.9.10",
-    "typescript": "^5",
+    "typescript": "^7",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.5"
   },
