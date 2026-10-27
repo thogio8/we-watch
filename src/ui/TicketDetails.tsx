@@ -18,6 +18,8 @@ interface TicketDetailsProps {
   clampTitle?: boolean;
   /** The lying ticket carries a stamp at the top right of the stub. */
   stampRoom?: boolean;
+  /** The movie page has room for the whole summary, whatever the screen. */
+  fullOverview?: boolean;
 }
 
 /** The stub of a movie ticket: title, meta, platforms, trailer, summary. */
@@ -26,6 +28,7 @@ export function TicketDetails({
   platforms,
   clampTitle = false,
   stampRoom = false,
+  fullOverview = false,
 }: TicketDetailsProps) {
   const titleClasses = cx(
     styles.title,
@@ -40,7 +43,11 @@ export function TicketDetails({
       <p className={styles.meta}>{movieMeta(movie)}</p>
       {showTags && <ProviderTags providers={movie.providers} />}
       <TrailerLink trailerKey={movie.trailerKey} title={movie.title} />
-      {movie.overview && <p className={styles.overview}>{movie.overview}</p>}
+      {movie.overview && (
+        <p className={cx(styles.overview, fullOverview && styles.full)}>
+          {movie.overview}
+        </p>
+      )}
     </>
   );
 }

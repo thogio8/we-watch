@@ -32,6 +32,18 @@ beforeEach(async () => {
 const ids = (movies: { tmdbId: number }[]) => movies.map((m) => m.tmdbId);
 
 describe("moviesRepository", () => {
+  it("findInList retrouve un film à voir ou vu, pas un film refusé", async () => {
+    await repo.apply("swipe_keep", 1, snapshot(1));
+    await repo.apply("swipe_reject", 2, snapshot(2));
+
+    expect(await repo.findInList(1)).toMatchObject({
+      tmdbId: 1,
+      status: "to_watch",
+    });
+    expect(await repo.findInList(2)).toBeNull();
+    expect(await repo.findInList(3)).toBeNull();
+  });
+
   it("swipe_keep insère en to_watch", async () => {
     expect(await repo.apply("swipe_keep", 1, snapshot(1))).toBe("applied");
     const [movie] = await repo.listByStatus("to_watch");

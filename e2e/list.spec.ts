@@ -32,4 +32,31 @@ test.describe("liste", () => {
 
     await expect(app.getByRole("tab", { name: /À VOIR · 0/ })).toBeVisible();
   });
+
+  test("la fiche d'un film : détail, générique, puis « vu » depuis la fiche", async ({
+    app,
+  }) => {
+    await swipe(app, ["keep"]);
+    await app.goto("/list");
+
+    await app.getByRole("link", { name: /Whiplash/ }).click();
+
+    await expect(app).toHaveURL(/\/list\/244786$/);
+    await expect(app.getByRole("heading", { name: "Whiplash" })).toBeVisible();
+    await expect(app.getByText("Damien Chazelle")).toBeVisible();
+    await expect(app.getByText("Miles Teller, J.K. Simmons")).toBeVisible();
+
+    await app.getByRole("button", { name: "ON L’A VU" }).click();
+
+    await expect(app).toHaveURL(/\/list$/);
+    await expect(app.getByRole("tab", { name: /VUS · 1/ })).toBeVisible();
+  });
+
+  test("une fiche hors de la liste : introuvable", async ({ app }) => {
+    await app.goto("/list/129");
+
+    await expect(
+      app.getByRole("heading", { name: "FILM INTROUVABLE" }),
+    ).toBeVisible();
+  });
 });

@@ -1,4 +1,4 @@
-import { CATALOG } from "./catalog";
+import { CATALOG, creditsOf } from "./catalog";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -20,12 +20,17 @@ export function setTmdbDown(value: boolean): void {
 }
 
 /**
- * A tiny TMDB v3: movie details, discover (every deck gets the whole
+ * A tiny TMDB v3: movie details and credits, discover (every deck gets the whole
  * catalogue on one page) and title search. Anything else is a 404.
  */
 export function fakeTmdb(url: string | URL): Response {
   if (down) return json({ success: false }, 503);
   const { pathname, searchParams } = new URL(url);
+  const credits = /\/movie\/(\d+)\/credits$/.exec(pathname);
+  if (credits) {
+    const found = creditsOf(Number(credits[1]));
+    return found ? json(found) : json({ success: false }, 404);
+  }
   const movie = /\/movie\/(\d+)$/.exec(pathname);
   if (movie) {
     const found = CATALOG.find((m) => m.id === Number(movie[1]));

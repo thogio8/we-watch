@@ -63,3 +63,11 @@
     display: none;
   }
 }
+
+/* Movie page: the whole summary, beating every clamp above (two classes). */
+.overview.full {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  line-clamp: none;
+}

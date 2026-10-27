@@ -58,6 +58,10 @@ test.describe("rendu visuel", () => {
       await expect(listTitles(app)).toHaveCount(3);
       await shoot(app, `${format.name}-5-liste`);
 
+      await app.goto("/list/496243");
+      await expect(app.getByText("Bong Joon-ho")).toBeVisible();
+      await shoot(app, `${format.name}-5b-fiche`);
+
       await app.context().clearCookies();
       await app.goto("/unlock");
       await shoot(app, `${format.name}-6-code`);

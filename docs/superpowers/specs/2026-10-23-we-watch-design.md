@@ -265,7 +265,7 @@ Demandes de Thomas après usage.
 ### 14.2 Fiche d'un film (LISTE)
 
 - Toucher une ligne de la liste ouvre **une page** `/list/<tmdbId>` (le retour du téléphone ramène à la liste).
-- Contenu : grand ticket (affiche, titre, année, durée, note, genres en clair, plateformes, bande-annonce), résumé **complet** ; **réalisation et têtes d'affiche** (TMDB `credits`, 24 h de cache ; absent si TMDB ne répond pas, la fiche s'affiche quand même) ; **notre histoire** du film (« Ajouté le … », « Vu le … ») ; **actions** selon le statut (ON L'A VU / À REVOIR / RETIRER DE LA LISTE), qui ramènent à la liste.
+- Contenu : grand ticket (affiche, titre, année, durée, note, genres en clair, plateformes, bande-annonce), résumé **complet** ; **réalisation et têtes d'affiche** (TMDB `credits`, 24 h de cache ; absent si TMDB ne répond pas, la fiche s'affiche quand même) ; **notre histoire** du film (« Ajouté le … », « Vu le … ») ; **actions** selon le statut (ON L'A VU / À REVOIR / RETIRER), qui ramènent à la liste.
 - Un film absent de la liste (refusé, inconnu) : page « introuvable » avec retour à la liste.
 
 ### 14.3 Versions

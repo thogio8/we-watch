@@ -1,4 +1,4 @@
-import type { TmdbMovieDetails } from "@/tmdb/schemas";
+import type { TmdbCredits, TmdbMovieDetails } from "@/tmdb/schemas";
 
 type Provider = "Netflix" | "Netflix Standard with Ads" | "Prime" | "Canal+";
 
@@ -17,6 +17,8 @@ interface Entry {
   genres: number[];
   providers: Provider[];
   trailer?: string;
+  director: string;
+  cast: string[];
 }
 
 /** Answers TMDB would give for a movie, trimmed to what we read. */
@@ -61,6 +63,8 @@ const ENTRIES: Entry[] = [
   {
     id: 244786,
     title: "Whiplash",
+    director: "Damien Chazelle",
+    cast: ["Miles Teller", "J.K. Simmons"],
     date: "2014-10-08",
     runtime: 107,
     genres: [18, 10402],
@@ -70,6 +74,8 @@ const ENTRIES: Entry[] = [
   {
     id: 129,
     title: "Le Voyage de Chihiro",
+    director: "Hayao Miyazaki",
+    cast: ["Rumi Hiiragi", "Miyu Irino"],
     date: "2001-07-20",
     runtime: 125,
     genres: [16, 14, 10751],
@@ -78,6 +84,14 @@ const ENTRIES: Entry[] = [
   {
     id: 496243,
     title: "Parasite",
+    director: "Bong Joon-ho",
+    cast: [
+      "Song Kang-ho",
+      "Lee Sun-kyun",
+      "Cho Yeo-jeong",
+      "Choi Woo-shik",
+      "Park So-dam",
+    ],
     date: "2019-05-30",
     runtime: 132,
     genres: [35, 53, 18],
@@ -86,6 +100,8 @@ const ENTRIES: Entry[] = [
   {
     id: 194,
     title: "Le Fabuleux Destin d'Amélie Poulain",
+    director: "Jean-Pierre Jeunet",
+    cast: ["Audrey Tautou", "Mathieu Kassovitz"],
     date: "2001-04-25",
     runtime: 122,
     genres: [35, 10749],
@@ -94,6 +110,8 @@ const ENTRIES: Entry[] = [
   {
     id: 27205,
     title: "Inception",
+    director: "Christopher Nolan",
+    cast: ["Leonardo DiCaprio", "Joseph Gordon-Levitt"],
     date: "2010-07-15",
     runtime: 148,
     genres: [28, 878],
@@ -102,3 +120,16 @@ const ENTRIES: Entry[] = [
 ];
 
 export const CATALOG: readonly TmdbMovieDetails[] = ENTRIES.map(details);
+
+/** TMDB /movie/<id>/credits of a catalogue movie, null if unknown. */
+export function creditsOf(tmdbId: number): TmdbCredits | null {
+  const entry = ENTRIES.find((e) => e.id === tmdbId);
+  if (!entry) return null;
+  return {
+    cast: entry.cast.map((name, order) => ({ name, order })),
+    crew: [
+      { name: entry.director, job: "Director" },
+      { name: "Une scripte", job: "Script Supervisor" },
+    ],
+  };
+}

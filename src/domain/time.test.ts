@@ -3,6 +3,7 @@ import {
   computeEndTime,
   formatClock,
   formatRuntime,
+  formatLongDate,
   formatShortDate,
 } from "./time";
 
@@ -24,6 +25,15 @@ describe("time", () => {
     expect(formatRuntime(47)).toBe("0h47");
     expect(formatRuntime(null)).toBeNull();
     expect(formatRuntime(0)).toBeNull();
+  });
+  it("formatLongDate écrit la date en toutes lettres, heure de Paris", () => {
+    expect(formatLongDate(new Date("2026-10-27T12:00:00Z"))).toBe(
+      "27 octobre 2026",
+    );
+    // 23 h 30 UTC on the 31st is already the 1st in Paris.
+    expect(formatLongDate(new Date("2026-12-31T23:30:00Z"))).toBe(
+      "1 janvier 2027",
+    );
   });
   it("formatShortDate JJ/MM", () =>
     expect(formatShortDate(new Date(2026, 9, 4))).toBe("04/10"));

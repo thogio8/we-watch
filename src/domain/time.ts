@@ -24,3 +24,16 @@ export function formatRuntime(minutes: number | null): string | null {
 export function formatShortDate(date: Date): string {
   return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
 }
+
+const LONG_DATE = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  // Server and phone agree: the server renders it, in UTC otherwise.
+  timeZone: "Europe/Paris",
+});
+
+/** « 27 octobre 2026 », in Paris time. */
+export function formatLongDate(date: Date): string {
+  return LONG_DATE.format(date);
+}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Poster } from "@/ui/Poster";
 import styles from "./MovieRow.module.css";
@@ -14,6 +15,8 @@ interface MovieRowProps {
   muted?: boolean;
   /** Saving: the row is faded and cannot be tapped again. */
   busy?: boolean;
+  /** The movie's page: poster and title open it (the button stays apart). */
+  href?: string;
 }
 
 /** The rows of a list or of the search results. */
@@ -40,10 +43,11 @@ export function MovieRow({
   action,
   muted = false,
   busy = false,
+  href,
 }: MovieRowProps) {
   const classes = cx(styles.row, muted && styles.muted, busy && styles.busy);
-  return (
-    <li className={classes} aria-busy={busy || undefined} inert={busy}>
+  const content = (
+    <>
       <div className={styles.thumb}>
         <Poster path={posterPath} title={title} size="w92" />
       </div>
@@ -51,6 +55,17 @@ export function MovieRow({
         <h2 className={styles.title}>{title}</h2>
         {children}
       </div>
+    </>
+  );
+  return (
+    <li className={classes} aria-busy={busy || undefined} inert={busy}>
+      {href ? (
+        <Link href={href} className={styles.link}>
+          {content}
+        </Link>
+      ) : (
+        content
+      )}
       <div className={styles.action}>{action}</div>
     </li>
   );

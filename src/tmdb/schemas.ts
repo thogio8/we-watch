@@ -52,3 +52,10 @@ export const tmdbMovieDetailsSchema = z.object({
 });
 
 export type TmdbMovieDetails = z.infer<typeof tmdbMovieDetailsSchema>;
+
+export const tmdbCreditsSchema = z.object({
+  cast: z.array(z.object({ name: z.string(), order: z.number() })),
+  crew: z.array(z.object({ name: z.string(), job: z.string() })),
+});
+
+export type TmdbCredits = z.infer<typeof tmdbCreditsSchema>;

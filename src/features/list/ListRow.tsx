@@ -29,6 +29,7 @@ export function ListRow({ movie, run, onRemove, onUnwatch }: ListRowProps) {
         posterPath={movie.posterPath}
         muted
         busy={busy}
+        href={`/list/${movie.tmdbId}`}
         action={
           <RowButton
             tone="paper"
@@ -52,6 +53,7 @@ export function ListRow({ movie, run, onRemove, onUnwatch }: ListRowProps) {
       title={movie.title}
       posterPath={movie.posterPath}
       busy={busy}
+      href={`/list/${movie.tmdbId}`}
       action={
         <RowButton
           tone="paper"

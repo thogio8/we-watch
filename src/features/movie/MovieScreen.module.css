@@ -1,0 +1,77 @@
+/* Movie page (spec §14.2): the ticket in full, then what TMDB and we know. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.back {
+  composes: textAction from "../../ui/TextAction.module.css";
+  align-self: flex-start;
+  text-decoration: none;
+}
+
+.ticket {
+  width: 100%;
+  max-width: var(--ticket-max);
+  margin-top: 6px;
+}
+
+.facts {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: var(--ticket-max);
+  margin: 26px 0 0;
+}
+
+.fact {
+  padding-bottom: 10px;
+  border-bottom: var(--border-thin-dashed);
+}
+
+.fact dt {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+}
+
+.fact dd {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.failed {
+  margin: 14px 0 0;
+  color: var(--pink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+
+.dropped {
+  margin-top: 52px;
+}
+
+.note {
+  margin: 8px 0 0;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* Wide column: the facts in two columns under the lying ticket. */
+@container shell (min-width: 640px) {
+  .facts {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 32px;
+  }
+}

@@ -11,6 +11,8 @@ import type { Database } from "./create-database";
 import { movies } from "./schema";
 
 export interface MoviesRepository {
+  /** A movie of our list (« à voir » or « vu »), null otherwise. */
+  findInList(tmdbId: number): Promise<Movie | null>;
   /** to_watch: decidedAt desc; watched: watchedAt desc. */
   listByStatus(status: "to_watch" | "watched"): Promise<Movie[]>;
   counts(): Promise<{ toWatch: number; watched: number }>;
@@ -35,6 +37,19 @@ export interface MoviesRepository {
 
 export function createMoviesRepository(db: Database): MoviesRepository {
   return {
+    async findInList(tmdbId) {
+      const [movie] = await db
+        .select()
+        .from(movies)
+        .where(
+          and(
+            eq(movies.tmdbId, tmdbId),
+            inArray(movies.status, ["to_watch", "watched"]),
+          ),
+        );
+      return movie ?? null;
+    },
+
     async listByStatus(status) {
       const order = status === "watched" ? movies.watchedAt : movies.decidedAt;
       return db
