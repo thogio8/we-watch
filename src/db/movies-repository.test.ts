@@ -20,6 +20,8 @@ function snapshot(
     posterPath: `/p${id}.jpg`,
     voteAverage: 7.5,
     providers: [],
+    genreIds: [],
+    trailerKey: null,
     ...overrides,
   };
 }
@@ -150,6 +152,74 @@ describe("moviesRepository", () => {
     const statuses = await repo.statusesOf([1, 99]);
     expect([...statuses]).toEqual([[1, "to_watch"]]);
     expect((await repo.statusesOf([])).size).toBe(0);
+  });
+});
+
+describe("moviesRepository V1.2", () => {
+  it("genres et bande-annonce aller-retour", async () => {
+    await repo.apply(
+      "swipe_keep",
+      1,
+      snapshot(1, { genreIds: [35, 18], trailerKey: "abc" }),
+    );
+    const [movie] = await repo.listByStatus("to_watch");
+    expect(movie).toMatchObject({ genreIds: [35, 18], trailerKey: "abc" });
+  });
+
+  it("refreshSnapshot remplace l'instantané sans toucher statut ni dates", async () => {
+    const t0 = new Date("2026-01-01T10:00:00Z");
+    const t1 = new Date("2026-01-02T10:00:00Z");
+    await repo.apply("swipe_keep", 1, snapshot(1), t0);
+    await repo.apply("mark_watched", 1, undefined, t1);
+    const providers = [{ id: 8, name: "Netflix", logoPath: null }];
+    expect(
+      await repo.refreshSnapshot(
+        snapshot(1, { providers, genreIds: [16], runtimeMinutes: 90 }),
+      ),
+    ).toBe("applied");
+    const [movie] = await repo.listByStatus("watched");
+    expect(movie).toMatchObject({
+      providers,
+      genreIds: [16],
+      runtimeMinutes: 90,
+      status: "watched",
+      decidedAt: t0,
+      watchedAt: t1,
+    });
+  });
+
+  it("refreshSnapshot sur un film absent ne crée rien", async () => {
+    expect(await repo.refreshSnapshot(snapshot(1))).toBe("noop");
+    expect(await repo.decidedIds()).toEqual(new Set());
+  });
+
+  it("idsWithStatus filtre par statut", async () => {
+    await repo.apply("swipe_keep", 1, snapshot(1));
+    await repo.apply("swipe_keep", 2, snapshot(2));
+    await repo.apply("swipe_reject", 3, snapshot(3));
+    await repo.apply("mark_watched", 2);
+    expect((await repo.idsWithStatus(["to_watch", "watched"])).sort()).toEqual([
+      1, 2,
+    ]);
+    expect(await repo.idsWithStatus([])).toEqual([]);
+  });
+
+  it("undoSwipe efface la décision du swipe", async () => {
+    await repo.apply("swipe_keep", 1, snapshot(1));
+    await repo.apply("swipe_reject", 2, snapshot(2));
+    expect(await repo.undoSwipe(1, "keep")).toBe("applied");
+    expect(await repo.undoSwipe(2, "reject")).toBe("applied");
+    expect(await repo.decidedIds()).toEqual(new Set());
+  });
+
+  it("undoSwipe ne touche pas un film dont le statut a changé", async () => {
+    await repo.apply("swipe_keep", 1, snapshot(1));
+    await repo.apply("mark_watched", 1);
+    await repo.apply("swipe_keep", 2, snapshot(2));
+    expect(await repo.undoSwipe(1, "keep")).toBe("noop");
+    expect(await repo.undoSwipe(2, "reject")).toBe("noop");
+    expect(await repo.undoSwipe(3, "keep")).toBe("noop");
+    expect(await repo.decidedIds()).toEqual(new Set([1, 2]));
   });
 });
 

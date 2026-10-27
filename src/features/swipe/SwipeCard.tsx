@@ -15,6 +15,7 @@ import { Poster } from "@/ui/Poster";
 import { ProviderTags } from "@/ui/ProviderTags";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
+import { TrailerLink } from "@/ui/TrailerLink";
 import type { SwipeDecision } from "./actions";
 import styles from "./SwipeCard.module.css";
 
@@ -177,6 +178,7 @@ export function SwipeCard({
           {movie.providers.length > 1 && (
             <ProviderTags providers={movie.providers} />
           )}
+          <TrailerLink trailerKey={movie.trailerKey} title={movie.title} />
           {movie.overview && (
             <p className={styles.overview}>{movie.overview}</p>
           )}

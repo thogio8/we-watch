@@ -1,6 +1,7 @@
 import "server-only";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { TmdbClient } from "./client";
+import { type DeckId, deckParams } from "./decks";
 import {
   type TmdbMovieDetails,
   tmdbDiscoverSchema,
@@ -18,6 +19,21 @@ const DISCOVER_REVALIDATE_SECONDS = 3600;
 export interface DiscoverPage {
   ids: number[];
   totalPages: number;
+}
+
+type TmdbVideo = NonNullable<TmdbMovieDetails["videos"]>["results"][number];
+
+/** A YouTube trailer: French first, then official, then TMDB's order. */
+function pickTrailerKey(videos: readonly TmdbVideo[]): string | null {
+  const trailers = videos.filter(
+    (v) => v.site === "YouTube" && v.type === "Trailer",
+  );
+  const rank = (v: TmdbVideo) =>
+    (v.iso_639_1 === "fr" ? 0 : 2) + (v.official ? 0 : 1);
+  const [best] = trailers
+    .map((video, index) => ({ video, index }))
+    .sort((a, b) => rank(a.video) - rank(b.video) || a.index - b.index);
+  return best?.video.key ?? null;
 }
 
 export function toSnapshot(details: TmdbMovieDetails): MovieSnapshot {
@@ -38,21 +54,19 @@ export function toSnapshot(details: TmdbMovieDetails): MovieSnapshot {
         name: p.provider_name,
         logoPath: p.logo_path,
       })),
+    genreIds: (details.genres ?? []).map((g) => g.id),
+    trailerKey: pickTrailerKey(details.videos?.results ?? []),
   };
 }
 
-export async function discoverTopRated(
+export async function discoverDeck(
   client: TmdbClient,
+  deck: DeckId,
   page: number,
 ): Promise<DiscoverPage> {
   const data = await client.get(
     "/discover/movie",
-    {
-      sort_by: "vote_average.desc",
-      "vote_count.gte": 1000,
-      include_adult: false,
-      page,
-    },
+    { ...deckParams(deck), include_adult: false, page },
     tmdbDiscoverSchema,
     { revalidateSeconds: DISCOVER_REVALIDATE_SECONDS },
   );
@@ -68,7 +82,12 @@ export async function getMovieSnapshot(
 ): Promise<MovieSnapshot> {
   const details = await client.get(
     `/movie/${tmdbId}`,
-    { append_to_response: "watch/providers" },
+    {
+      append_to_response: "watch/providers,videos",
+      // Appended videos follow `language` (fr-FR) unless widened: few films
+      // have a French trailer, so English ones are the fallback.
+      include_video_language: "fr,en",
+    },
     tmdbMovieDetailsSchema,
     { revalidateSeconds: DETAILS_REVALIDATE_SECONDS },
   );

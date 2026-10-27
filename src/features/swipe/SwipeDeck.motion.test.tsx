@@ -18,6 +18,8 @@ const card = (tmdbId: number, title: string): MovieSnapshot => ({
   posterPath: null,
   voteAverage: 8.4,
   providers: [],
+  genreIds: [],
+  trailerKey: null,
 });
 
 const WHIPLASH = card(244786, "WHIPLASH");
@@ -48,7 +50,7 @@ afterEach(() => {
 
 describe("SwipeDeck (animations actives)", () => {
   it("un double tap pendant l'envol ne décide qu'une carte", async () => {
-    const decide = vi.fn(() => Promise.resolve());
+    const decide = vi.fn(() => Promise.resolve("applied" as const));
     const user = userEvent.setup();
     render(
       <SwipeDeck
@@ -56,7 +58,9 @@ describe("SwipeDeck (animations actives)", () => {
           ok: true,
           batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
         }}
+        deck="top"
         decide={decide}
+        undo={() => Promise.resolve("applied")}
         loadMore={() => Promise.resolve({ ok: false })}
       />,
     );
@@ -70,14 +74,14 @@ describe("SwipeDeck (animations actives)", () => {
     // The save fails while the card is still flying out (~350 ms): it comes
     // back, and with two cards no other exit is left to release the buttons.
     const decide = vi
-      .fn<(tmdbId: number, decision: SwipeDecision) => Promise<void>>()
+      .fn<(tmdbId: number, decision: SwipeDecision) => Promise<"applied">>()
       .mockImplementationOnce(
         () =>
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error("offline")), 100),
           ),
       )
-      .mockResolvedValue(undefined);
+      .mockResolvedValue("applied");
     const user = userEvent.setup();
     render(
       <SwipeDeck
@@ -85,7 +89,9 @@ describe("SwipeDeck (animations actives)", () => {
           ok: true,
           batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
         }}
+        deck="top"
         decide={decide}
+        undo={() => Promise.resolve("applied")}
         loadMore={() => Promise.resolve({ ok: false })}
       />,
     );

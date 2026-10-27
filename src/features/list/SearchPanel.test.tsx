@@ -29,6 +29,8 @@ function result(
     posterPath: null,
     voteAverage: 7.8,
     providers: [{ id: 8, name: "Netflix", logoPath: null }],
+    genreIds: [],
+    trailerKey: null,
     status,
     ...overrides,
   };

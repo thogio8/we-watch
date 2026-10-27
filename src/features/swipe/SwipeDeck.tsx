@@ -2,9 +2,12 @@
 
 import { AnimatePresence, useReducedMotion } from "motion/react";
 import { useEffect, useReducer, useRef, useState } from "react";
+import type { ApplyResult } from "@/db/movies-repository";
 import type { MovieSnapshot } from "@/domain/movie";
+import { DECKS, DEFAULT_DECK, type DeckId, deckLabel } from "@/tmdb/decks";
 import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
+import { ChipLink } from "@/ui/Chip";
 import { Lines } from "@/ui/Lines";
 import { Ticket } from "@/ui/Ticket";
 import type {
@@ -12,20 +15,27 @@ import type {
   LoadMoreResult,
   loadMoreCards,
   SwipeDecision,
+  undoSwipe,
 } from "./actions";
 import type { DeckBatch } from "./deck";
 import { POSTER_HEIGHT, SwipeCard } from "./SwipeCard";
 import styles from "./SwipeDeck.module.css";
 
 interface SwipeDeckProps {
+  deck: DeckId;
   initial: LoadMoreResult;
   decide: typeof decideSwipe;
+  undo: typeof undoSwipe;
   loadMore: typeof loadMoreCards;
 }
 
 /** Below this many queued cards, the next page is fetched. */
 const PRELOAD_BELOW = 3;
 const TOAST_MS = 4000;
+/** How long « ↺ ANNULER » stays offered after a swipe. */
+const UNDO_MS = 5000;
+
+type Toast = "save_failed" | "undo_failed";
 
 interface DeckState {
   queue: MovieSnapshot[];
@@ -37,17 +47,30 @@ interface DeckState {
   decided: ReadonlySet<number>;
   /** Direction the last decided card leaves in. */
   lastDecision: SwipeDecision;
-  /** Id of the failed save currently reported, null when no message. */
-  toast: number | null;
+  /** The swipe « ↺ ANNULER » would take back, null once dismissed. */
+  undoable: { card: MovieSnapshot; decision: SwipeDecision } | null;
+  /** Failure currently reported, null when no message. */
+  toast: Toast | null;
 }
 
 type DeckAction =
   | { type: "loaded"; batch: DeckBatch }
   | { type: "load_failed" }
   | { type: "retry" }
-  | { type: "decided"; tmdbId: number; decision: SwipeDecision }
+  | { type: "decided"; card: MovieSnapshot; decision: SwipeDecision }
   | { type: "decide_failed"; card: MovieSnapshot }
+  | { type: "undone" }
+  | { type: "undo_failed" }
+  | { type: "dismiss_undo" }
   | { type: "dismiss_toast" };
+
+/** The card is back on top, undecided (failed save or « ↺ ANNULER »). */
+function putBack(state: DeckState, card: MovieSnapshot): DeckState {
+  const decided = new Set(state.decided);
+  decided.delete(card.tmdbId);
+  const others = state.queue.filter((c) => c.tmdbId !== card.tmdbId);
+  return { ...state, queue: [card, ...others], decided };
+}
 
 function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
@@ -77,25 +100,31 @@ function deckReducer(state: DeckState, action: DeckAction): DeckState {
     case "decided":
       return {
         ...state,
-        queue: state.queue.filter((card) => card.tmdbId !== action.tmdbId),
-        decided: new Set(state.decided).add(action.tmdbId),
+        queue: state.queue.filter((card) => card.tmdbId !== action.card.tmdbId),
+        decided: new Set(state.decided).add(action.card.tmdbId),
         lastDecision: action.decision,
+        undoable: { card: action.card, decision: action.decision },
         toast: null,
       };
     case "decide_failed": {
-      // The card comes back on top, to be decided again.
-      const decided = new Set(state.decided);
-      decided.delete(action.card.tmdbId);
-      const others = state.queue.filter(
-        (card) => card.tmdbId !== action.card.tmdbId,
-      );
+      // The card comes back on top, to be decided again: nothing to undo.
+      const undoable =
+        state.undoable?.card.tmdbId === action.card.tmdbId
+          ? null
+          : state.undoable;
       return {
-        ...state,
-        queue: [action.card, ...others],
-        decided,
-        toast: action.card.tmdbId,
+        ...putBack(state, action.card),
+        undoable,
+        toast: "save_failed",
       };
     }
+    case "undone":
+      if (state.undoable === null) return state;
+      return { ...putBack(state, state.undoable.card), undoable: null };
+    case "undo_failed":
+      return { ...state, toast: "undo_failed" };
+    case "dismiss_undo":
+      return { ...state, undoable: null };
     case "dismiss_toast":
       return { ...state, toast: null };
   }
@@ -108,6 +137,7 @@ function initDeck(initial: LoadMoreResult): DeckState {
     loadFailed: false,
     decided: new Set(),
     lastDecision: "keep",
+    undoable: null,
     toast: null,
   };
   return initial.ok
@@ -194,18 +224,61 @@ function CardStack({ queue, lastDecision, onDecide }: CardStackProps) {
   );
 }
 
-export function SwipeDeck({ initial, decide, loadMore }: SwipeDeckProps) {
+const TOASTS: Record<Toast, string> = {
+  save_failed: "PAS RÉUSSI À ENREGISTRER, RÉESSAIE",
+  undo_failed: "PAS RÉUSSI À ANNULER",
+};
+
+const deckHref = (id: DeckId) =>
+  id === DEFAULT_DECK ? "/swipe" : `/swipe?deck=${id}`;
+
+/** Themed decks as a scrolling row of chips; the deck lives in the URL. */
+function DeckChips({ deck }: { deck: DeckId }) {
+  return (
+    <nav className={styles.decks} aria-label="Thèmes">
+      {DECKS.map(({ id, label }) => (
+        <ChipLink key={id} href={deckHref(id)} current={id === deck}>
+          {label}
+        </ChipLink>
+      ))}
+    </nav>
+  );
+}
+
+export function SwipeDeck({
+  deck,
+  initial,
+  decide,
+  undo,
+  loadMore,
+}: SwipeDeckProps) {
   const [state, dispatch] = useReducer(deckReducer, initial, initDeck);
   const loading = useRef(false);
+  /**
+   * Last save or undo of each movie, so they reach the server in the order
+   * they were made: an undo waits for its save (and only undoes a swipe that
+   * applied), a new decision waits for the undo.
+   */
+  const ops = useRef(new Map<number, Promise<ApplyResult>>());
+  const chain = (
+    tmdbId: number,
+    next: (previous: ApplyResult) => Promise<ApplyResult>,
+  ) => {
+    const previous = ops.current.get(tmdbId) ?? Promise.resolve("noop");
+    // A failed operation was reported already: the next one starts afresh.
+    const op = previous.catch((): ApplyResult => "noop").then(next);
+    ops.current.set(tmdbId, op);
+    return op;
+  };
 
   // Keep a few cards ahead. A batch may bring no new card while pages remain
   // (all already decided): its new nextPage re-runs this effect.
-  const { queue, nextPage, loadFailed, toast } = state;
+  const { queue, nextPage, loadFailed, toast, undoable } = state;
   useEffect(() => {
     if (queue.length >= PRELOAD_BELOW || nextPage === null) return;
     if (loadFailed || loading.current) return;
     loading.current = true;
-    loadMore(nextPage).then(
+    loadMore(deck, nextPage).then(
       (result) => {
         loading.current = false;
         dispatch(
@@ -219,7 +292,7 @@ export function SwipeDeck({ initial, decide, loadMore }: SwipeDeckProps) {
         dispatch({ type: "load_failed" });
       },
     );
-  }, [queue.length, nextPage, loadFailed, loadMore]);
+  }, [queue.length, nextPage, loadFailed, loadMore, deck]);
 
   useEffect(() => {
     if (toast === null) return;
@@ -230,21 +303,39 @@ export function SwipeDeck({ initial, decide, loadMore }: SwipeDeckProps) {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  useEffect(() => {
+    if (undoable === null) return;
+    const timer = setTimeout(() => dispatch({ type: "dismiss_undo" }), UNDO_MS);
+    return () => clearTimeout(timer);
+  }, [undoable]);
+
   const decideCard = (card: MovieSnapshot, decision: SwipeDecision) => {
-    dispatch({ type: "decided", tmdbId: card.tmdbId, decision });
+    dispatch({ type: "decided", card, decision });
     // Optimistic: the card is gone already; it comes back if the save fails.
-    decide(card.tmdbId, decision).catch(() =>
+    chain(card.tmdbId, () => decide(card.tmdbId, decision)).catch(() =>
       dispatch({ type: "decide_failed", card }),
     );
+  };
+
+  const undoLast = () => {
+    if (undoable === null) return;
+    const { card, decision } = undoable;
+    dispatch({ type: "undone" });
+    // A swipe that did not apply (decided on another device) is not ours to
+    // erase: the card simply comes back.
+    chain(card.tmdbId, (saved) =>
+      saved === "applied"
+        ? undo(card.tmdbId, decision)
+        : Promise.resolve(saved),
+    ).catch(() => dispatch({ type: "undo_failed" }));
   };
 
   const view = deckView(state);
 
   return (
     <main className={styles.screen}>
-      {(view === "cards" || view === "loading") && (
-        <h1 className={styles.kicker}>LES MIEUX NOTÉS</h1>
-      )}
+      <h1 className={styles.kicker}>{deckLabel(deck)}</h1>
+      <DeckChips deck={deck} />
 
       {view === "cards" && (
         <CardStack
@@ -258,12 +349,10 @@ export function SwipeDeck({ initial, decide, loadMore }: SwipeDeckProps) {
 
       {view === "end" && (
         <>
-          <h1 className={styles.logo}>
+          <h2 className={styles.logo}>
             <Lines lines={["VOUS AVEZ", "TOUT VU", "(OU PRESQUE)"]} />
-          </h1>
-          <p className={styles.small}>
-            Plus aucun film des mieux notés à trier
-          </p>
+          </h2>
+          <p className={styles.small}>Plus aucun film de ce thème à trier</p>
           <div className={styles.actions}>
             <ButtonLink href="/" variant="primary">
               ALLER TIRER
@@ -274,9 +363,9 @@ export function SwipeDeck({ initial, decide, loadMore }: SwipeDeckProps) {
 
       {view === "error" && (
         <>
-          <h1 className={styles.logo}>
+          <h2 className={styles.logo}>
             <Lines lines={["TMDB NE", "RÉPOND PAS"]} />
-          </h1>
+          </h2>
           <p className={styles.small}>
             Impossible de charger les films pour l’instant
           </p>
@@ -291,10 +380,26 @@ export function SwipeDeck({ initial, decide, loadMore }: SwipeDeckProps) {
         </>
       )}
 
-      {toast !== null && (
+      {toast !== null ? (
         <p role="alert" className={styles.toast}>
-          PAS RÉUSSI À ENREGISTRER, RÉESSAIE
+          {TOASTS[toast]}
         </p>
+      ) : (
+        undoable !== null && (
+          <div className={styles.undo} role="status">
+            <span className={styles.undoText}>
+              {undoable.decision === "keep" ? "♥ " : "✕ "}
+              {undoable.card.title}
+            </span>
+            <button
+              type="button"
+              className={styles.undoButton}
+              onClick={undoLast}
+            >
+              ↺ ANNULER
+            </button>
+          </div>
+        )
       )}
     </main>
   );
@@ -315,10 +420,11 @@ function LoadingTicket() {
 }
 
 /** Shown while the first batch loads on the server. */
-export function SwipeDeckFallback() {
+export function SwipeDeckFallback({ deck }: { deck: DeckId }) {
   return (
     <main className={styles.screen}>
-      <h1 className={styles.kicker}>LES MIEUX NOTÉS</h1>
+      <h1 className={styles.kicker}>{deckLabel(deck)}</h1>
+      <DeckChips deck={deck} />
       <LoadingTicket />
     </main>
   );

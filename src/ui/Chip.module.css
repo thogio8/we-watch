@@ -1,0 +1,36 @@
+/* Mockup A's chips: white, ink outline, yellow when chosen. */
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 11px;
+  border: var(--border-thin);
+  border-radius: var(--radius-chip);
+  background: var(--white);
+  box-shadow: var(--shadow-offset-xs);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  line-height: 1.1;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"],
+.chip[aria-current="page"] {
+  background: var(--yellow);
+  box-shadow: var(--shadow-offset-xs), var(--glow-yellow);
+}
+
+.chip:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+.chip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}

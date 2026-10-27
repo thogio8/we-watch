@@ -12,6 +12,8 @@ function snap(tmdbId: number): MovieSnapshot {
     posterPath: null,
     voteAverage: 8,
     providers: [],
+    genreIds: [],
+    trailerKey: null,
   };
 }
 

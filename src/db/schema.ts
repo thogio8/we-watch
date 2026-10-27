@@ -21,6 +21,11 @@ export const movies = sqliteTable(
       .$type<StreamingProvider[]>()
       .notNull()
       .default([]),
+    genreIds: text("genre_ids", { mode: "json" })
+      .$type<number[]>()
+      .notNull()
+      .default([]),
+    trailerKey: text("trailer_key"),
     status: text("status", { enum: ["to_watch", "watched", "rejected"] })
       .$type<MovieStatus>()
       .notNull(),

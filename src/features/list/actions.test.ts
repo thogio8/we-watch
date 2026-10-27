@@ -41,6 +41,8 @@ function snapshot(tmdbId: number, title: string): MovieSnapshot {
     posterPath: null,
     voteAverage: 6.3,
     providers: [],
+    genreIds: [],
+    trailerKey: null,
   };
 }
 

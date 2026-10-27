@@ -1,10 +1,13 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Movie, MovieSnapshot, MovieStatus } from "@/domain/movie";
 import { type MovieAction, nextStatus } from "@/domain/transitions";
 import type { Database } from "./create-database";
 import { movies } from "./schema";
 
 export type ApplyResult = "applied" | "noop";
+
+/** Status a swipe decision creates (see domain/transitions). */
+const SWIPED_STATUS = { keep: "to_watch", reject: "rejected" } as const;
 
 export interface MoviesRepository {
   /** to_watch: decidedAt desc; watched: watchedAt desc. */
@@ -13,6 +16,14 @@ export interface MoviesRepository {
   /** Ids of every movie already decided, whatever its status. */
   decidedIds(): Promise<Set<number>>;
   statusesOf(ids: readonly number[]): Promise<Map<number, MovieStatus>>;
+  idsWithStatus(statuses: readonly MovieStatus[]): Promise<number[]>;
+  /** New TMDB data for a known movie; status and dates are kept. */
+  refreshSnapshot(snapshot: MovieSnapshot): Promise<ApplyResult>;
+  /**
+   * Forgets a swipe, as if the card had never been decided: only while the
+   * movie still has the status that decision gave it.
+   */
+  undoSwipe(tmdbId: number, decision: "keep" | "reject"): Promise<ApplyResult>;
   apply(
     action: MovieAction,
     tmdbId: number,
@@ -52,6 +63,37 @@ export function createMoviesRepository(db: Database): MoviesRepository {
         .from(movies)
         .where(inArray(movies.tmdbId, [...ids]));
       return new Map(rows.map((r) => [r.id, r.status]));
+    },
+
+    async idsWithStatus(statuses) {
+      if (statuses.length === 0) return [];
+      const rows = await db
+        .select({ id: movies.tmdbId })
+        .from(movies)
+        .where(inArray(movies.status, [...statuses]));
+      return rows.map((r) => r.id);
+    },
+
+    async refreshSnapshot(snapshot) {
+      const updated = await db
+        .update(movies)
+        .set(snapshot)
+        .where(eq(movies.tmdbId, snapshot.tmdbId))
+        .returning({ id: movies.tmdbId });
+      return updated.length > 0 ? "applied" : "noop";
+    },
+
+    async undoSwipe(tmdbId, decision) {
+      const deleted = await db
+        .delete(movies)
+        .where(
+          and(
+            eq(movies.tmdbId, tmdbId),
+            eq(movies.status, SWIPED_STATUS[decision]),
+          ),
+        )
+        .returning({ id: movies.tmdbId });
+      return deleted.length > 0 ? "applied" : "noop";
     },
 
     async apply(action, tmdbId, snapshot, now = new Date()) {

@@ -27,6 +27,20 @@ export const tmdbMovieDetailsSchema = z.object({
   overview: z.string().nullish(),
   poster_path: z.string().nullable().optional(),
   vote_average: z.number(),
+  genres: z.array(z.object({ id: z.number() })).optional(),
+  videos: z
+    .object({
+      results: z.array(
+        z.object({
+          key: z.string(),
+          site: z.string(),
+          type: z.string(),
+          official: z.boolean().optional(),
+          iso_639_1: z.string().nullish(),
+        }),
+      ),
+    })
+    .optional(),
   "watch/providers": z
     .object({
       results: z.record(

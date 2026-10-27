@@ -26,5 +26,51 @@
         ]
       }
     }
+  },
+  "genres": [
+    {
+      "id": 16,
+      "name": "Animation"
+    },
+    {
+      "id": 10751,
+      "name": "Familial"
+    },
+    {
+      "id": 14,
+      "name": "Fantastique"
+    }
+  ],
+  "videos": {
+    "results": [
+      {
+        "iso_639_1": "en",
+        "site": "YouTube",
+        "type": "Teaser",
+        "official": true,
+        "key": "teaser-en"
+      },
+      {
+        "iso_639_1": "en",
+        "site": "YouTube",
+        "type": "Trailer",
+        "official": true,
+        "key": "trailer-en"
+      },
+      {
+        "iso_639_1": "fr",
+        "site": "Vimeo",
+        "type": "Trailer",
+        "official": true,
+        "key": "vimeo-fr"
+      },
+      {
+        "iso_639_1": "fr",
+        "site": "YouTube",
+        "type": "Trailer",
+        "official": false,
+        "key": "trailer-fr"
+      }
+    ]
   }
 }

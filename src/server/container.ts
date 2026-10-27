@@ -7,7 +7,8 @@ import {
 import { getServerEnv } from "@/env";
 import type { DeckDeps } from "@/features/swipe/deck";
 import { createTmdbClient, type TmdbClient } from "@/tmdb/client";
-import { discoverTopRated, getMovieSnapshot } from "@/tmdb/movies";
+import type { DeckId } from "@/tmdb/decks";
+import { discoverDeck, getMovieSnapshot } from "@/tmdb/movies";
 
 let repository: MoviesRepository | undefined;
 let tmdbClient: TmdbClient | undefined;
@@ -29,11 +30,11 @@ export function getTmdbClient(): TmdbClient {
   return tmdbClient;
 }
 
-export function getDeckDeps(): DeckDeps {
+export function getDeckDeps(deck: DeckId): DeckDeps {
   const client = getTmdbClient();
   const repo = getMoviesRepository();
   return {
-    discover: (page) => discoverTopRated(client, page),
+    discover: (page) => discoverDeck(client, deck, page),
     snapshot: (id) => getMovieSnapshot(client, id),
     decidedIds: () => repo.decidedIds(),
   };

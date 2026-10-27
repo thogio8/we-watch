@@ -18,6 +18,8 @@ function movie(tmdbId: number, title: string, overrides: Partial<Movie> = {}) {
     posterPath: null,
     voteAverage: 8.54,
     providers: [{ id: 8, name: "Netflix", logoPath: null }],
+    genreIds: [],
+    trailerKey: null,
     status: "to_watch",
     decidedAt: new Date(2026, 9, 1),
     watchedAt: null,
