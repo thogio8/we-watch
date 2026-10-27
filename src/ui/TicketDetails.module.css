@@ -26,7 +26,6 @@
   overflow: hidden;
   font-size: var(--text-sm);
   line-height: 1.35;
-  opacity: 0.95;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;

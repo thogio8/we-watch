@@ -48,7 +48,7 @@
 .love {
   background: var(--pink);
   box-shadow: var(--shadow-offset), var(--glow-pink);
-  color: var(--white);
+  color: var(--on-pink);
 }
 
 .love:active:not(:disabled) {

@@ -30,10 +30,10 @@
 }
 
 .title {
-  color: var(--white);
+  color: var(--on-pink);
   font-size: var(--text-2xl);
   line-height: 1;
-  text-shadow: var(--shadow-offset-sm);
+  text-shadow: var(--shadow-offset-sm-paper);
 }
 
 .input {
@@ -61,7 +61,7 @@
 .error {
   min-height: 1.4em;
   margin: 10px 0 0;
-  color: var(--white);
+  color: var(--on-pink);
   font-family: var(--font-display);
   font-size: var(--text-md);
   text-align: center;

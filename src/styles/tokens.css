@@ -12,6 +12,8 @@
   --yellow: #ffe600;
   --blue: #2f6bff;
   --white: #ffffff;
+  /* Text on the pink: ink, for contrast (5:1, WCAG AA; white was 3.2:1). */
+  --on-pink: var(--ink);
 
   /* Riso paper: 1 px dots on a 6 px grid */
   --paper-dots: radial-gradient(rgba(27, 27, 107, 0.09) 1px, transparent 1px);
@@ -55,6 +57,8 @@
   /* Solid offset shadows */
   --shadow-offset: 4px 4px 0 var(--ink);
   --shadow-offset-sm: 3px 3px 0 var(--ink);
+  /* Ink text on pink keeps its riso offset, printed in paper. */
+  --shadow-offset-sm-paper: 3px 3px 0 var(--paper);
   --shadow-offset-xs: 2px 2px 0 var(--ink);
   --shadow-offset-lg: 8px 8px 0 var(--ink);
   --shadow-ticket: 7px 7px 0 var(--blue);

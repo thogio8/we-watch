@@ -18,7 +18,7 @@
 .on {
   background: var(--pink);
   box-shadow: var(--shadow-offset-sm);
-  color: var(--white);
+  color: var(--on-pink);
 }
 
 /* TMDB and JustWatch attributions. */

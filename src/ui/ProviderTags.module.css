@@ -14,7 +14,7 @@
   border: var(--border-thin);
   border-radius: var(--radius-pill);
   background: var(--yellow);
-  /* Explicit ink: tags also sit on the pink ticket, whose text is white. */
+  /* Explicit ink: tags also sit on the pink ticket. */
   color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
