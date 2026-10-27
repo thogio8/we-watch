@@ -24,7 +24,7 @@ jobs:
       - run: npm ci
       # End-to-end tests run in the Playwright Docker image (scripts/e2e.sh).
       - run: npm run ci
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -63,7 +63,7 @@ jobs:
 
       - name: Backup the movies table
         run: node scripts/backup-db.mjs backup/movies.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: db-backup-${{ github.sha }}
           path: backup/
