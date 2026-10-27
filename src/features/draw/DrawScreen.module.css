@@ -114,30 +114,6 @@
   right: 12px;
 }
 
-.title {
-  font-size: var(--text-xl);
-  line-height: 1.05;
-}
-
-.meta {
-  margin: 6px 0 0;
-  font-size: var(--text-sm);
-  text-transform: uppercase;
-}
-
-/* Short summary: the first lines only. */
-.overview {
-  display: -webkit-box;
-  margin: 8px 0 0;
-  overflow: hidden;
-  font-size: var(--text-sm);
-  line-height: 1.35;
-  opacity: 0.95;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
 .actions {
   display: flex;
   justify-content: center;
@@ -161,7 +137,8 @@
 /*
  * Variants, after every base rule so they win (same specificity).
  * Wide column (spec §12): panel and button side by side; the ticket lies
- * down, its poster too small for the end stamp, which moves to the stub.
+ * down, its poster too small for the end stamp, which moves to the stub
+ * (TicketDetails keeps the title clear of it).
  */
 @container shell (min-width: 640px) {
   .split {
@@ -196,18 +173,6 @@
   .endStamp {
     right: 22px;
   }
-
-  /* Bigger, and clear of the end stamp. */
-  .title {
-    padding-right: 200px;
-    font-size: var(--text-2xl);
-  }
-
-  /* Room for a longer summary beside the poster. */
-  .overview {
-    -webkit-line-clamp: 6;
-    line-clamp: 6;
-  }
 }
 
 /* Phone held sideways: one-line title, a smaller button, tighter spacing. */
@@ -227,22 +192,6 @@
 
   .actions {
     margin-top: 14px;
-  }
-}
-
-/* Short screens (small phones, phones held sideways): the summary gives way
-   to the buttons. */
-@media (max-height: 700px) {
-  .overview {
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-}
-
-/* Tiny screens (iPhone SE 1st gen): no summary at all. */
-@media (max-height: 620px) {
-  .overview {
-    display: none;
   }
 }
 

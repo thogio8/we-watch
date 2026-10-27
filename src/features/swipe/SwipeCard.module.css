@@ -51,64 +51,10 @@
   min-height: 150px;
 }
 
-.title {
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: var(--text-xl);
-  line-height: 1.05;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-.meta {
-  margin: 6px 0 0;
-  font-size: var(--text-sm);
-  text-transform: uppercase;
-}
-
-/* Short summary: the first lines only. */
-.overview {
-  display: -webkit-box;
-  margin: 8px 0 0;
-  overflow: hidden;
-  font-size: var(--text-sm);
-  line-height: 1.35;
-  opacity: 0.95;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
-/* Lying ticket (spec §12): a bigger title and more of the summary. */
-@container shell (min-width: 640px) {
-  .title {
-    font-size: var(--text-2xl);
-  }
-
-  .overview {
-    -webkit-line-clamp: 6;
-    line-clamp: 6;
-  }
-}
-
-/* Short screens (small phones, phones held sideways): the summary gives way
-   to the buttons. */
+/* Short screens: the card may shrink with its shortened summary. */
 @media (max-height: 700px) {
   .info {
     min-height: 0;
-  }
-
-  .overview {
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-}
-
-/* Tiny screens (iPhone SE 1st gen): no summary at all. */
-@media (max-height: 620px) {
-  .overview {
-    display: none;
   }
 }
 

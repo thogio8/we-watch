@@ -27,13 +27,11 @@ import {
 import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
 import { Lines } from "@/ui/Lines";
-import { movieMeta } from "@/ui/movieMeta";
 import { Poster } from "@/ui/Poster";
-import { ProviderTags } from "@/ui/ProviderTags";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket, TICKET_POSTER_ATTR } from "@/ui/Ticket";
+import { TicketDetails } from "@/ui/TicketDetails";
 import { TornPile } from "@/ui/TornPile";
-import { TrailerLink } from "@/ui/TrailerLink";
 import styles from "./DrawScreen.module.css";
 import { useDrawSession } from "./DrawSessionProvider";
 import { measureTear, tearClips } from "./tear";
@@ -371,16 +369,7 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
                   </motion.div>
                 }
               >
-                <h2 className={styles.title}>{view.movie.title}</h2>
-                <p className={styles.meta}>{movieMeta(view.movie)}</p>
-                <ProviderTags providers={view.movie.providers} />
-                <TrailerLink
-                  trailerKey={view.movie.trailerKey}
-                  title={view.movie.title}
-                />
-                {view.movie.overview && (
-                  <p className={styles.overview}>{view.movie.overview}</p>
-                )}
+                <TicketDetails movie={view.movie} platforms="all" stampRoom />
               </Ticket>
             </motion.div>
             <div className={styles.actions}>

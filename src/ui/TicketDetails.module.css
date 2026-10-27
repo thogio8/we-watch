@@ -1,0 +1,66 @@
+/* The stub text of the draw ticket and the swipe card (one source of truth). */
+
+.title {
+  font-size: var(--text-xl);
+  line-height: 1.05;
+}
+
+.clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.meta {
+  margin: 6px 0 0;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+}
+
+/* Short summary: the first lines only. */
+.overview {
+  display: -webkit-box;
+  margin: 8px 0 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  opacity: 0.95;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/* Lying ticket (spec §12): a bigger title, more of the summary. */
+@container shell (min-width: 640px) {
+  .title {
+    font-size: var(--text-2xl);
+  }
+
+  /* Clear of the end stamp at the stub's top right. */
+  .stampRoom {
+    padding-right: 200px;
+  }
+
+  .overview {
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+  }
+}
+
+/* Short screens (small phones, phones held sideways): the summary gives way
+   to the buttons. */
+@media (max-height: 700px) {
+  .overview {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
+
+/* Tiny screens (iPhone SE 1st gen): no summary at all. */
+@media (max-height: 620px) {
+  .overview {
+    display: none;
+  }
+}

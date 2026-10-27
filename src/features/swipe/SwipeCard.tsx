@@ -10,13 +10,10 @@ import {
 } from "motion/react";
 import { useRef } from "react";
 import type { MovieSnapshot } from "@/domain/movie";
-import { distinctPlatforms } from "@/domain/tonight";
-import { movieMeta } from "@/ui/movieMeta";
 import { Poster } from "@/ui/Poster";
-import { ProviderTags } from "@/ui/ProviderTags";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
-import { TrailerLink } from "@/ui/TrailerLink";
+import { TicketDetails } from "@/ui/TicketDetails";
 import type { SwipeDecision } from "./actions";
 import styles from "./SwipeCard.module.css";
 
@@ -178,16 +175,7 @@ export function SwipeCard({
         }
       >
         <div className={styles.info}>
-          <h2 className={styles.title}>{movie.title}</h2>
-          <p className={styles.meta}>{movieMeta(movie)}</p>
-          {/* The first platform is the stamp; list them all when there are more. */}
-          {distinctPlatforms(movie.providers).length > 1 && (
-            <ProviderTags providers={movie.providers} />
-          )}
-          <TrailerLink trailerKey={movie.trailerKey} title={movie.title} />
-          {movie.overview && (
-            <p className={styles.overview}>{movie.overview}</p>
-          )}
+          <TicketDetails movie={movie} platforms="beyond-stamp" clampTitle />
         </div>
       </Ticket>
     </motion.div>
