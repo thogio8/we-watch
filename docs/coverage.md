@@ -10,7 +10,7 @@ Porte qualité avant le front (Task 8) : la couverture de la logique métier doi
 npm run test:coverage
 ```
 
-Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1 ; 368 tests, 34 fichiers après la V1.2).
+Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1 ; 369 tests, 32 fichiers après la V1.2).
 
 ## Périmètre
 

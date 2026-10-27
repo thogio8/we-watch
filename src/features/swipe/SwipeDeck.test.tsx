@@ -429,7 +429,7 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
     );
   });
 
-  it("une annulation en échec le dit", async () => {
+  it("une annulation en échec le dit et la carte repart", async () => {
     const undo = vi.fn<Decide>(() => Promise.reject(new Error("offline")));
     const { user } = renderDeck(ok([WHIPLASH, CHIHIRO], null), { undo });
 
@@ -439,6 +439,32 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "PAS RÉUSSI À ANNULER",
     );
+    // Still saved as kept: the next card is back on top.
+    await waitFor(() =>
+      expect(currentTitle()).toHaveTextContent("LE VOYAGE DE CHIHIRO"),
+    );
+  });
+
+  it("un vieil échec d'enregistrement ne ressuscite pas une carte re-décidée", async () => {
+    let failFirst: (error: Error) => void = () => {};
+    const decide = vi
+      .fn<Decide>()
+      .mockImplementationOnce(
+        () => new Promise((_, reject) => (failFirst = reject)),
+      )
+      .mockResolvedValue("applied");
+    const { user } = renderDeck(ok([WHIPLASH, CHIHIRO], null), { decide });
+
+    await tap(user, "ON LE VEUT ♥");
+    await user.click(undoButton());
+    await tap(user, "✕ BOF");
+    failFirst(new Error("offline"));
+
+    await waitFor(() =>
+      expect(decide).toHaveBeenLastCalledWith(244786, "reject"),
+    );
+    expect(currentTitle()).toHaveTextContent("LE VOYAGE DE CHIHIRO");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("un enregistrement en échec retire l'offre d'annuler", async () => {

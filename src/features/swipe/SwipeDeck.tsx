@@ -60,7 +60,7 @@ type DeckAction =
   | { type: "decided"; card: MovieSnapshot; decision: SwipeDecision }
   | { type: "decide_failed"; card: MovieSnapshot }
   | { type: "undone" }
-  | { type: "undo_failed" }
+  | { type: "undo_failed"; tmdbId: number }
   | { type: "dismiss_undo" }
   | { type: "dismiss_toast" };
 
@@ -122,7 +122,13 @@ function deckReducer(state: DeckState, action: DeckAction): DeckState {
       if (state.undoable === null) return state;
       return { ...putBack(state, state.undoable.card), undoable: null };
     case "undo_failed":
-      return { ...state, toast: "undo_failed" };
+      // The decision is still saved: the card leaves again, as decided.
+      return {
+        ...state,
+        queue: state.queue.filter((card) => card.tmdbId !== action.tmdbId),
+        decided: new Set(state.decided).add(action.tmdbId),
+        toast: "undo_failed",
+      };
     case "dismiss_undo":
       return { ...state, undoable: null };
     case "dismiss_toast":
@@ -312,9 +318,13 @@ export function SwipeDeck({
   const decideCard = (card: MovieSnapshot, decision: SwipeDecision) => {
     dispatch({ type: "decided", card, decision });
     // Optimistic: the card is gone already; it comes back if the save fails.
-    chain(card.tmdbId, () => decide(card.tmdbId, decision)).catch(() =>
-      dispatch({ type: "decide_failed", card }),
-    );
+    const op = chain(card.tmdbId, () => decide(card.tmdbId, decision));
+    op.catch(() => {
+      // An undo or a new decision came after: this card's fate is theirs.
+      if (ops.current.get(card.tmdbId) === op) {
+        dispatch({ type: "decide_failed", card });
+      }
+    });
   };
 
   const undoLast = () => {
@@ -327,7 +337,7 @@ export function SwipeDeck({
       saved === "applied"
         ? undo(card.tmdbId, decision)
         : Promise.resolve(saved),
-    ).catch(() => dispatch({ type: "undo_failed" }));
+    ).catch(() => dispatch({ type: "undo_failed", tmdbId: card.tmdbId }));
   };
 
   const view = deckView(state);
