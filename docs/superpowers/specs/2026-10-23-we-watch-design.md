@@ -252,3 +252,22 @@ Règles retenues :
   - CI locale `npm run ci` derrière des hooks git (lefthook), rejouée par GitHub Actions ;
   - `TMDB_API_URL` (facultatif) pour pointer l'appli vers le faux TMDB des tests.
 - **V1.2.5** (2026-10-27) : texte **encre marine sur le rose** (tickets, bouton ♥, onglet actif) au lieu du blanc, pour un contraste conforme WCAG AA (5:1 au lieu de 3,2:1), décidé avec Thomas ; le titre « ENTREZ LE CODE » garde son décalage riso, imprimé en papier. Mise en prod uniquement par GitHub Actions après CI verte (sauvegarde, migration, test de fumée, retour arrière) ; tests visuels par captures ; Dependabot.
+
+## 14. V1.3 : revenir en arrière, fiche film, versions semver (décidé le 2026-10-27)
+
+Demandes de Thomas après usage.
+
+### 14.1 Revenir en arrière au tirage
+
+- **← RETOUR** sur le ticket tiré : retour à l'accueil (filtres, gros bouton). Le film affiché n'est **pas** mis dans la pile « pas ce soir » : il reste tirable ; la pile est gardée.
+- **↺ RESSORTIR « TITRE »** sous la pile, sur le ticket tiré et sur « VOUS ÊTES DIFFICILES CE SOIR » : le dernier ticket déchiré qui colle encore aux filtres revient comme ticket tiré et quitte la pile. Le ticket qu'il remplace (tiré au hasard) n'est pas mis dans la pile.
+
+### 14.2 Fiche d'un film (LISTE)
+
+- Toucher une ligne de la liste ouvre **une page** `/list/<tmdbId>` (le retour du téléphone ramène à la liste).
+- Contenu : grand ticket (affiche, titre, année, durée, note, genres en clair, plateformes, bande-annonce), résumé **complet** ; **réalisation et têtes d'affiche** (TMDB `credits`, 24 h de cache ; absent si TMDB ne répond pas, la fiche s'affiche quand même) ; **notre histoire** du film (« Ajouté le … », « Vu le … ») ; **actions** selon le statut (ON L'A VU / À REVOIR / RETIRER DE LA LISTE), qui ramènent à la liste.
+- Un film absent de la liste (refusé, inconnu) : page « introuvable » avec retour à la liste.
+
+### 14.3 Versions
+
+Semver calculé depuis les commits (Conventional Commits) par release-please : `fix` → correctif, `feat` → mineure, `!` → majeure. Une PR « release » publie numéro, `CHANGELOG.md`, tag et release GitHub. Les déploiements suivent toujours chaque push vert.
