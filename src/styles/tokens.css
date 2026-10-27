@@ -83,6 +83,24 @@
      phone held sideways) the column widens and the nav moves to the top. */
   --column-max: 480px;
   --column-wide: 960px;
+  /* Side margin of every page; wider on wide screens (see below). */
+  --gutter: 18px;
+  /* A lying ticket stops growing here, however wide the column. */
+  --ticket-max: 760px;
   --nav-height: 82px;
   --nav-top-height: 64px;
+}
+
+/*
+ * Breakpoints (CSS variables cannot be used in media queries, so they are
+ * written out where needed; keep them in sync with this list, spec §12):
+ * - @media (min-width: 760px): wide screens, nav at the top;
+ * - @container shell (min-width: 640px): wide column, lying ticket, grids;
+ * - @media (max-height: 520px): phone held sideways;
+ * - @media (max-height: 700px) / (max-height: 620px): short / tiny screens.
+ */
+@media (min-width: 760px) {
+  :root {
+    --gutter: 24px;
+  }
 }

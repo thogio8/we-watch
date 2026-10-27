@@ -8,8 +8,8 @@
    * Reach the viewport edges through the shell's padding, then clip there:
    * a thrown card must not widen the page, but its shadow and glow still show.
    */
-  margin-inline: -18px;
-  padding-inline: 18px;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
   overflow-x: clip;
 }
 
@@ -25,7 +25,7 @@
 .deck {
   display: grid;
   width: 100%;
-  max-width: 760px;
+  max-width: var(--ticket-max);
   margin-top: 10px;
 }
 
@@ -102,17 +102,19 @@
   display: flex;
   gap: 8px;
   align-self: stretch;
-  margin: 4px -18px 0;
-  padding: 4px 18px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  mask-image: linear-gradient(
+  --fade-edges: linear-gradient(
     to right,
     transparent,
     var(--ink) 18px,
     var(--ink) calc(100% - 36px),
     transparent
   );
+
+  margin: 4px calc(-1 * var(--gutter)) 0;
+  padding: 4px var(--gutter) 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: var(--fade-edges);
 }
 
 @container shell (min-width: 640px) {
@@ -206,16 +208,10 @@
   .decks {
     flex-wrap: nowrap;
     justify-content: flex-start;
-    margin-inline: -24px;
-    padding-inline: 24px;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
     overflow-x: auto;
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      var(--ink) 18px,
-      var(--ink) calc(100% - 36px),
-      transparent
-    );
+    mask-image: var(--fade-edges);
   }
 
   .actions {

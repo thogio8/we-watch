@@ -17,7 +17,7 @@ export type DeckId = (typeof DECKS)[number]["id"];
 
 export const DEFAULT_DECK: DeckId = "top";
 
-export type DeckParams = Record<string, string | number>;
+type DeckParams = Record<string, string | number>;
 
 const decade = (start: number): DeckParams => ({
   "primary_release_date.gte": `${start}-01-01`,

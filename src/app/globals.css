@@ -44,9 +44,9 @@ button {
   margin: 0 auto;
   /* Safe-area insets keep content clear of the notch and home indicator. */
   padding: calc(20px + env(safe-area-inset-top))
-    calc(18px + env(safe-area-inset-right))
+    calc(var(--gutter) + env(safe-area-inset-right))
     calc(var(--nav-height) + 24px + env(safe-area-inset-bottom))
-    calc(18px + env(safe-area-inset-left));
+    calc(var(--gutter) + env(safe-area-inset-left));
 }
 
 /* Wide screens: a wider column below the top nav (see BottomNav). */
@@ -54,9 +54,9 @@ button {
   .shell {
     max-width: var(--column-wide);
     padding: calc(var(--nav-top-height) + 28px + env(safe-area-inset-top))
-      calc(24px + env(safe-area-inset-right))
+      calc(var(--gutter) + env(safe-area-inset-right))
       calc(40px + env(safe-area-inset-bottom))
-      calc(24px + env(safe-area-inset-left));
+      calc(var(--gutter) + env(safe-area-inset-left));
   }
 }
 

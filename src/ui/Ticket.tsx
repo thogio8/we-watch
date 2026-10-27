@@ -16,6 +16,7 @@ interface TicketProps {
    * perforation, the stub on the right.
    */
   adaptive?: boolean;
+  /** Extra class on the ticket itself (e.g. its width in a form). */
   className?: string;
 }
 

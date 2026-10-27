@@ -10,11 +10,11 @@ Porte qualité avant le front (Task 8) : la couverture de la logique métier doi
 npm run test:coverage
 ```
 
-Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1 ; 369 tests, 32 fichiers après la V1.2 ; 373 tests, 33 fichiers après la V1.2.1).
+Code de sortie : 0 (84 tests, 8 fichiers de test au moment de la porte ; 246 tests, 24 fichiers après la V1.1 ; 369 tests, 32 fichiers après la V1.2 ; 373 tests, 33 fichiers après la V1.2.1 ; 388 tests, 36 fichiers après la V1.2.3).
 
 ## Périmètre
 
-`src/access/**`, `src/domain/**`, `src/db/**`, `src/tmdb/**`, `src/features/swipe/deck.ts`, `src/features/unlock/actions.ts` (V1.1 : code d'accès), `src/features/draw/tonightStorage.ts`, `src/features/refresh/**`, `src/app/api/cron/**` (V1.2 : filtres, rafraîchissement), `src/features/draw/tear.ts` (V1.2.1 : déchirure du ticket couché)
+`src/access/**`, `src/domain/**`, `src/db/**`, `src/tmdb/**`, `src/features/swipe/deck.ts`, `src/features/unlock/actions.ts` (V1.1 : code d'accès), `src/features/draw/tonightStorage.ts`, `src/features/refresh/**`, `src/app/api/cron/**` (V1.2 : filtres, rafraîchissement), `src/features/draw/tear.ts` (V1.2.1 : déchirure du ticket couché), `src/server/validate.ts` (V1.2.3 : contrôles des actions)
 
 ## Seuils (vitest.config.ts)
 
@@ -49,6 +49,7 @@ Table générée depuis `coverage/coverage-summary.json` (reporter `json-summary
 | src/features/refresh/refresh-movies.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/deck.ts | 100% | 100% | 100% | 100% |
 | src/features/unlock/actions.ts | 100% | 100% | 100% | 100% |
+| src/server/validate.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/client.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/decks.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/images.ts | 100% | 100% | 100% | 100% |
@@ -58,10 +59,10 @@ Table générée depuis `coverage/coverage-summary.json` (reporter `json-summary
 Résumé texte global :
 
 ```
-Statements   : 100% ( 325/325 )
-Branches     : 100% ( 193/193 )
-Functions    : 100% ( 101/101 )
-Lines        : 100% ( 290/290 )
+Statements   : 100% ( 337/337 )
+Branches     : 100% ( 209/209 )
+Functions    : 100% ( 105/105 )
+Lines        : 100% ( 302/302 )
 ```
 
 ## Preuve que la porte échoue en cas de manque

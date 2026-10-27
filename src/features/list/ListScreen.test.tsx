@@ -253,4 +253,16 @@ describe("ListScreen", () => {
       within(footer).getByRole("link", { name: "JustWatch" }),
     ).toHaveAttribute("href", "https://www.justwatch.com/fr");
   });
+
+  it("une plateforme par marque, pas une par offre", () => {
+    const ads = { id: 1796, name: "Netflix Standard with Ads", logoPath: null };
+    renderList({
+      toWatch: [
+        movie(1, "AVEC PUB", {
+          providers: [{ id: 8, name: "Netflix", logoPath: null }, ads],
+        }),
+      ],
+    });
+    expect(within(panel()).getByText("2h05 · Netflix")).toBeVisible();
+  });
 });

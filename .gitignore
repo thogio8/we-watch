@@ -47,3 +47,6 @@ next-env.d.ts
 
 # superpowers
 .superpowers/
+
+# IDE
+.idea/

@@ -13,8 +13,8 @@ export interface DeckBatch {
 }
 
 /**
- * Parcourt les pages à partir de fromPage, ignore les films déjà décidés,
- * s'arrête dès minCards cartes réunies ou après maxPages pages.
+ * Reads TMDB pages from `fromPage`, skips movies already decided, and stops
+ * once `minCards` cards are gathered or after `maxPages` pages.
  */
 export async function loadDeckBatch(
   deps: DeckDeps,

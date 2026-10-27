@@ -24,13 +24,7 @@ const serverEnvSchema = z.object({
     ),
 });
 
-export type ServerEnv = {
-  TMDB_ACCESS_TOKEN: string;
-  DATABASE_URL: string;
-  DATABASE_AUTH_TOKEN?: string;
-  ACCESS_CODE: string;
-  CRON_SECRET?: string;
-};
+type ServerEnv = z.output<typeof serverEnvSchema>;
 
 export function parseServerEnv(
   source: Record<string, string | undefined>,

@@ -7,7 +7,6 @@ import { createTmdbClient } from "./client";
 import {
   discoverDeck,
   getMovieSnapshot,
-  posterUrl,
   searchMovies,
   toSnapshot,
 } from "./movies";
@@ -129,14 +128,6 @@ describe("bande-annonce", () => {
         video("vimeo", { site: "Vimeo" }),
       ]),
     ).toBeNull();
-  });
-});
-
-describe("posterUrl", () => {
-  it("construit l'URL d'image", () => {
-    expect(posterUrl("/a.jpg", "w342")).toBe(
-      "https://image.tmdb.org/t/p/w342/a.jpg",
-    );
   });
 });
 

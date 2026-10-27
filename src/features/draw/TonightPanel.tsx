@@ -22,7 +22,7 @@ const toggle = <T,>(list: readonly T[], item: T): T[] =>
   list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 
 /** « AVANT MINUIT · RIRE · NETFLIX », or « AUCUN FILTRE ». */
-export function filtersSummary(
+function filtersSummary(
   filters: TonightFilters,
   platforms: readonly Platform[],
 ): string {

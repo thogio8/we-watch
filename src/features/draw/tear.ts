@@ -20,7 +20,7 @@ const TEAR_POINTS = [
 /** Past the ticket's far edge: room for the offset shadow and the glow. */
 const SHADOW_ROOM = 60;
 
-export type TearAxis = "horizontal" | "vertical";
+type TearAxis = "horizontal" | "vertical";
 
 function clip(axis: TearAxis, line: (offset: number) => number): string {
   if (axis === "horizontal") {

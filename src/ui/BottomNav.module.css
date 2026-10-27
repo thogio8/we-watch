@@ -7,9 +7,9 @@
   gap: 10px;
   width: 100%;
   max-width: var(--column-max);
-  padding: 12px calc(18px + env(safe-area-inset-right))
+  padding: 12px calc(var(--gutter) + env(safe-area-inset-right))
     calc(20px + env(safe-area-inset-bottom))
-    calc(18px + env(safe-area-inset-left));
+    calc(var(--gutter) + env(safe-area-inset-left));
   border-top: var(--border);
   background: var(--paper);
   transform: translateX(-50%);
@@ -51,8 +51,8 @@
     justify-content: center;
     max-width: none;
     padding: calc(10px + env(safe-area-inset-top))
-      calc(24px + env(safe-area-inset-right)) 10px
-      calc(24px + env(safe-area-inset-left));
+      calc(var(--gutter) + env(safe-area-inset-right)) 10px
+      calc(var(--gutter) + env(safe-area-inset-left));
     border-top: 0;
     border-bottom: var(--border);
     transform: none;

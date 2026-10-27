@@ -39,7 +39,7 @@ export function decisionFromDrag(
   return flicked ? direction : null;
 }
 
-export type CardPosition = "top" | "behind";
+type CardPosition = "top" | "behind";
 
 /**
  * Follows the screen height so BOF / ON LE VEUT stay in sight on small phones:

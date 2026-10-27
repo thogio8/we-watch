@@ -9,8 +9,6 @@ import {
   tmdbSearchSchema,
 } from "./schemas";
 
-export { posterUrl } from "./images";
-
 const MAX_TMDB_PAGES = 500;
 const MAX_SEARCH_RESULTS = 8;
 const DETAILS_REVALIDATE_SECONDS = 86400;

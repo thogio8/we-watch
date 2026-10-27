@@ -10,6 +10,7 @@ import {
   useTransition,
 } from "react";
 import type { Movie } from "@/domain/movie";
+import { distinctPlatforms } from "@/domain/tonight";
 import { formatRuntime, formatShortDate } from "@/domain/time";
 import styles from "./ListScreen.module.css";
 import {
@@ -55,7 +56,7 @@ function toWatchMeta(movie: Movie): string {
   const providers =
     movie.providers.length === 0
       ? ["PAS EN STREAMING"]
-      : movie.providers.map((p) => p.name);
+      : distinctPlatforms(movie.providers).map((p) => p.name);
   return [formatRuntime(movie.runtimeMinutes), ...providers]
     .filter((part) => part !== null)
     .join(" · ");

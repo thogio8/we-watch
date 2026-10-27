@@ -15,7 +15,7 @@ export interface MovieSnapshot {
   posterPath: string | null;
   voteAverage: number;
   providers: StreamingProvider[];
-  /** TMDB genre ids (see domain/moods). */
+  /** TMDB genre ids (moods: see domain/tonight). */
   genreIds: number[];
   /** YouTube key of the trailer, null when TMDB has none. */
   trailerKey: string | null;

@@ -7,7 +7,7 @@ export interface RefreshDeps {
   save(snapshot: MovieSnapshot): Promise<unknown>;
 }
 
-export interface RefreshReport {
+interface RefreshReport {
   total: number;
   refreshed: number;
   failed: number[];

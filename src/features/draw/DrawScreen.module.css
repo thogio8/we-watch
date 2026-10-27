@@ -104,7 +104,7 @@
 
 .ticket {
   width: 100%;
-  max-width: 760px;
+  max-width: var(--ticket-max);
   margin-top: 10px;
 }
 
