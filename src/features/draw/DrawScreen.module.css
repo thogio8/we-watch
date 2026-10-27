@@ -244,17 +244,15 @@
   text-shadow: var(--shadow-offset-xs);
 }
 
-/* Lying ticket: the stamp stays on the poster, however narrow (phone held
-   sideways), sized from its width so it never covers the title. */
+/* Lying ticket: the poster is too small to carry the stamp (phone held
+   sideways), so it moves to the stub's top-right corner; the title keeps
+   clear of it. */
 @container shell (min-width: 640px) {
   .endStamp {
-    right: auto;
-    left: 8px;
-    max-width: calc(var(--poster-w) - 16px);
+    right: 22px;
   }
 
-  .endStamp > * {
-    padding: 4px 8px;
-    font-size: clamp(10px, calc(var(--poster-w) / 11), var(--text-lg));
+  .title {
+    padding-right: 200px;
   }
 }

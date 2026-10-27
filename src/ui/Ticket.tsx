@@ -4,6 +4,11 @@ import styles from "./Ticket.module.css";
 interface TicketProps {
   poster: ReactNode;
   children: ReactNode;
+  /**
+   * Positioned against the whole ticket (not the poster), so a stamp can sit
+   * on the poster of a standing ticket and on the stub of a lying one.
+   */
+  stamp?: ReactNode;
   /** px, or any CSS length (e.g. a clamp() following the screen height). */
   posterHeight?: number | string;
   /**
@@ -22,6 +27,7 @@ export const TICKET_POSTER_ATTR = "data-ticket-poster";
 export function Ticket({
   poster,
   children,
+  stamp,
   posterHeight = DEFAULT_POSTER_HEIGHT,
   adaptive = false,
   className,
@@ -47,6 +53,7 @@ export function Ticket({
         aria-hidden="true"
       />
       <div className={styles.info}>{children}</div>
+      {stamp}
     </article>
   );
 }

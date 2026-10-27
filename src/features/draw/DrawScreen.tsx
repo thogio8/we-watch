@@ -357,16 +357,18 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
                       title={view.movie.title}
                       size="w500"
                     />
-                    <motion.div
-                      className={styles.endStamp}
-                      variants={stampVariants(reduce)}
-                    >
-                      <EndStamp
-                        runtimeMinutes={view.movie.runtimeMinutes}
-                        now={now}
-                      />
-                    </motion.div>
                   </>
+                }
+                stamp={
+                  <motion.div
+                    className={styles.endStamp}
+                    variants={stampVariants(reduce)}
+                  >
+                    <EndStamp
+                      runtimeMinutes={view.movie.runtimeMinutes}
+                      now={now}
+                    />
+                  </motion.div>
                 }
               >
                 <h2 className={styles.title}>{view.movie.title}</h2>
