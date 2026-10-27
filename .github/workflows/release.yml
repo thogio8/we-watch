@@ -1,0 +1,23 @@
+# Semantic versioning, computed from the commit types since the last release:
+# fix → 1.2.x, feat → 1.x.0, feat! / BREAKING CHANGE → x.0.0.
+# Keeps a « release » PR open (version bump + CHANGELOG.md); merging it tags
+# vX.Y.Z and publishes a GitHub release. Deploys still follow every green push
+# on main (ci.yml): a release only names what is already live.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

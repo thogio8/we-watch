@@ -80,7 +80,7 @@ Concrètement, sur ce repo :
 - **DA « Ticket d'entrée » (riso fluo)** non négociable : papier `#fff4d6`, encre marine, rose, jaune et bleu fluo (texte encre sur le rose, pour le contraste), Archivo Black + Space Mono, contours épais, ombres décalées pleines. Aucune couleur brute hors `src/styles/tokens.css` (exception documentée : `src/features/pwa/brand.ts` pour les icônes).
 - **Responsive** (spec §12) : téléphone d'abord ; `@media (min-width: 760px)` = écrans larges (nav en haut) ; `@container shell (min-width: 640px)` = colonne large (ticket couché, grille) ; hauteurs `520px` (téléphone couché), `620px`/`700px` (petits écrans). Vérifier tout changement d'UI dans un vrai navigateur sur plusieurs formats.
 - Animations légères, `prefers-reduced-motion` respecté.
-- **Commits** : `type(scope): description`, header seul, en anglais. **Jamais de mention de Claude ni de `Co-Authored-By`.** Sur ce repo, Claude peut commiter et pousser seul (autorisation de Thomas) ; ailleurs non.
+- **Commits** : `type(scope): description` ([Conventional Commits](https://www.conventionalcommits.org)), header seul, en anglais. **Le type fixe la version (semver)** : `feat` = fonctionnalité visible (mineure), `fix` = correction visible (correctif), `feat!` ou `fix!` = rupture (majeure) ; `refactor`, `test`, `ci`, `docs`, `chore` ne publient rien. Un commit = un type honnête : ne pas déguiser un refactor en `feat`. **Jamais de mention de Claude ni de `Co-Authored-By`.** Sur ce repo, Claude peut commiter et pousser seul (autorisation de Thomas) ; ailleurs non.
 
 ## Qualité et tests
 
@@ -97,5 +97,6 @@ Concrètement, sur ce repo :
 1. Section de spec, puis code par petites étapes testées et commitées.
 2. Build local + vérification navigateur (`npm run start:local`).
 3. Si le schéma change : `npm run db:generate`, migration rétrocompatible (voir plus haut) ; la CI la passera en prod.
-4. `npm version <x.y.z> --no-git-tag-version`, commit, tag `vX.Y.Z`, `git push origin main --tags`, puis suivre le run : `gh run watch`.
-5. Release note riso dans `docs/releases/` si Thomas en veut une (une image PNG à copier-coller marche le mieux).
+4. `git push origin main` (la CI déploie), puis suivre le run : `gh run watch`.
+5. **Versions : jamais à la main** (ni `npm version`, ni tag). release-please (`.github/workflows/release.yml`) tient une PR « release » à jour d'après les types de commits ; la fusionner (`gh pr merge <n> --squash`) publie : numéro semver, `CHANGELOG.md`, tag `vX.Y.Z`, release GitHub. La fusionner quand une version a du sens (une fonctionnalité finie, un lot de corrections).
+6. Release note riso dans `docs/releases/` si Thomas en veut une (une image PNG à copier-coller marche le mieux).
