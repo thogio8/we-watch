@@ -16,6 +16,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.{ts,tsx}"],
+    setupFiles: ["tests/setup.ts"],
     coverage: {
       provider: "v8",
       // Business scope gated before the front-end work (see global constraints).

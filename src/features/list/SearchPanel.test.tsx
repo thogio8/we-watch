@@ -1,14 +1,6 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MovieStatus } from "@/domain/movie";
 import type { SearchOutcome, SearchResult } from "./actions";
 import { SearchPanel } from "./SearchPanel";
@@ -83,10 +75,15 @@ beforeEach(() => {
   vi.useFakeTimers();
 });
 
-afterEach(() => {
-  cleanup();
-  vi.useRealTimers();
-});
+/** Finds « dune », then empties the field with ✕. */
+async function searchThenClear() {
+  renderPanel({
+    search: vi.fn<Search>(() => Promise.resolve(found(DUNE_2021))),
+  });
+  typeQuery("dune");
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "Effacer la recherche" }));
+}
 
 describe("SearchPanel", () => {
   it("n'appelle search qu'après 300 ms de pause", async () => {
@@ -148,15 +145,7 @@ describe("SearchPanel", () => {
   });
 
   it("✕ dans le champ vide la requête et réaffiche la liste", async () => {
-    renderPanel({
-      search: vi.fn<Search>(() => Promise.resolve(found(DUNE_2021))),
-    });
-
-    typeQuery("dune");
-    await settle();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Effacer la recherche" }),
-    );
+    await searchThenClear();
 
     expect(field()).toHaveValue("");
     expect(field()).toHaveFocus();
@@ -167,15 +156,7 @@ describe("SearchPanel", () => {
   });
 
   it("une nouvelle recherche ne repart pas des anciens résultats", async () => {
-    renderPanel({
-      search: vi.fn<Search>(() => Promise.resolve(found(DUNE_2021))),
-    });
-
-    typeQuery("dune");
-    await settle();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Effacer la recherche" }),
-    );
+    await searchThenClear();
     typeQuery("alien");
 
     expect(screen.getByText("ON CHERCHE…")).toBeVisible();

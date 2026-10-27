@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "./route";
 
 const SECRET = "un-secret-de-cron-assez-long";
@@ -26,10 +26,6 @@ beforeEach(() => {
   refreshMovies
     .mockReset()
     .mockResolvedValue({ total: 2, refreshed: 2, failed: [] });
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
 });
 
 describe("GET /api/cron/refresh-movies", () => {

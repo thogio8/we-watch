@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BottomNav } from "./BottomNav";
 
@@ -9,7 +8,6 @@ const pathname = vi.hoisted(() => ({ current: "/swipe" }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
 
 afterEach(() => {
-  cleanup();
   pathname.current = "/swipe";
 });
 

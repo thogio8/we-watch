@@ -1,69 +1,48 @@
 // @vitest-environment jsdom
 // Own file: motion reads `prefers-reduced-motion` once per module, and these
 // tests need the real fly-out (SwipeDeck.test.tsx runs reduced motion).
-import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { aSnapshot } from "@tests/helpers/movies";
+import { stubMatchMedia } from "@tests/helpers/dom";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { SwipeDecision } from "./actions";
 import { SwipeDeck } from "./SwipeDeck";
 
-const card = (tmdbId: number, title: string): MovieSnapshot => ({
-  tmdbId,
-  title,
-  releaseYear: 2014,
-  runtimeMinutes: 107,
-  overview: "",
-  posterPath: null,
-  voteAverage: 8.4,
-  providers: [],
-  genreIds: [],
-  trailerKey: null,
-});
+const card = (tmdbId: number, title: string): MovieSnapshot =>
+  aSnapshot(tmdbId, { title });
 
 const WHIPLASH = card(244786, "WHIPLASH");
 const CHIHIRO = card(129, "LE VOYAGE DE CHIHIRO");
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "matchMedia",
-    (query: string) =>
-      ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      }) satisfies MediaQueryList,
-  );
+  stubMatchMedia({ reducedMotion: false });
 });
 
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-});
+function renderTwoCards(
+  decide: (tmdbId: number, decision: SwipeDecision) => Promise<"applied">,
+) {
+  const user = userEvent.setup();
+  render(
+    <SwipeDeck
+      initial={{
+        ok: true,
+        batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
+      }}
+      deck="top"
+      decide={decide}
+      undo={() => Promise.resolve("applied")}
+      loadMore={() => Promise.resolve({ ok: false })}
+    />,
+  );
+  return user;
+}
 
 describe("SwipeDeck (animations actives)", () => {
   it("un double tap pendant l'envol ne décide qu'une carte", async () => {
     const decide = vi.fn(() => Promise.resolve("applied" as const));
-    const user = userEvent.setup();
-    render(
-      <SwipeDeck
-        initial={{
-          ok: true,
-          batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
-        }}
-        deck="top"
-        decide={decide}
-        undo={() => Promise.resolve("applied")}
-        loadMore={() => Promise.resolve({ ok: false })}
-      />,
-    );
+    const user = renderTwoCards(decide);
 
     await user.dblClick(screen.getByRole("button", { name: "ON LE VEUT ♥" }));
 
@@ -82,19 +61,7 @@ describe("SwipeDeck (animations actives)", () => {
           ),
       )
       .mockResolvedValue("applied");
-    const user = userEvent.setup();
-    render(
-      <SwipeDeck
-        initial={{
-          ok: true,
-          batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
-        }}
-        deck="top"
-        decide={decide}
-        undo={() => Promise.resolve("applied")}
-        loadMore={() => Promise.resolve({ ok: false })}
-      />,
-    );
+    const user = renderTwoCards(decide);
     const keep = () => screen.getByRole("button", { name: "ON LE VEUT ♥" });
     const deck = () => screen.getByRole("region", { name: "Film à trier" });
 

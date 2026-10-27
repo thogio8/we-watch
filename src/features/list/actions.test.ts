@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidatePath } from "next/cache";
+import { assertUnlocked } from "@/access/assert-unlocked";
+import { aSnapshot } from "@tests/helpers/movies";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
 import {
@@ -10,15 +13,11 @@ import {
 
 const apply = vi.fn();
 const statusesOf = vi.fn();
-const revalidatePath = vi.fn();
 const searchMovies = vi.fn();
 const getMovieSnapshot = vi.fn();
 const client = { get: vi.fn() };
 
-const assertUnlocked = vi.fn();
-vi.mock("@/access/assert-unlocked", () => ({
-  assertUnlocked: () => assertUnlocked(),
-}));
+vi.mock("@/access/assert-unlocked");
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply, statusesOf }),
   getTmdbClient: () => client,
@@ -27,34 +26,20 @@ vi.mock("@/tmdb/movies", () => ({
   searchMovies: (...args: unknown[]) => searchMovies(...args),
   getMovieSnapshot: (...args: unknown[]) => getMovieSnapshot(...args),
 }));
-vi.mock("next/cache", () => ({
-  revalidatePath: (...args: unknown[]) => revalidatePath(...args),
-}));
+vi.mock("next/cache");
 
-function snapshot(tmdbId: number, title: string): MovieSnapshot {
-  return {
-    tmdbId,
-    title,
-    releaseYear: 1984,
-    runtimeMinutes: 137,
-    overview: "",
-    posterPath: null,
-    voteAverage: 6.3,
-    providers: [],
-    genreIds: [],
-    trailerKey: null,
-  };
-}
+const snapshot = (tmdbId: number, title: string): MovieSnapshot =>
+  aSnapshot(tmdbId, { title, releaseYear: 1984, runtimeMinutes: 137 });
 
 const DUNE_2021 = snapshot(438631, "Dune");
 const DUNE_2 = snapshot(693134, "Dune : Deuxième partie");
 const DUNE_1984 = snapshot(841, "Dune");
 
 beforeEach(() => {
-  assertUnlocked.mockReset().mockResolvedValue(undefined);
+  vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
   apply.mockReset().mockResolvedValue("applied");
   statusesOf.mockReset().mockResolvedValue(new Map());
-  revalidatePath.mockReset();
+  vi.mocked(revalidatePath).mockReset();
   searchMovies.mockReset().mockResolvedValue([]);
   getMovieSnapshot.mockReset().mockResolvedValue(DUNE_1984);
 });
@@ -159,7 +144,7 @@ describe("appareil verrouillé", () => {
     ["searchCatalog", () => searchCatalog("dune")],
     ["addFromSearch", () => addFromSearch(841)],
   ] as const)("%s refuse sans rien appliquer", async (_name, call) => {
-    assertUnlocked.mockRejectedValue(new Error("device is locked"));
+    vi.mocked(assertUnlocked).mockRejectedValue(new Error("device is locked"));
 
     await expect(call()).rejects.toThrow("device is locked");
     expect(apply).not.toHaveBeenCalled();

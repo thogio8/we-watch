@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { UnlockScreen } from "./UnlockScreen";
 
 const unlock = vi.fn();
@@ -10,8 +9,6 @@ const unlock = vi.fn();
 vi.mock("./actions", () => ({
   unlock: (...args: unknown[]) => unlock(...args),
 }));
-
-afterEach(cleanup);
 
 describe("UnlockScreen", () => {
   it("demande le code dans un champ masqué", () => {

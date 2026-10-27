@@ -1,24 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidatePath } from "next/cache";
+import { assertUnlocked } from "@/access/assert-unlocked";
 import { markWatched } from "./actions";
 
 const apply = vi.fn();
-const revalidatePath = vi.fn();
 
-const assertUnlocked = vi.fn();
-vi.mock("@/access/assert-unlocked", () => ({
-  assertUnlocked: () => assertUnlocked(),
-}));
+vi.mock("@/access/assert-unlocked");
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply }),
 }));
-vi.mock("next/cache", () => ({
-  revalidatePath: (...args: unknown[]) => revalidatePath(...args),
-}));
+vi.mock("next/cache");
 
 beforeEach(() => {
-  assertUnlocked.mockReset().mockResolvedValue(undefined);
+  vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
   apply.mockReset().mockResolvedValue("applied");
-  revalidatePath.mockReset();
+  vi.mocked(revalidatePath).mockReset();
 });
 
 describe("markWatched", () => {
@@ -40,7 +36,7 @@ describe("markWatched", () => {
 
 describe("appareil verrouillé", () => {
   it("markWatched refuse sans rien appliquer", async () => {
-    assertUnlocked.mockRejectedValue(new Error("device is locked"));
+    vi.mocked(assertUnlocked).mockRejectedValue(new Error("device is locked"));
 
     await expect(markWatched(129)).rejects.toThrow("device is locked");
     expect(apply).not.toHaveBeenCalled();

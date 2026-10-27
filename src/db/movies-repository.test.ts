@@ -1,5 +1,6 @@
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
+import { aSnapshot } from "@tests/helpers/movies";
 import type { MovieSnapshot } from "@/domain/movie";
 import { createDatabase, type Database } from "./create-database";
 import {
@@ -7,24 +8,17 @@ import {
   type MoviesRepository,
 } from "./movies-repository";
 
-function snapshot(
+const snapshot = (
   id: number,
   overrides: Partial<MovieSnapshot> = {},
-): MovieSnapshot {
-  return {
-    tmdbId: id,
-    title: `Film ${id}`,
+): MovieSnapshot =>
+  aSnapshot(id, {
     releaseYear: 2000 + id,
-    runtimeMinutes: 100,
     overview: "Résumé",
     posterPath: `/p${id}.jpg`,
     voteAverage: 7.5,
-    providers: [],
-    genreIds: [],
-    trailerKey: null,
     ...overrides,
-  };
-}
+  });
 
 let db: Database;
 let repo: MoviesRepository;

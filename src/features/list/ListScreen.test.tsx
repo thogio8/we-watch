@@ -1,35 +1,20 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { aMovie, NETFLIX } from "@tests/helpers/movies";
 import type { Movie } from "@/domain/movie";
 import { ListScreen } from "./ListScreen";
 
-function movie(tmdbId: number, title: string, overrides: Partial<Movie> = {}) {
-  return {
-    tmdbId,
+const movie = (tmdbId: number, title: string, overrides: Partial<Movie> = {}) =>
+  aMovie(tmdbId, {
     title,
     releaseYear: 2001,
     runtimeMinutes: 125,
-    overview: "",
-    posterPath: null,
     voteAverage: 8.5,
-    providers: [{ id: 8, name: "Netflix", logoPath: null }],
-    genreIds: [],
-    trailerKey: null,
-    status: "to_watch",
-    decidedAt: new Date(2026, 9, 1),
-    watchedAt: null,
+    providers: [NETFLIX],
     ...overrides,
-  } satisfies Movie;
-}
+  });
 
 const CHIHIRO = movie(129, "LE VOYAGE DE CHIHIRO");
 const WHIPLASH = movie(244786, "WHIPLASH", {
@@ -75,8 +60,6 @@ function renderList({
 }
 
 const panel = () => screen.getByRole("tabpanel");
-
-afterEach(cleanup);
 
 describe("ListScreen", () => {
   it("affiche les compteurs des deux onglets", () => {

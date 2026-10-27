@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidatePath } from "next/cache";
+import { assertUnlocked } from "@/access/assert-unlocked";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
 import type { DeckId } from "@/tmdb/decks";
@@ -12,16 +14,12 @@ import {
 const apply = vi.fn();
 const undo = vi.fn();
 const getDeckDeps = vi.fn();
-const revalidatePath = vi.fn();
 const getMovieSnapshot = vi.fn();
 const loadDeckBatch = vi.fn();
 const client = { get: vi.fn() };
 const deckDeps = { discover: vi.fn(), snapshot: vi.fn(), decidedIds: vi.fn() };
 
-const assertUnlocked = vi.fn();
-vi.mock("@/access/assert-unlocked", () => ({
-  assertUnlocked: () => assertUnlocked(),
-}));
+vi.mock("@/access/assert-unlocked");
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply, undoSwipe: undo }),
   getTmdbClient: () => client,
@@ -33,9 +31,7 @@ vi.mock("@/tmdb/movies", () => ({
 vi.mock("./deck", () => ({
   loadDeckBatch: (...args: unknown[]) => loadDeckBatch(...args),
 }));
-vi.mock("next/cache", () => ({
-  revalidatePath: (...args: unknown[]) => revalidatePath(...args),
-}));
+vi.mock("next/cache");
 
 const WHIPLASH: MovieSnapshot = {
   tmdbId: 244786,
@@ -51,11 +47,11 @@ const WHIPLASH: MovieSnapshot = {
 };
 
 beforeEach(() => {
-  assertUnlocked.mockReset().mockResolvedValue(undefined);
+  vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
   apply.mockReset().mockResolvedValue("applied");
   undo.mockReset().mockResolvedValue("applied");
   getDeckDeps.mockReset().mockReturnValue(deckDeps);
-  revalidatePath.mockReset();
+  vi.mocked(revalidatePath).mockReset();
   getMovieSnapshot.mockReset().mockResolvedValue(WHIPLASH);
   loadDeckBatch.mockReset();
 });
@@ -168,7 +164,7 @@ describe("appareil verrouillé", () => {
     ["loadMoreCards", () => loadMoreCards("top", 1)],
     ["undoSwipe", () => undoSwipe(244786, "keep")],
   ] as const)("%s refuse sans rien appliquer", async (_name, call) => {
-    assertUnlocked.mockRejectedValue(new Error("device is locked"));
+    vi.mocked(assertUnlocked).mockRejectedValue(new Error("device is locked"));
 
     await expect(call()).rejects.toThrow("device is locked");
     expect(getMovieSnapshot).not.toHaveBeenCalled();

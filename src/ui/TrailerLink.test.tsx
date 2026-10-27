@@ -1,10 +1,7 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { TrailerLink } from "./TrailerLink";
-
-afterEach(cleanup);
 
 describe("TrailerLink", () => {
   it("ouvre la bande-annonce YouTube dans un nouvel onglet", () => {

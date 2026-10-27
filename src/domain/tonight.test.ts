@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { aSnapshot } from "@tests/helpers/movies";
 import type { MovieSnapshot, StreamingProvider } from "./movie";
 import {
   BEDTIMES,
@@ -22,24 +23,7 @@ const NETFLIX: StreamingProvider = { id: 8, name: "Netflix", logoPath: null };
 const PRIME: StreamingProvider = { id: 119, name: "Prime", logoPath: null };
 const CANAL: StreamingProvider = { id: 381, name: "Canal+", logoPath: null };
 
-function movie(
-  tmdbId: number,
-  overrides: Partial<MovieSnapshot> = {},
-): MovieSnapshot {
-  return {
-    tmdbId,
-    title: `Film ${tmdbId}`,
-    releaseYear: 2000,
-    runtimeMinutes: 100,
-    overview: "",
-    posterPath: null,
-    voteAverage: 7,
-    providers: [],
-    genreIds: [],
-    trailerKey: null,
-    ...overrides,
-  };
-}
+const movie = aSnapshot;
 
 const ids = (movies: readonly MovieSnapshot[]) => movies.map((m) => m.tmdbId);
 

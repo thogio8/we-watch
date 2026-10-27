@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import {
-  cleanup,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { aSnapshot, PRIME } from "@tests/helpers/movies";
+import { stubMatchMedia } from "@tests/helpers/dom";
 import type { ApplyResult } from "@/domain/transitions";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { DeckId } from "@/tmdb/decks";
@@ -16,25 +11,20 @@ import type { LoadMoreResult, SwipeDecision } from "./actions";
 import type { DeckBatch } from "./deck";
 import { SwipeDeck } from "./SwipeDeck";
 
-function snapshot(
+const snapshot = (
   tmdbId: number,
   title: string,
   overrides: Partial<MovieSnapshot> = {},
-): MovieSnapshot {
-  return {
-    tmdbId,
+) =>
+  aSnapshot(tmdbId, {
     title,
     releaseYear: 2014,
     runtimeMinutes: 107,
     overview: `Résumé de ${title}.`,
-    posterPath: null,
     voteAverage: 8.38,
-    providers: [{ id: 119, name: "Amazon Prime Video", logoPath: null }],
-    genreIds: [],
-    trailerKey: null,
+    providers: [PRIME],
     ...overrides,
-  };
-}
+  });
 
 const WHIPLASH = snapshot(244786, "WHIPLASH");
 const CHIHIRO = snapshot(129, "LE VOYAGE DE CHIHIRO", { providers: [] });
@@ -87,26 +77,7 @@ async function tap(user: ReturnType<typeof userEvent.setup>, name: string) {
 
 beforeEach(() => {
   // Reduced motion: no fly-out, cards swap immediately.
-  vi.stubGlobal(
-    "matchMedia",
-    (query: string) =>
-      ({
-        matches: query.includes("prefers-reduced-motion"),
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      }) satisfies MediaQueryList,
-  );
-});
-
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
+  stubMatchMedia({ reducedMotion: true });
 });
 
 describe("SwipeDeck", () => {

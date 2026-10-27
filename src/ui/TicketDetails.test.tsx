@@ -1,28 +1,22 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { aSnapshot, NETFLIX, PRIME } from "@tests/helpers/movies";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TicketDetails } from "./TicketDetails";
 
-afterEach(cleanup);
-
-const NETFLIX = { id: 8, name: "Netflix", logoPath: null };
-const PRIME = { id: 119, name: "Amazon Prime Video", logoPath: null };
-
-const movie = (overrides: Partial<MovieSnapshot> = {}): MovieSnapshot => ({
-  tmdbId: 244786,
-  title: "WHIPLASH",
-  releaseYear: 2014,
-  runtimeMinutes: 107,
-  overview: "Un batteur et son professeur.",
-  posterPath: null,
-  voteAverage: 8.4,
-  providers: [NETFLIX],
-  genreIds: [18],
-  trailerKey: "7d_jQycdQGo",
-  ...overrides,
-});
+const movie = (overrides: Partial<MovieSnapshot> = {}): MovieSnapshot =>
+  aSnapshot(244786, {
+    title: "WHIPLASH",
+    releaseYear: 2014,
+    runtimeMinutes: 107,
+    overview: "Un batteur et son professeur.",
+    voteAverage: 8.4,
+    providers: [NETFLIX],
+    genreIds: [18],
+    trailerKey: "7d_jQycdQGo",
+    ...overrides,
+  });
 
 const tags = () => screen.queryByRole("list", { name: "Plateformes" });
 

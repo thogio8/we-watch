@@ -1,10 +1,7 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { ProviderTags } from "./ProviderTags";
-
-afterEach(cleanup);
 
 describe("ProviderTags", () => {
   it("ProviderTags affiche chaque plateforme", () => {

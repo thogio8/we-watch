@@ -1,31 +1,24 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { aMovie, NETFLIX } from "@tests/helpers/movies";
+import { stubMatchMedia } from "@tests/helpers/dom";
 import type { Movie } from "@/domain/movie";
 import { DrawScreen } from "./DrawScreen";
 import { DrawSessionProvider } from "./DrawSessionProvider";
 
-function movie(tmdbId: number, title: string, overrides: Partial<Movie> = {}) {
-  return {
-    tmdbId,
+const movie = (tmdbId: number, title: string, overrides: Partial<Movie> = {}) =>
+  aMovie(tmdbId, {
     title,
     releaseYear: 2001,
     runtimeMinutes: 125,
     overview: `Résumé de ${title}.`,
-    posterPath: null,
     voteAverage: 8.54,
-    providers: [{ id: 8, name: "Netflix", logoPath: null }],
-    genreIds: [],
-    trailerKey: null,
-    status: "to_watch",
-    decidedAt: new Date(2026, 9, 1),
-    watchedAt: null,
+    providers: [NETFLIX],
     ...overrides,
-  } satisfies Movie;
-}
+  });
 
 const CHIHIRO = movie(129, "LE VOYAGE DE CHIHIRO");
 const WHIPLASH = movie(244786, "WHIPLASH", { runtimeMinutes: 107 });
@@ -58,34 +51,20 @@ function renderDraw(props: Props) {
 
 const drawButton = () => screen.getByRole("button", { name: "TIRER UN FILM" });
 
+/** Draws the only movie, then sets it aside: the pile is empty. */
+async function exhaustPile(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(drawButton());
+  await user.click(await screen.findByRole("button", { name: "RETIRER" }));
+  await screen.findByRole("heading", { name: "VOUS ÊTES DIFFICILES CE SOIR" });
+}
+
 beforeEach(() => {
   // Only the clock is frozen: user-event and motion keep real timers.
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 9, 23, 21, 7));
   vi.spyOn(Math, "random").mockReturnValue(0);
   // Reduced motion: animations resolve immediately.
-  vi.stubGlobal(
-    "matchMedia",
-    (query: string) =>
-      ({
-        matches: query.includes("prefers-reduced-motion"),
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      }) satisfies MediaQueryList,
-  );
-});
-
-afterEach(() => {
-  cleanup();
-  localStorage.clear();
-  vi.useRealTimers();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
+  stubMatchMedia({ reducedMotion: true });
 });
 
 describe("DrawScreen", () => {
@@ -244,11 +223,7 @@ describe("DrawScreen", () => {
 
   it("pile épuisée puis film ajouté → tirable sans vider la pile", async () => {
     const { user, rerender } = renderDraw({ toWatch: [CHIHIRO] });
-    await user.click(drawButton());
-    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
-    await screen.findByRole("heading", {
-      name: "VOUS ÊTES DIFFICILES CE SOIR",
-    });
+    await exhaustPile(user);
 
     rerender({ toWatch: [WHIPLASH, CHIHIRO] });
     await user.click(
@@ -263,11 +238,7 @@ describe("DrawScreen", () => {
 
   it("pile épuisée puis liste vidée → écran liste vide", async () => {
     const { user, rerender } = renderDraw({ toWatch: [CHIHIRO] });
-    await user.click(drawButton());
-    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
-    await screen.findByRole("heading", {
-      name: "VOUS ÊTES DIFFICILES CE SOIR",
-    });
+    await exhaustPile(user);
 
     rerender({ toWatch: [] });
 
