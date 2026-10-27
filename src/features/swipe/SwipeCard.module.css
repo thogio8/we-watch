@@ -112,11 +112,16 @@
   }
 }
 
-/* Lying ticket: the platform stamp starts on the poster and may run over the
-   perforation, rather than being cut by the ticket's left edge. */
+/* Lying ticket: the platform stamp stays on the poster, however narrow
+   (phone held sideways), sized from its width; a long name is cut short. */
 @container shell (min-width: 640px) {
   .platform {
     right: auto;
-    left: 10px;
+    left: 8px;
+    max-width: calc(var(--poster-w) - 16px);
+    overflow: hidden;
+    padding: 3px 8px;
+    font-size: clamp(10px, calc(var(--poster-w) / 12), var(--text-md));
+    text-overflow: ellipsis;
   }
 }

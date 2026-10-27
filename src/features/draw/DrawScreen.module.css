@@ -244,11 +244,17 @@
   text-shadow: var(--shadow-offset-xs);
 }
 
-/* Lying ticket: the stamp starts on the poster and may run over the
-   perforation, rather than being cut by the ticket's left edge. */
+/* Lying ticket: the stamp stays on the poster, however narrow (phone held
+   sideways), sized from its width so it never covers the title. */
 @container shell (min-width: 640px) {
   .endStamp {
     right: auto;
-    left: 10px;
+    left: 8px;
+    max-width: calc(var(--poster-w) - 16px);
+  }
+
+  .endStamp > * {
+    padding: 4px 8px;
+    font-size: clamp(10px, calc(var(--poster-w) / 11), var(--text-lg));
   }
 }
