@@ -1,41 +1,41 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { aSnapshot, NETFLIX } from "@tests/helpers/movies";
 import type { MovieStatus } from "@/domain/movie";
 import type { SearchOutcome, SearchResult } from "./actions";
 import { SearchPanel } from "./SearchPanel";
 
+/** A TMDB result as the search returns it, Netflix and 2h35 by default. */
 function result(
   tmdbId: number,
-  title: string,
-  releaseYear: number,
   status: MovieStatus | null,
-  overrides: Partial<SearchResult> = {},
+  overrides: Partial<SearchResult>,
 ): SearchResult {
   return {
-    tmdbId,
-    title,
-    releaseYear,
-    runtimeMinutes: 155,
-    overview: "",
-    posterPath: null,
-    voteAverage: 7.8,
-    providers: [{ id: 8, name: "Netflix", logoPath: null }],
-    genreIds: [],
-    trailerKey: null,
+    ...aSnapshot(tmdbId, {
+      runtimeMinutes: 155,
+      voteAverage: 7.8,
+      providers: [NETFLIX],
+    }),
     status,
     ...overrides,
   };
 }
 
-const DUNE_2021 = result(438631, "DUNE", 2021, null);
-const DUNE_2 = result(693134, "DUNE : DEUXIÈME PARTIE", 2024, "to_watch");
-const DUNE_1984 = result(841, "DUNE", 1984, "rejected", {
+const DUNE_2021 = result(438631, null, { title: "DUNE", releaseYear: 2021 });
+const DUNE_2 = result(693134, "to_watch", {
+  title: "DUNE : DEUXIÈME PARTIE",
+  releaseYear: 2024,
+});
+const DUNE_1984 = result(841, "rejected", {
+  title: "DUNE",
+  releaseYear: 1984,
   runtimeMinutes: 137,
   voteAverage: 6.3,
   providers: [],
 });
-const DUNE_2000 = result(876, "DUNE", 2000, "watched");
+const DUNE_2000 = result(876, "watched", { title: "DUNE", releaseYear: 2000 });
 
 type Search = (query: string) => Promise<SearchOutcome>;
 type Add = (tmdbId: number) => Promise<void>;

@@ -102,6 +102,12 @@ describe("searchCatalog", () => {
     await expect(searchCatalog("dune")).resolves.toEqual({ ok: false });
   });
 
+  it("laisse remonter une panne qui ne vient pas de TMDB", async () => {
+    searchMovies.mockRejectedValue(new TypeError("bug"));
+
+    await expect(searchCatalog("dune")).rejects.toThrow("bug");
+  });
+
   it("laisse remonter les autres erreurs", async () => {
     statusesOf.mockRejectedValue(new Error("database is locked"));
 
