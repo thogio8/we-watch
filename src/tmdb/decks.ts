@@ -34,8 +34,12 @@ const PARAMS: Record<DeckId, DeckParams> = {
   korean: { with_original_language: "ko", "vote_count.gte": 200 },
 };
 
+const LABELS = Object.fromEntries(
+  DECKS.map((deck) => [deck.id, deck.label]),
+) as Record<DeckId, string>;
+
 export function deckLabel(id: DeckId): string {
-  return DECKS.find((deck) => deck.id === id)?.label ?? "";
+  return LABELS[id];
 }
 
 export function isDeckId(value: unknown): value is DeckId {

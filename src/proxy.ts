@@ -6,11 +6,14 @@ import { getServerEnv } from "@/env";
 
 /** Shared access code: every request needs the unlock cookie (see src/access). */
 export async function proxy(request: NextRequest) {
+  const env = getServerEnv();
   const decision = await accessDecision({
     pathname: request.nextUrl.pathname,
     method: request.method,
     cookie: request.cookies.get(ACCESS_COOKIE)?.value,
-    code: getServerEnv().ACCESS_CODE,
+    code: env.ACCESS_CODE,
+    authorization: request.headers.get("authorization"),
+    cronSecret: env.CRON_SECRET,
   });
   switch (decision) {
     case "allow":

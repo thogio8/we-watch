@@ -200,6 +200,13 @@ describe("getMovieSnapshot", () => {
     expect(init.next).toEqual({ revalidate: 86400 });
     expect(snap.tmdbId).toBe(129);
   });
+
+  it("fresh contourne le cache", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(detailsFull));
+    await getMovieSnapshot(clientWith(fetchImpl), 129, { fresh: true });
+    const init = fetchImpl.mock.calls[0]![1] as { cache?: string };
+    expect(init.cache).toBe("no-store");
+  });
 });
 
 describe("searchMovies", () => {

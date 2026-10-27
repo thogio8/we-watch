@@ -79,3 +79,51 @@ describe("accessDecision", () => {
     },
   );
 });
+
+describe("accessDecision : route du cron", () => {
+  const SECRET = "un-secret-de-cron-assez-long";
+  const request = (
+    method: string,
+    authorization: string | null,
+    cronSecret: string | undefined = SECRET,
+  ) =>
+    accessDecision({
+      pathname: "/api/cron/refresh-movies",
+      method,
+      cookie: valid,
+      code: CODE,
+      authorization,
+      cronSecret,
+    });
+
+  it("le bon secret ouvre la route en GET", async () => {
+    await expect(request("GET", `Bearer ${SECRET}`)).resolves.toBe("allow");
+  });
+
+  it("le cookie seul ne suffit pas, et jamais de redirection", async () => {
+    await expect(request("GET", null)).resolves.toBe("unauthorized");
+    await expect(request("GET", "Bearer faux")).resolves.toBe("unauthorized");
+  });
+
+  it("refuse un POST et une route sans secret configuré", async () => {
+    await expect(request("POST", `Bearer ${SECRET}`)).resolves.toBe(
+      "unauthorized",
+    );
+    await expect(request("GET", "Bearer undefined", undefined)).resolves.toBe(
+      "unauthorized",
+    );
+  });
+
+  it("les autres routes /api restent derrière le cookie", async () => {
+    await expect(
+      accessDecision({
+        pathname: "/api/autre",
+        method: "GET",
+        cookie: undefined,
+        code: CODE,
+        authorization: `Bearer ${SECRET}`,
+        cronSecret: SECRET,
+      }),
+    ).resolves.toBe("redirect");
+  });
+});

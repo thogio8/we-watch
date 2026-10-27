@@ -48,4 +48,25 @@ describe("parseServerEnv", () => {
       }),
     ).toThrow(/ACCESS_CODE: ACCESS_CODE must be at least 8 characters/);
   });
+  it("CRON_SECRET est facultatif, vide = absent", () => {
+    const base = {
+      TMDB_ACCESS_TOKEN: "t",
+      DATABASE_URL: "file:local.db",
+      ACCESS_CODE: "pop corn ce soir",
+    };
+    expect(parseServerEnv({ ...base, CRON_SECRET: "" })).toEqual(base);
+    expect(
+      parseServerEnv({ ...base, CRON_SECRET: "0123456789abcdef" }).CRON_SECRET,
+    ).toBe("0123456789abcdef");
+  });
+  it("refuse un CRON_SECRET de moins de 16 caractères", () => {
+    expect(() =>
+      parseServerEnv({
+        TMDB_ACCESS_TOKEN: "t",
+        DATABASE_URL: "file:local.db",
+        ACCESS_CODE: "pop corn ce soir",
+        CRON_SECRET: "court",
+      }),
+    ).toThrow(/CRON_SECRET must be at least 16 characters/);
+  });
 });

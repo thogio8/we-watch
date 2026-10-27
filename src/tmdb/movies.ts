@@ -76,9 +76,11 @@ export async function discoverDeck(
   };
 }
 
+/** `fresh` skips Next's 24 h cache (daily refresh). */
 export async function getMovieSnapshot(
   client: TmdbClient,
   tmdbId: number,
+  { fresh = false }: { fresh?: boolean } = {},
 ): Promise<MovieSnapshot> {
   const details = await client.get(
     `/movie/${tmdbId}`,
@@ -89,7 +91,7 @@ export async function getMovieSnapshot(
       include_video_language: "fr,en",
     },
     tmdbMovieDetailsSchema,
-    { revalidateSeconds: DETAILS_REVALIDATE_SECONDS },
+    fresh ? undefined : { revalidateSeconds: DETAILS_REVALIDATE_SECONDS },
   );
   return toSnapshot(details);
 }

@@ -1,3 +1,4 @@
+import { CRON_PATH, isCronAuthorized } from "./cron";
 import { UNLOCK_PATH } from "./paths";
 import { isValidAccessToken } from "./token";
 
@@ -9,6 +10,9 @@ interface AccessRequest {
   /** Value of the access cookie, if the browser sent one. */
   cookie: string | undefined;
   code: string;
+  /** Authorization header and secret of the cron route. */
+  authorization?: string | null;
+  cronSecret?: string;
 }
 
 /**
@@ -30,7 +34,15 @@ export async function accessDecision({
   method,
   cookie,
   code,
+  authorization,
+  cronSecret,
 }: AccessRequest): Promise<AccessDecision> {
+  // The cron route answers its secret only, never the cookie.
+  if (pathname === CRON_PATH) {
+    return isReadOnly(method) && isCronAuthorized(authorization, cronSecret)
+      ? "allow"
+      : "unauthorized";
+  }
   // /unlock serves the form and receives its Server Action POST.
   if (pathname === UNLOCK_PATH) {
     return "allow";

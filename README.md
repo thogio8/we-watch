@@ -23,7 +23,19 @@ L'URL de prod est publique : un code partagé, saisi une fois par appareil sur `
 - `ACCESS_CODE` est obligatoire, en local comme sur Vercel : 8 caractères minimum, mais choisir une **phrase de passe de 12 caractères ou plus** (3 ou 4 mots, ex. « pop corn sous la couette »), facile à taper sur un téléphone. La pause de 500 ms après un mauvais code ne freine pas des essais lancés en parallèle : c'est la longueur du code qui protège.
 - Le bon code pose le cookie `ww_access` (httpOnly, SameSite=Lax, un an). Le cookie est `Secure` dès que `NODE_ENV=production` : `npm start` servi en http sur une IP du réseau local ne garde donc pas le cookie (`localhost` est accepté par les navigateurs) ; pour tester depuis un téléphone en LAN, utiliser `npm run dev`.
 - Changer `ACCESS_CODE` déconnecte tous les appareils.
-- Le proxy valide l'environnement serveur (`TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `ACCESS_CODE`) à chaque requête : si `TMDB_ACCESS_TOKEN`, `DATABASE_URL` ou `ACCESS_CODE` manque ou est invalide, **tout** renvoie 500, y compris `/unlock`, le manifest et les icônes. `DATABASE_AUTH_TOKEN` est facultatif pour la validation mais indispensable pour Turso. Vérifier les quatre sur Vercel avant de déployer.
+
+## Rafraîchissement quotidien (V1.2)
+
+Vercel Cron appelle `GET /api/cron/refresh-movies` une fois par jour (`vercel.json`, 14 h UTC) : chaque film « à voir » et « vu » reprend ses données TMDB (plateformes, durée, genres, bande-annonce), sans toucher statut ni dates. La route échappe au cookie d'accès et n'accepte que `Authorization: Bearer $CRON_SECRET`.
+
+- `CRON_SECRET` est facultatif (16 caractères minimum) : sans lui, la route répond 401 et rien n'est rafraîchi. Le générer avec `openssl rand -hex 32`.
+- Lancer un rafraîchissement à la main (par exemple après une migration) :
+
+  ```bash
+  curl -H "Authorization: Bearer $CRON_SECRET" https://we-watch-lac.vercel.app/api/cron/refresh-movies
+  ```
+
+- Le proxy valide l'environnement serveur (`TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `ACCESS_CODE`, `CRON_SECRET`) à chaque requête : si `TMDB_ACCESS_TOKEN`, `DATABASE_URL` ou `ACCESS_CODE` manque ou est invalide, **tout** renvoie 500, y compris `/unlock`, le manifest et les icônes. `DATABASE_AUTH_TOKEN` est facultatif pour la validation mais indispensable pour Turso. Vérifier les quatre sur Vercel avant de déployer.
 
 ## Installer sur iPhone
 
@@ -68,7 +80,7 @@ turso db shell we-watch ".tables"   # la table movies doit apparaître
 ### 3. Vercel
 
 1. Importer le dépôt `thogio8/we-watch`.
-2. Définir `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN` et `ACCESS_CODE` pour l'environnement Production.
+2. Définir `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `ACCESS_CODE` et `CRON_SECRET` pour l'environnement Production.
    > Attention : si Preview reçoit les mêmes variables, les déploiements de preview pointent vers la même base Turso et écrivent dans les données de prod. Préférer une base Turso séparée pour Preview, ou ne définir les variables que pour Production.
 3. La région des fonctions est fixée à Dublin (`dub1`) par `vercel.json`, au plus près de la base Turso (`aws-eu-west-1`, Irlande — Turso ne propose pas Paris).
 4. Déployer.
@@ -84,17 +96,19 @@ Sur l'URL Vercel, depuis un téléphone :
 - [ ] swiper 2 films
 - [ ] rechercher un film et l'ajouter
 - [ ] tirer au sort, puis « ON LE REGARDE »
+- [ ] régler « FINI AVANT » et une humeur : le bouton devient « TIRER PARMI N »
+- [ ] changer de thème au swipe, puis « ↺ ANNULER » un swipe
 - [ ] vérifier l'onglet VUS
 - [ ] recharger : tout est persistant
 
 ## Structure
 
-- `src/domain` : types et règles métier pures (films, tirage, transitions de statut)
+- `src/domain` : types et règles métier pures (films, tirage, filtres « ce soir », transitions de statut)
 - `src/db` : schéma Drizzle et repository des films (libSQL)
-- `src/tmdb` : client TMDB, schémas de validation et mapping
+- `src/tmdb` : client TMDB, schémas de validation, mapping et decks thématiques
 - `src/access` : code d'accès partagé (jeton HMAC, cookie, décision du proxy)
-- `src/proxy.ts` : proxy Next.js qui verrouille toutes les requêtes sans cookie valide
-- `src/features` : écrans et actions par fonctionnalité (swipe, list, draw, unlock, pwa)
+- `src/proxy.ts` : proxy Next.js qui verrouille toutes les requêtes sans cookie valide (sauf la route du cron, gardée par `CRON_SECRET`)
+- `src/features` : écrans et actions par fonctionnalité (swipe, list, draw, refresh, unlock, pwa)
 - `src/ui` : composants partagés (boutons, navigation, affiche, tags de plateformes, tampon, ticket, pile déchirée, lignes)
 - `src/app` : routes et layout Next.js, manifest et icônes générées
 - `src/server` : composition côté serveur (container : base, client TMDB, repository)

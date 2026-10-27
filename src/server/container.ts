@@ -5,6 +5,7 @@ import {
   type MoviesRepository,
 } from "@/db/movies-repository";
 import { getServerEnv } from "@/env";
+import type { RefreshDeps } from "@/features/refresh/refresh-movies";
 import type { DeckDeps } from "@/features/swipe/deck";
 import { createTmdbClient, type TmdbClient } from "@/tmdb/client";
 import type { DeckId } from "@/tmdb/decks";
@@ -37,5 +38,15 @@ export function getDeckDeps(deck: DeckId): DeckDeps {
     discover: (page) => discoverDeck(client, deck, page),
     snapshot: (id) => getMovieSnapshot(client, id),
     decidedIds: () => repo.decidedIds(),
+  };
+}
+
+export function getRefreshDeps(): RefreshDeps {
+  const client = getTmdbClient();
+  const repo = getMoviesRepository();
+  return {
+    ids: () => repo.idsWithStatus(["to_watch", "watched"]),
+    snapshot: (id) => getMovieSnapshot(client, id, { fresh: true }),
+    save: (snapshot) => repo.refreshSnapshot(snapshot),
   };
 }

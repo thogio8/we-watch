@@ -12,6 +12,16 @@ const serverEnvSchema = z.object({
   // Shared code that unlocks a device (see src/access). The 500 ms delay on
   // a wrong code does not stop parallel guesses: length is the real defence.
   ACCESS_CODE: z.string().min(8, "ACCESS_CODE must be at least 8 characters"),
+  // Bearer secret Vercel Cron sends to the daily refresh (src/access/cron).
+  // Optional: without it, the refresh route stays closed.
+  CRON_SECRET: z
+    .string()
+    .optional()
+    .transform((value) => (value === "" ? undefined : value))
+    .refine(
+      (value) => value === undefined || value.length >= 16,
+      "CRON_SECRET must be at least 16 characters",
+    ),
 });
 
 export type ServerEnv = {
@@ -19,6 +29,7 @@ export type ServerEnv = {
   DATABASE_URL: string;
   DATABASE_AUTH_TOKEN?: string;
   ACCESS_CODE: string;
+  CRON_SECRET?: string;
 };
 
 export function parseServerEnv(
@@ -31,10 +42,11 @@ export function parseServerEnv(
       .join("; ");
     throw new Error(`Invalid server environment: ${details}`);
   }
-  const { DATABASE_AUTH_TOKEN, ...rest } = result.data;
-  return DATABASE_AUTH_TOKEN === undefined
-    ? rest
-    : { ...rest, DATABASE_AUTH_TOKEN };
+  // Optional values are left out rather than set to undefined.
+  const env: ServerEnv = Object.fromEntries(
+    Object.entries(result.data).filter(([, value]) => value !== undefined),
+  ) as ServerEnv;
+  return env;
 }
 
 let cached: ServerEnv | undefined;

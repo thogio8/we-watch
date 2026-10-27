@@ -26,6 +26,10 @@ export default defineConfig({
         "src/tmdb/**",
         "src/features/swipe/deck.ts",
         "src/features/unlock/actions.ts",
+        // V1.2 « ce soir »
+        "src/features/draw/tonightStorage.ts",
+        "src/features/refresh/**",
+        "src/app/api/cron/**",
       ],
       thresholds: { lines: 95, functions: 95, statements: 95, branches: 90 },
     },
