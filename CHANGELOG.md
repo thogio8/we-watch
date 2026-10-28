@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/thogio8/we-watch/compare/v1.3.1...v1.3.2) (2026-10-28)
+
+
+### Corrections
+
+* **draw:** follow a list changed on another page instead of freezing the last screen ([550bcee](https://github.com/thogio8/we-watch/commit/550bceea34549aec803e4177b03d135255df93ef))
+* **tmdb:** strip invisible direction marks from titles and overviews ([32182d7](https://github.com/thogio8/we-watch/commit/32182d79980878d88af369cbb64e109d8a6e1a38))
+
 ## [1.3.1](https://github.com/thogio8/we-watch/compare/v1.3.0...v1.3.1) (2026-10-27)
 
 
