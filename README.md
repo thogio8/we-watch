@@ -6,7 +6,7 @@
   <a href="https://github.com/thogio8/we-watch/actions/workflows/ci.yml"><img src="https://github.com/thogio8/we-watch/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/thogio8/we-watch/releases"><img src="https://img.shields.io/github/v/release/thogio8/we-watch?label=version&color=ff3fa4" alt="Version"></a>
   <img src="https://img.shields.io/badge/Next.js-16-1b1b6b" alt="Next.js 16">
-  <img src="https://img.shields.io/badge/PWA-ffe600?labelColor=1b1b6b" alt="PWA">
+  <img src="https://img.shields.io/badge/PWA-ffe600" alt="PWA">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-2f6bff" alt="Licence MIT"></a>
 </p>
 
