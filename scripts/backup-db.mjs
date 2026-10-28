@@ -12,7 +12,14 @@ const client = createClient({
   url: process.env.DATABASE_URL,
   authToken: process.env.DATABASE_AUTH_TOKEN || undefined,
 });
-const { rows } = await client.execute("select * from movies");
+// A brand-new database has no table yet (first deploy): nothing to save.
+const { rows: tables } = await client.execute(
+  "select name from sqlite_master where type = 'table' and name = 'movies'",
+);
+const { rows } =
+  tables.length > 0
+    ? await client.execute("select * from movies")
+    : { rows: [] };
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify(rows));
 console.log(`${rows.length} movies saved to ${out}`);
