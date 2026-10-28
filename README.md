@@ -7,6 +7,7 @@
   <a href="https://github.com/thogio8/we-watch/releases"><img src="https://img.shields.io/github/v/release/thogio8/we-watch?label=version&color=ff3fa4" alt="Version"></a>
   <img src="https://img.shields.io/badge/Next.js-16-1b1b6b" alt="Next.js 16">
   <img src="https://img.shields.io/badge/PWA-iPhone-ffe600?labelColor=1b1b6b" alt="PWA iPhone">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-2f6bff" alt="Licence MIT"></a>
 </p>
 
 # we-watch
@@ -126,3 +127,7 @@ Les règles du projet (architecture, conventions, définition de « fini ») son
 ## Crédits
 
 <img src="public/tmdb-logo.svg" alt="TMDB" height="14"> This product uses the TMDB API but is not endorsed or certified by TMDB. Disponibilités en streaming : [JustWatch](https://www.justwatch.com/fr), via TMDB.
+
+## Licence
+
+[MIT](LICENSE) : réutilisez, modifiez, hébergez, en gardant la mention de copyright. Les données de films appartiennent à TMDB et restent soumises à [leurs conditions](https://www.themoviedb.org/api-terms-of-use).
