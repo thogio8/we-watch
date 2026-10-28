@@ -1,117 +1,128 @@
+<p align="center">
+  <img src="docs/readme/poster.webp" alt="we-watch : on swipe des films à deux, le soir le hasard tranche" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/thogio8/we-watch/actions/workflows/ci.yml"><img src="https://github.com/thogio8/we-watch/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/thogio8/we-watch/releases"><img src="https://img.shields.io/github/v/release/thogio8/we-watch?label=version&color=ff3fa4" alt="Version"></a>
+  <img src="https://img.shields.io/badge/Next.js-16-1b1b6b" alt="Next.js 16">
+  <img src="https://img.shields.io/badge/PWA-iPhone-ffe600?labelColor=1b1b6b" alt="PWA iPhone">
+</p>
+
 # we-watch
 
-Swipe des films TMDB dans une watchlist, puis tirage au sort du film de ce soir.
+**Une longue liste de films à voir, et chaque soir le même débat.** we-watch sépare les deux moments : on remplit la liste à deux, tranquillement, en swipant des films ; le soir venu, un bouton, un film, et c'est le hasard qui tranche.
 
-## Prérequis
+Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), installable sur l'écran d'accueil du téléphone, gratuite à héberger, en français, et volontairement joyeuse : direction artistique « ticket d'entrée », riso fluo.
 
-- Node.js 22 ou plus récent, npm
-- Un jeton d'accès TMDB (API Read Access Token) : themoviedb.org → Paramètres → API
+## Ce qu'elle fait
 
-## Démarrage local
+**🎟️ TIRER** : le film de ce soir
+
+- Un gros bouton, un film tiré au sort dans la liste « à voir », avec l'heure à laquelle il finira si on le lance maintenant (« FINI À 23H12 »).
+- **RETIRER** déchire le ticket et en tire un autre ; les tickets déchirés s'empilent (« PAS CE SOIR ») et ne ressortent pas de la soirée, sauf si on les **↺ RESSORT**.
+- **La soirée** : filtres facultatifs pour réduire le choix : heure de coucher (« FINI AVANT MINUIT »), envie du moment (RIRE, FRISSONNER, S'ÉMOUVOIR…), plateformes auxquelles on est abonnés.
+
+**💘 SWIPER** : remplir la liste
+
+- Des films bien notés, un par un : glisser à droite (ON LE VEUT ♥) ou à gauche (✕ BOF), ou utiliser les boutons.
+- Des thèmes : les mieux notés, années 80, années 90, moins de 1h40, animation, cinéma français, cinéma coréen.
+- Bande-annonce en un geste, et **↺ ANNULER** pendant quelques secondes après chaque choix.
+
+**📋 LISTE** : notre liste
+
+- Les films « à voir » et « vus », une recherche TMDB pour ajouter un film précis, et une fiche par film : résumé complet, genres, réalisation, têtes d'affiche, date d'ajout, actions.
+- Sur chaque film, **les plateformes de streaming françaises** où il est disponible, ou « PAS EN STREAMING » : une information, jamais un filtre. C'est la liste qui compte, pas le catalogue d'une plateforme.
+- Les données des films (plateformes, durées…) se rafraîchissent chaque jour.
+
+<p align="center">
+  <img src="docs/readme/desktop.webp" alt="Le ticket tiré sur un écran large" width="74%">
+  &nbsp;
+  <img src="docs/readme/fiche.webp" alt="La fiche d'un film sur téléphone" width="22%">
+</p>
+
+Pensée pour le téléphone, elle s'adapte à tous les écrans : petit Android, iPhone couché, tablette, grand écran (le ticket se couche comme un vrai billet).
+
+## Essayer en local
+
+Il faut **Node.js 24** et un jeton d'accès TMDB gratuit (themoviedb.org → Paramètres → API → « API Read Access Token »).
 
 ```bash
+git clone https://github.com/thogio8/we-watch.git && cd we-watch
 npm install
-cp .env.example .env.local   # puis renseigner TMDB_ACCESS_TOKEN et ACCESS_CODE
-npm run db:migrate           # crée la base locale local.db (DATABASE_URL=file:local.db)
-npm run dev
+cp .env.example .env.local   # renseigner TMDB_ACCESS_TOKEN et ACCESS_CODE
+npm run db:migrate           # crée la base SQLite locale (local.db)
+npm run dev                  # http://localhost:3000
 ```
 
-## Code d'accès
+L'appli demande alors le code d'accès choisi dans `ACCESS_CODE`, puis s'ouvre sur TIRER : la liste est vide, direction SWIPER.
 
-L'URL de prod est publique : un code partagé, saisi une fois par appareil sur `/unlock`, protège l'app (pas de comptes).
+## Héberger votre propre we-watch
 
-- `ACCESS_CODE` est obligatoire, en local comme sur Vercel : 8 caractères minimum, mais choisir une **phrase de passe de 12 caractères ou plus** (3 ou 4 mots, ex. « pop corn sous la couette »), facile à taper sur un téléphone. La pause de 500 ms après un mauvais code ne freine pas des essais lancés en parallèle : c'est la longueur du code qui protège.
-- Le bon code pose le cookie `ww_access` (httpOnly, SameSite=Lax, un an). Le cookie est `Secure` dès que `NODE_ENV=production` : `npm start` servi en http sur une IP du réseau local ne garde donc pas le cookie (`localhost` est accepté par les navigateurs) ; pour tester depuis un téléphone en LAN, utiliser `npm run dev`.
-- Changer `ACCESS_CODE` déconnecte tous les appareils.
+Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base SQLite) et **GitHub Actions** (tests et déploiement). Le déploiement passe uniquement par GitHub Actions : chaque push sur `main` est testé, puis la base est sauvegardée et migrée, la nouvelle version mise en ligne, vérifiée, et retirée automatiquement si la vérification échoue.
 
-## Rafraîchissement quotidien (V1.2)
+1. **Turso** : créer la base et un jeton.
 
-Vercel Cron appelle `GET /api/cron/refresh-movies` une fois par jour (`vercel.json`, 14 h UTC) : chaque film « à voir » et « vu » reprend ses données TMDB (plateformes, durée, genres, bande-annonce), sans toucher statut ni dates. La route échappe au cookie d'accès et n'accepte que `Authorization: Bearer $CRON_SECRET`.
+   ```bash
+   turso db create we-watch --location aws-eu-west-1
+   turso db show we-watch --url        # → DATABASE_URL (libsql://…)
+   turso db tokens create we-watch     # → DATABASE_AUTH_TOKEN
+   ```
 
-- `CRON_SECRET` est facultatif (16 caractères minimum) : sans lui, la route répond 401 et rien n'est rafraîchi. Le générer avec `openssl rand -hex 32`.
-- Lancer un rafraîchissement à la main (par exemple après une migration) :
+2. **Vercel** : créer le projet depuis votre copie du dépôt, sans le déployer.
+   - `npx vercel link` crée le projet ; `.vercel/project.json` donne `orgId` et `projectId`.
+   - Variables d'environnement **Production** : `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `ACCESS_CODE` et `CRON_SECRET` (`openssl rand -hex 32`). Ne pas les donner aux previews : elles écriraient dans la même base.
+   - Un jeton dans Account Settings → Tokens.
+   - La région des fonctions (`vercel.json`, `dub1` = Dublin) se règle au plus près de la base.
+3. **GitHub** (Settings → Secrets and variables → Actions) :
+   - secrets : `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET` ;
+   - variable : `PROD_URL`, l'adresse de production (par exemple `https://votre-projet.vercel.app`).
+4. **Pousser sur `main`** : la CI crée la table au premier passage, puis chaque push déploie.
 
-  ```bash
-  curl -H "Authorization: Bearer $CRON_SECRET" https://we-watch-lac.vercel.app/api/cron/refresh-movies
-  ```
+## Le code d'accès
 
-- Le proxy valide l'environnement serveur (`TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `ACCESS_CODE`, `CRON_SECRET`) à chaque requête : si `TMDB_ACCESS_TOKEN`, `DATABASE_URL` ou `ACCESS_CODE` manque ou est invalide, **tout** renvoie 500, y compris `/unlock`, le manifest et les icônes. `DATABASE_AUTH_TOKEN` est facultatif pour la validation mais indispensable pour Turso. Vérifier les quatre sur Vercel avant de déployer.
+Il n'y a pas de comptes : un code partagé (`ACCESS_CODE`), saisi une fois par appareil, protège toute l'appli. Choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée : c'est sa longueur qui la protège. Changer le code déconnecte tous les appareils.
 
-## Installer sur iPhone
+> Une vraie authentification est en préparation pour la prochaine version.
 
-Safari → Partager → « Sur l'écran d'accueil ». L'app s'ouvre en plein écran (manifest `display: standalone`, icône ticket générée par `src/app/icon.tsx` et `src/app/apple-icon.tsx`). Pas de mode hors ligne.
+## L'installer sur iPhone
 
-## Commandes
+Dans Safari : Partager → « Sur l'écran d'accueil ». L'appli s'ouvre alors en plein écran, avec son icône de ticket.
 
-- `npm run dev` : serveur de développement
-- `npm run build` : build de production (`next build`, ne lance pas les migrations)
-- `npm start` : sert le build de production — **attention, il lit `.env.production.local`, donc la base de prod**
-- `npm run start:local` : sert le build de production sur la base locale `local.db` (à utiliser pour tester)
-- `npm run lint` : ESLint
-- `npm run typecheck` : génération des types Next puis `tsc --noEmit`
-- `npm test` : tests unitaires (Vitest)
-- `npm run test:coverage` : tests avec couverture, la couverture s'affiche en console ; `docs/coverage.md` est mis à jour à la main à partir de ce résultat
-- `npm run format` : formatage Prettier
-- `npm run db:generate` : génère une migration SQL à partir de `src/db/schema.ts`
-- `npm run db:migrate` : applique les migrations à la base ciblée par `DATABASE_URL`
+## Sous le capot
 
-## Déployer
+|         |                                                                                                                                                           |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Appli   | Next.js 16 (App Router, Server Actions, Cache Components), React 19, TypeScript strict                                                                    |
+| Données | SQLite via Turso / libSQL, Drizzle ORM ; API TMDB appelée côté serveur uniquement                                                                         |
+| Style   | CSS Modules, design tokens centralisés, animations Motion (`prefers-reduced-motion` respecté)                                                             |
+| Tests   | Vitest (unitaires et fonctionnels sur une vraie base et un faux TMDB), Playwright (parcours, 6 formats d'écran, accessibilité axe, captures de référence) |
+| Qualité | ESLint (taille, complexité, sens des couches), jscpd (doublons), knip (code mort)                                                                         |
+| CI/CD   | lefthook en local, GitHub Actions en parallèle, versions semver automatiques (release-please)                                                             |
 
-Hébergement : Vercel (app) + Turso (base libSQL).
+```
+src/
+  domain/    règles métier pures : films, tirage, filtres « ce soir », transitions de statut
+  db/        schéma Drizzle et repository
+  tmdb/      client TMDB, validation, mapping, thèmes de swipe
+  access/    code d'accès : jeton, cookie, décision du proxy
+  server/    assemblage base + TMDB (un seul endroit)
+  features/  un dossier par écran : composants, actions serveur, logique testée
+  ui/        composants partagés sans logique métier
+  app/       routes Next, manifest et icônes générées
+```
 
-### 1. Turso
+La conception complète, version par version, est dans [`docs/superpowers/specs/`](docs/superpowers/specs/2026-10-23-we-watch-design.md).
+
+## Contribuer
 
 ```bash
-turso db create we-watch --location aws-eu-west-1
-turso db show we-watch --url        # → DATABASE_URL (libsql://…)
-turso db tokens create we-watch     # → DATABASE_AUTH_TOKEN
+npm run ci          # tout ce que vérifie la CI : format, lint, types, doublons, code mort, tests, e2e
+npm run test:e2e    # tests de bout en bout seuls (Docker requis)
 ```
 
-### 2. Migrer la base distante
+Les règles du projet (architecture, conventions, définition de « fini ») sont dans [`CLAUDE.md`](CLAUDE.md), écrit pour les humains comme pour les agents de code. En bref : petits fichiers, logique pure testée, commits [Conventional Commits](https://www.conventionalcommits.org) (`feat`, `fix`… fixent le numéro de version), et la direction artistique ne se négocie pas.
 
-> `drizzle-kit` ne lit pas `.env.local` : `drizzle.config.ts` lit `process.env`
-> directement. Sans `DATABASE_URL` explicite, la commande se rabat sur
-> `file:local.db` et migre la base locale, pas Turso.
+## Crédits
 
-```bash
-DATABASE_URL=libsql://… DATABASE_AUTH_TOKEN=… npm run db:migrate
-turso db shell we-watch ".tables"   # la table movies doit apparaître
-```
-
-### 3. Vercel
-
-1. Importer le dépôt `thogio8/we-watch`.
-2. Définir `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `ACCESS_CODE` et `CRON_SECRET` pour l'environnement Production.
-   > Attention : si Preview reçoit les mêmes variables, les déploiements de preview pointent vers la même base Turso et écrivent dans les données de prod. Préférer une base Turso séparée pour Preview, ou ne définir les variables que pour Production.
-3. La région des fonctions est fixée à Dublin (`dub1`) par `vercel.json`, au plus près de la base Turso (`aws-eu-west-1`, Irlande — Turso ne propose pas Paris).
-4. Déployer.
-
-Les migrations sont lancées à la main (étape 2) avant de déployer un changement de schéma ; le build ne les exécute pas.
-
-## Vérifier en prod
-
-Sur l'URL Vercel, depuis un téléphone :
-
-- [ ] l'URL renvoie vers `/unlock` ; un mauvais code affiche « MAUVAIS CODE », le bon ouvre l'app
-- [ ] ajouter l'app à l'écran d'accueil, la rouvrir : pas de nouvelle demande de code, rien sous l'encoche
-- [ ] swiper 2 films
-- [ ] rechercher un film et l'ajouter
-- [ ] tirer au sort, puis « ON LE REGARDE »
-- [ ] régler « FINI AVANT » et une humeur : le bouton devient « TIRER PARMI N »
-- [ ] changer de thème au swipe, puis « ↺ ANNULER » un swipe
-- [ ] vérifier l'onglet VUS
-- [ ] recharger : tout est persistant
-
-## Structure
-
-- `src/domain` : types et règles métier pures (films, tirage, filtres « ce soir », transitions de statut)
-- `src/db` : schéma Drizzle et repository des films (libSQL)
-- `src/tmdb` : client TMDB, schémas de validation, mapping et decks thématiques
-- `src/access` : code d'accès partagé (jeton HMAC, cookie, décision du proxy)
-- `src/proxy.ts` : proxy Next.js qui verrouille toutes les requêtes sans cookie valide (sauf la route du cron, gardée par `CRON_SECRET`)
-- `src/features` : écrans et actions par fonctionnalité (swipe, list, draw, refresh, unlock, pwa)
-- `src/ui` : composants partagés (boutons, navigation, affiche, tags de plateformes, tampon, ticket, pile déchirée, lignes)
-- `src/app` : routes et layout Next.js, manifest et icônes générées
-- `src/server` : composition côté serveur (container : base, client TMDB, repository)
-- `src/styles` : design tokens CSS
-- `src/env.ts` : lecture et validation des variables d'environnement
+<img src="public/tmdb-logo.svg" alt="TMDB" height="14"> This product uses the TMDB API but is not endorsed or certified by TMDB. Disponibilités en streaming : [JustWatch](https://www.justwatch.com/fr), via TMDB.
