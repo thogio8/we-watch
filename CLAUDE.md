@@ -2,9 +2,9 @@
 
 # we-watch
 
-Appli perso de Thomas et sa copine : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installée sur iPhone, protégée par un code d'accès partagé, sans comptes. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
+Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installée sur iPhone, protégée par un code d'accès partagé, sans comptes. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
 
-- Prod : https://we-watch-lac.vercel.app (Vercel, fonctions en `dub1`) + base Turso `we-watch` (`aws-eu-west-1`).
+- Prod : Vercel (région des fonctions dans `vercel.json`, au plus près de la base) + base Turso (libSQL). L'adresse de prod est la variable de dépôt GitHub `PROD_URL` (`gh variable list`), jamais écrite en dur.
 - Spec de référence, versions comprises : `docs/superpowers/specs/2026-10-23-we-watch-design.md` (§1-10 V1/V1.1, §11 V1.2, §12 V1.2.1, §13 V1.2.2+). **La lire avant toute fonctionnalité** et y ajouter une section pour chaque nouvelle version.
 
 ## Commandes
@@ -54,7 +54,7 @@ Règles :
 - Logique non triviale = fonction pure dans `domain/` ou `features/x/*.ts`, testée à part ; les composants restent de l'affichage.
 - Ces règles de couches sont **vérifiées par ESLint** (`eslint.config.mjs`, `no-restricted-imports`) : un import interdit casse la CI.
 
-## Code propre : SOLID, KISS, DRY (exigence de Thomas, non négociable)
+## Code propre : SOLID, KISS, DRY (non négociable)
 
 Concrètement, sur ce repo :
 
@@ -66,7 +66,7 @@ Concrètement, sur ce repo :
   - UI : `ui/Headline` (titres riso), `ui/cx` (classes), `ui/Tab.module.css` (onglets, via `composes`), `ui/Ticket`, `ui/TicketDetails`, `ui/Button`, `ui/Chip`, `ui/Stamp`, `ui/Lines`.
   - Serveur : `server/validate.ts` (contrôles d'entrée), `SWIPES` (domain).
   - Tests : `tests/helpers/movies.ts` (`aSnapshot`, `aMovie`, `NETFLIX`…), `tests/helpers/dom.ts` (`stubMatchMedia`), `tests/setup.ts` (nettoyage commun), mocks `vi.mock("@/access/assert-unlocked")` / `vi.mock("next/cache")` (dossiers `__mocks__`), `tests/helpers/functional.ts`, `tests/fake-tmdb/`, `e2e/fixtures.ts`.
-- **Garde-fous automatiques** (ESLint, erreur = CI rouge) : 200 lignes max par fichier, 80 par fonction, complexité 10, imbrication 3, 4 paramètres max (sinon un objet), `===`, pas de ternaire imbriqué. **jscpd** refuse tout bloc dupliqué (6 lignes / 60 tokens), **knip** tout export ou dépendance inutilisé. Ne jamais contourner une règle (`eslint-disable`, seuil relevé) sans l'accord de Thomas : découper plutôt.
+- **Garde-fous automatiques** (ESLint, erreur = CI rouge) : 200 lignes max par fichier, 80 par fonction, complexité 10, imbrication 3, 4 paramètres max (sinon un objet), `===`, pas de ternaire imbriqué. **jscpd** refuse tout bloc dupliqué (6 lignes / 60 tokens), **knip** tout export ou dépendance inutilisé. Ne jamais contourner une règle (`eslint-disable`, seuil relevé) sans l'accord du mainteneur : découper plutôt.
 
 ## Définition de « fini »
 
@@ -81,11 +81,11 @@ Concrètement, sur ce repo :
 - **DA « Ticket d'entrée » (riso fluo)** non négociable : papier `#fff4d6`, encre marine, rose, jaune et bleu fluo (texte encre sur le rose, pour le contraste), Archivo Black + Space Mono, contours épais, ombres décalées pleines. Aucune couleur brute hors `src/styles/tokens.css` (exception documentée : `src/features/pwa/brand.ts` pour les icônes).
 - **Responsive** (spec §12) : téléphone d'abord ; `@media (min-width: 760px)` = écrans larges (nav en haut) ; `@container shell (min-width: 640px)` = colonne large (ticket couché, grille) ; hauteurs `520px` (téléphone couché), `620px`/`700px` (petits écrans). Vérifier tout changement d'UI dans un vrai navigateur sur plusieurs formats.
 - Animations légères, `prefers-reduced-motion` respecté.
-- **Commits** : `type(scope): description` ([Conventional Commits](https://www.conventionalcommits.org)), header seul, en anglais. **Le type fixe la version (semver)** : `feat` = fonctionnalité visible (mineure), `fix` = correction visible (correctif), `feat!` ou `fix!` = rupture (majeure) ; `refactor`, `test`, `ci`, `docs`, `chore` ne publient rien. Un commit = un type honnête : ne pas déguiser un refactor en `feat`. **Jamais de mention de Claude ni de `Co-Authored-By`.** Sur ce repo, Claude peut commiter et pousser seul (autorisation de Thomas) ; ailleurs non.
+- **Commits** : `type(scope): description` ([Conventional Commits](https://www.conventionalcommits.org)), header seul, en anglais. **Le type fixe la version (semver)** : `feat` = fonctionnalité visible (mineure), `fix` = correction visible (correctif), `feat!` ou `fix!` = rupture (majeure) ; `refactor`, `test`, `ci`, `docs`, `chore` ne publient rien. Un commit = un type honnête : ne pas déguiser un refactor en `feat`. **Jamais de trailer `Co-Authored-By` ni de mention d'un outil d'IA.** L'agent du mainteneur peut commiter et pousser seul sur ce repo.
 
 ## Qualité et tests
 
-- **CI locale** (lefthook, installé par `npm install`) : `pre-commit` formate et lint les fichiers indexés ; `pre-push` lance `npm run ci` (format, lint, types, doublons, code mort, tests + couverture, build + e2e, ~1 min). Ne jamais pousser au rouge ni contourner (`--no-verify`, `LEFTHOOK=0`) sans raison dite à Thomas. GitHub Actions rejoue les mêmes vérifications en jobs parallèles puis déploie (voir « Pièges »). Dependabot ouvre chaque lundi une PR de mises à jour : la fusionner si la CI est verte.
+- **CI locale** (lefthook, installé par `npm install`) : `pre-commit` formate et lint les fichiers indexés ; `pre-push` lance `npm run ci` (format, lint, types, doublons, code mort, tests + couverture, build + e2e, ~1 min). Ne jamais pousser au rouge ni contourner (`--no-verify`, `LEFTHOOK=0`) sans raison dite au mainteneur. GitHub Actions rejoue les mêmes vérifications en jobs parallèles puis déploie (voir « Pièges »). Dependabot ouvre chaque lundi une PR de mises à jour : la fusionner si la CI est verte.
 - **Couverture** (`vitest.config.ts`, seuils 95/95/95/90, actuellement 100 %) : tous les `.ts` de `src/` sauf hooks et câblage, donc tout nouveau module y entre seul. `docs/coverage.md` est mis à jour à la main.
 - **Tests UI** : Testing Library, requêtes par rôle et texte visible, pas de détails d'implémentation.
 - **Tests fonctionnels** (`tests/functional/`) : `startServerStack()` donne une vraie base SQLite et le faux TMDB ; on appelle les vraies actions serveur.
@@ -100,4 +100,4 @@ Concrètement, sur ce repo :
 3. Si le schéma change : `npm run db:generate`, migration rétrocompatible (voir plus haut) ; la CI la passera en prod.
 4. `git push origin main` (la CI déploie), puis suivre le run : `gh run watch`.
 5. **Versions : jamais à la main** (ni tag, ni `version.txt`). Le dernier job de la CI (`version`), une fois la prod vérifiée, lance release-please : si les commits poussés contiennent un `feat` ou un `fix`, il ouvre la PR « release » (`CHANGELOG.md`, `version.txt`), la fusionne aussitôt puis publie le tag `vX.Y.Z` et la release GitHub. Rien à approuver ni à fusionner ; ces fichiers de version ne relancent pas la CI (`paths-ignore`). Donc **un push = une version** s'il contient du visible : grouper les commits d'une même fonctionnalité dans un seul push.
-6. Release note riso dans `docs/releases/` si Thomas en veut une (une image PNG à copier-coller marche le mieux).
+6. Release note riso sur demande, hors du dépôt (une image PNG à copier-coller marche le mieux).
