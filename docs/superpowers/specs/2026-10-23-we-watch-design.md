@@ -271,3 +271,10 @@ Demandes de Thomas après usage.
 ### 14.3 Versions
 
 Semver calculé depuis les commits (Conventional Commits) par release-please : `fix` → correctif, `feat` → mineure, `!` → majeure. Une PR « release » publie numéro, `CHANGELOG.md`, tag et release GitHub. Les déploiements suivent toujours chaque push vert.
+
+### 14.4 V1.3.1 et V1.3.2 : correctifs
+
+- **V1.3.1** (2026-10-27) : le téléphone garde les pages visitées 5 minutes (`staleTimes`), rafraîchies à chaque écriture : passer d'un onglet à l'autre ne recharge plus rien.
+- **V1.3.2** (2026-10-28), trouvés en testant l'appli comme une utilisatrice :
+  - TIRER restait figé sur son dernier écran (ticket d'un film déjà vu, boutons morts ; ou « RIEN À TIRER » avec une liste remplie) quand la liste changeait pendant qu'on était sur une autre page. Cause : Next garde la page en mémoire, endormie, et l'animation de sortie lancée là ne finit jamais. Hors écran, les vues se remplacent désormais sans animation.
+  - Les titres et résumés TMDB perdent leurs marques de direction invisibles (U+200E…) ; les films déjà en base sont nettoyés par le rafraîchissement quotidien.
