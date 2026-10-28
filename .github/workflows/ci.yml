@@ -1,8 +1,8 @@
 # The only road to production (Vercel's Git auto-deploy is off, vercel.json).
 # Three jobs run side by side, the release waits for all of them:
 #   checks  → format, lint, types, duplicates, dead code, unit tests
-#   e2e     → build + Playwright (the two together = `npm run ci`, the
-#             local pre-push hook, lefthook.yml)
+#   e2e     → build + Playwright, split over two machines (the two jobs
+#             together = `npm run ci`, the local pre-push hook, lefthook.yml)
 #   build   → main only: builds and uploads the production deployment
 #             without putting it online (--skip-domain)
 #   release → main only, once all are green: backup, migrate, put the new
@@ -32,6 +32,10 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -40,11 +44,11 @@ jobs:
           cache: npm
       - run: npm ci
       # Runs in the Playwright Docker image (scripts/e2e.sh).
-      - run: npm run test:e2e
+      - run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
