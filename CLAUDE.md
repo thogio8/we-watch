@@ -99,5 +99,5 @@ Concrètement, sur ce repo :
 2. Build local + vérification navigateur (`npm run start:local`).
 3. Si le schéma change : `npm run db:generate`, migration rétrocompatible (voir plus haut) ; la CI la passera en prod.
 4. `git push origin main` (la CI déploie), puis suivre le run : `gh run watch`.
-5. **Versions : jamais à la main** (ni `npm version`, ni tag). release-please (`.github/workflows/release.yml`) tient une PR « release » à jour d'après les types de commits ; la fusionner (`gh pr merge <n> --squash`) publie : numéro semver, `CHANGELOG.md`, tag `vX.Y.Z`, release GitHub. La fusionner quand une version a du sens (une fonctionnalité finie, un lot de corrections).
+5. **Versions : jamais à la main** (ni tag, ni `version.txt`). Le dernier job de la CI (`version`), une fois la prod vérifiée, lance release-please : si les commits poussés contiennent un `feat` ou un `fix`, il ouvre la PR « release » (`CHANGELOG.md`, `version.txt`), la fusionne aussitôt puis publie le tag `vX.Y.Z` et la release GitHub. Rien à approuver ni à fusionner ; ces fichiers de version ne relancent pas la CI (`paths-ignore`). Donc **un push = une version** s'il contient du visible : grouper les commits d'une même fonctionnalité dans un seul push.
 6. Release note riso dans `docs/releases/` si Thomas en veut une (une image PNG à copier-coller marche le mieux).

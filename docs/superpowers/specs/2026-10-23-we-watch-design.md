@@ -270,7 +270,7 @@ Demandes de Thomas après usage.
 
 ### 14.3 Versions
 
-Semver calculé depuis les commits (Conventional Commits) par release-please : `fix` → correctif, `feat` → mineure, `!` → majeure. Une PR « release » publie numéro, `CHANGELOG.md`, tag et release GitHub. Les déploiements suivent toujours chaque push vert.
+Semver calculé depuis les commits (Conventional Commits) par release-please : `fix` → correctif, `feat` → mineure, `!` → majeure. Une PR « release » publie numéro, `CHANGELOG.md`, tag et release GitHub. Les déploiements suivent toujours chaque push vert. Depuis le 2026-10-28, la PR est ouverte et fusionnée par la CI elle-même, une fois la prod vérifiée : chaque push qui contient un `feat` ou un `fix` publie sa version.
 
 ### 14.4 V1.3.1 et V1.3.2 : correctifs
 

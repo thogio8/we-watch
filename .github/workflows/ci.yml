@@ -7,13 +7,23 @@
 #             without putting it online (--skip-domain)
 #   release → main only, once all are green: backup, migrate, put the new
 #             deployment online, smoke test, roll back if it fails.
-# Free on a private repo (2,000 minutes a month).
+#   version → once production is up: names what is live (semver from the
+#             commit types, release-please-config.json).
 name: CI
 
+# Version files only (the release PR): nothing to check nor deploy.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - CHANGELOG.md
+      - version.txt
+      - .release-please-manifest.json
   pull_request:
+    paths-ignore:
+      - CHANGELOG.md
+      - version.txt
+      - .release-please-manifest.json
   workflow_dispatch:
 
 jobs:
@@ -130,3 +140,41 @@ jobs:
       - name: Roll back if production is broken
         if: failure() && steps.previous.outputs.id != ''
         run: bash scripts/vercel-prod.sh promote "${{ steps.previous.outputs.id }}"
+
+  # fix → x.y.Z, feat → x.Y.0, feat! → X.0.0; refactor, test, ci, docs and
+  # chore publish nothing. release-please opens its PR (CHANGELOG.md,
+  # version.txt), it is merged at once (the code is already live), then
+  # release-please tags vX.Y.Z and publishes the GitHub release. Changes made
+  # with this job's token start no workflow: no second run of the CI.
+  version:
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: version
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Open or update the release PR
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - name: Merge it, if there is something to publish
+        id: merge
+        run: |
+          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --label "autorelease: pending" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$number" ]; then
+            gh pr merge "$number" --repo "$GITHUB_REPOSITORY" --squash
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Tag and publish the release
+        if: steps.merge.outputs.merged == 'true'
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
