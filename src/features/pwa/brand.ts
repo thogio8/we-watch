@@ -10,5 +10,5 @@ export const BRAND = {
   blue: "#2f6bff",
 } as const;
 
-export const APP_NAME = "we-watch";
+export const APP_NAME = "WeWatch";
 export const APP_DESCRIPTION = "Swipe des films, tirage de la soirée";

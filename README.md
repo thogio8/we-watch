@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/readme/poster.webp" alt="we-watch : on swipe des films à deux, le soir le hasard tranche" width="100%">
+  <img src="docs/readme/poster.webp" alt="WeWatch : on swipe des films à deux, le soir le hasard tranche" width="100%">
 </p>
 
 <p align="center">
@@ -10,9 +10,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-2f6bff" alt="Licence MIT"></a>
 </p>
 
-# we-watch
+# WeWatch
 
-**Une longue liste de films à voir, et chaque soir le même débat.** we-watch sépare les deux moments : on remplit la liste à deux, tranquillement, en swipant des films ; le soir venu, un bouton, un film, et c'est le hasard qui tranche.
+**Une longue liste de films à voir, et chaque soir le même débat.** WeWatch sépare les deux moments : on remplit la liste à deux, tranquillement, en swipant des films ; le soir venu, un bouton, un film, et c'est le hasard qui tranche.
 
 Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), installable sur l'écran d'accueil du téléphone, gratuite à héberger, en français, et volontairement joyeuse : direction artistique « ticket d'entrée », riso fluo.
 
@@ -58,7 +58,7 @@ npm run dev                  # http://localhost:3000
 
 L'appli demande alors le code d'accès choisi dans `ACCESS_CODE`, puis s'ouvre sur TIRER : la liste est vide, direction SWIPER.
 
-## Héberger votre propre we-watch
+## Héberger votre propre WeWatch
 
 Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base SQLite) et **GitHub Actions** (tests et déploiement). Le déploiement passe uniquement par GitHub Actions : chaque push sur `main` est testé, puis la base est sauvegardée et migrée, la nouvelle version mise en ligne, vérifiée, et retirée automatiquement si la vérification échoue.
 

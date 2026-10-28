@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# we-watch
+# WeWatch
 
 Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installable (iPhone, Android, ordinateur), protégée par un code d'accès partagé, sans comptes. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
 
