@@ -2,14 +2,26 @@ import { expect, type Page, test as base } from "@playwright/test";
 import { sql } from "drizzle-orm";
 import { createDatabase } from "../src/db/create-database";
 import { movies } from "../src/db/schema";
-import { ACCESS_CODE, E2E_DATABASE } from "./env";
+import { ACCESS_CODE, appPort, databaseOf } from "./env";
 
-const db = createDatabase(`file:${E2E_DATABASE}`);
+const databases = new Map<number, ReturnType<typeof createDatabase>>();
 
-/** Every test starts unlocked, on an empty list. */
+/** The database of the running test's worker (one per worker, e2e/env.ts). */
+function db() {
+  const worker = base.info().parallelIndex;
+  if (!databases.has(worker)) {
+    databases.set(worker, createDatabase(`file:${databaseOf(worker)}`));
+  }
+  return databases.get(worker)!;
+}
+
+/** Every test starts unlocked, on an empty list, on its worker's server. */
 export const test = base.extend<{ app: Page }>({
+  baseURL: async ({}, use, testInfo) => {
+    await use(`http://localhost:${appPort(testInfo.parallelIndex)}`);
+  },
   app: async ({ page }, use) => {
-    await db.delete(movies);
+    await db().delete(movies);
     await unlock(page);
     await use(page);
   },
@@ -66,7 +78,9 @@ export const listTitles = (page: Page) =>
  * their order: the server stamps them with today.
  */
 export async function decidedOn(date: Date) {
-  await db.update(movies).set({
-    decidedAt: sql`${movies.decidedAt} - (select max(${movies.decidedAt}) from ${movies}) + ${date.getTime()}`,
-  });
+  await db()
+    .update(movies)
+    .set({
+      decidedAt: sql`${movies.decidedAt} - (select max(${movies.decidedAt}) from ${movies}) + ${date.getTime()}`,
+    });
 }

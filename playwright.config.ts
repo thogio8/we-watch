@@ -1,16 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_ENV, E2E_PORT } from "./e2e/env";
+import { appPort, E2E_WORKERS, e2eEnv, workerIndexes } from "./e2e/env";
 
 /**
- * End-to-end tests: the production build, served on a throwaway SQLite file
+ * End-to-end tests: the production build, served on throwaway SQLite files
  * and a fake TMDB (e2e/global-setup.ts). `npm run test:e2e` builds first.
+ * Each worker has its own server and database (e2e/env.ts, e2e/fixtures.ts).
  */
 export default defineConfig({
   testDir: "e2e",
   globalSetup: "./e2e/global-setup.ts",
-  // One database for every test: run them one after the other.
-  workers: 1,
-  fullyParallel: false,
+  workers: E2E_WORKERS,
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
@@ -20,7 +20,6 @@ export default defineConfig({
     toHaveScreenshot: { maxDiffPixels: 10, animations: "disabled" },
   },
   use: {
-    baseURL: `http://localhost:${E2E_PORT}`,
     locale: "fr-FR",
     timezoneId: "Europe/Paris",
     reducedMotion: "reduce",
@@ -39,11 +38,11 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: `next start --port ${E2E_PORT}`,
-    url: `http://localhost:${E2E_PORT}/unlock`,
-    env: E2E_ENV,
+  webServer: workerIndexes().map((worker) => ({
+    command: `next start --port ${appPort(worker)}`,
+    url: `http://localhost:${appPort(worker)}/unlock`,
+    env: e2eEnv(worker),
     reuseExistingServer: !process.env.CI,
-    stdout: "ignore",
-  },
+    stdout: "ignore" as const,
+  })),
 });

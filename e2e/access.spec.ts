@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { enterCode, unlock } from "./fixtures";
+import { enterCode, expect, test, unlock } from "./fixtures";
 
 test.describe("code d'accès", () => {
   test("sans code, toutes les pages renvoient vers l'écran du code", async ({
