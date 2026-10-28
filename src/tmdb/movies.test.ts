@@ -75,6 +75,19 @@ describe("toSnapshot", () => {
     ).toEqual([]);
   });
 
+  it("retire les marques de direction invisibles du titre et du résumé", () => {
+    const snap = toSnapshot(
+      tmdbMovieDetailsSchema.parse({
+        id: 1,
+        title: "‎Avatar Aang‏ ",
+        overview: "‪Résumé‬",
+        vote_average: 5,
+      }),
+    );
+    expect(snap.title).toBe("Avatar Aang");
+    expect(snap.overview).toBe("Résumé");
+  });
+
   it("release_date absente ou illisible → releaseYear null", () => {
     const base = { id: 1, title: "T", vote_average: 5 };
     expect(

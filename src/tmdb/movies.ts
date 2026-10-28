@@ -54,13 +54,17 @@ function toReleaseYear(releaseDate: string | null | undefined): number | null {
   return year === undefined ? null : Number(year);
 }
 
+/** TMDB titles sometimes carry invisible direction marks (U+200E…). */
+const DIRECTION_MARKS = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
+const clean = (text: string) => text.replace(DIRECTION_MARKS, "").trim();
+
 export function toSnapshot(details: TmdbMovieDetails): MovieSnapshot {
   return {
     tmdbId: details.id,
-    title: details.title,
+    title: clean(details.title),
     releaseYear: toReleaseYear(details.release_date),
     runtimeMinutes: details.runtime || null,
-    overview: details.overview ?? "",
+    overview: clean(details.overview ?? ""),
     posterPath: details.poster_path ?? null,
     voteAverage: details.vote_average,
     providers: toProviders(details["watch/providers"]?.results.FR?.flatrate),
