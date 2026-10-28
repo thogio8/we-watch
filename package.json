@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "dup": "jscpd",
     "deadcode": "knip",
-    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run dup && npm run deadcode && npm run test:coverage && npm run test:e2e",
+    "ci:checks": "npm run format:check && npm run lint && npm run typecheck && npm run dup && npm run deadcode && npm run test:coverage",
+    "ci": "npm run ci:checks && npm run test:e2e",
     "prepare": "lefthook install"
   },
   "dependencies": {

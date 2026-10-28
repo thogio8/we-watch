@@ -1,7 +1,12 @@
-# The only road to production (Vercel's Git auto-deploy is off, vercel.json):
-#   ci      → the same `npm run ci` as the local pre-push hook (lefthook.yml)
-#   deploy  → main only, once ci is green: backup, migrate, deploy, smoke test,
-#             and roll back if the smoke test fails.
+# The only road to production (Vercel's Git auto-deploy is off, vercel.json).
+# Three jobs run side by side, the release waits for all of them:
+#   checks  → format, lint, types, duplicates, dead code, unit tests
+#   e2e     → build + Playwright (the two together = `npm run ci`, the
+#             local pre-push hook, lefthook.yml)
+#   build   → main only: builds and uploads the production deployment
+#             without putting it online (--skip-domain)
+#   release → main only, once all are green: backup, migrate, put the new
+#             deployment online, smoke test, roll back if it fails.
 # Free on a private repo (2,000 minutes a month).
 name: CI
 
@@ -12,9 +17,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  ci:
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -22,8 +27,20 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # End-to-end tests run in the Playwright Docker image (scripts/e2e.sh).
-      - run: npm run ci
+      - run: npm run ci:checks
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Runs in the Playwright Docker image (scripts/e2e.sh).
+      - run: npm run test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -33,12 +50,36 @@ jobs:
             test-results/
           retention-days: 7
 
-  deploy:
-    needs: ci
+  build:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # One deploy at a time, never cancelled halfway through a migration.
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    outputs:
+      url: ${{ steps.upload.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build and upload, not online yet
+        id: upload
+        run: |
+          npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx vercel@latest build --prod --token="$VERCEL_TOKEN"
+          url="$(npx vercel@latest deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: [checks, e2e, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # One release at a time, never cancelled halfway through a migration.
     concurrency:
       group: production
       cancel-in-progress: false
@@ -76,13 +117,8 @@ jobs:
         id: previous
         run: echo "id=$(bash scripts/vercel-prod.sh current)" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy to Vercel
-        run: |
-          npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-          npx vercel@latest build --prod --token="$VERCEL_TOKEN"
-          url="$(npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
-          # Explicit: after a rollback, Vercel stops promoting new deploys.
-          bash scripts/vercel-prod.sh promote "$url"
+      - name: Put the new deployment online
+        run: bash scripts/vercel-prod.sh promote "${{ needs.build.outputs.url }}"
 
       - name: Smoke test production
         run: bash scripts/smoke-prod.sh
