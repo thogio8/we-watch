@@ -1,4 +1,5 @@
 import { expect, type Page, test as base } from "@playwright/test";
+import { sql } from "drizzle-orm";
 import { createDatabase } from "../src/db/create-database";
 import { movies } from "../src/db/schema";
 import { ACCESS_CODE, E2E_DATABASE } from "./env";
@@ -59,3 +60,13 @@ export async function settled(page: Page) {
 /** Titles shown in the current list tab. */
 export const listTitles = (page: Page) =>
   page.getByRole("tabpanel").getByRole("heading", { level: 2 });
+
+/**
+ * Moves the list's dates to `date` (the latest one lands on it), keeping
+ * their order: the server stamps them with today.
+ */
+export async function decidedOn(date: Date) {
+  await db.update(movies).set({
+    decidedAt: sql`${movies.decidedAt} - (select max(${movies.decidedAt}) from ${movies}) + ${date.getTime()}`,
+  });
+}

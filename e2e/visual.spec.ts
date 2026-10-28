@@ -1,5 +1,13 @@
 import { type Page } from "@playwright/test";
-import { expect, listTitles, settled, swipe, test, topCard } from "./fixtures";
+import {
+  decidedOn,
+  expect,
+  listTitles,
+  settled,
+  swipe,
+  test,
+  topCard,
+} from "./fixtures";
 
 /**
  * Visual regression: one reference image per screen and format
@@ -13,9 +21,11 @@ const FORMATS = [
   { name: "desktop", width: 1280, height: 800 },
 ];
 
+const FROZEN_NOW = new Date("2026-10-27T21:07:00+01:00");
+
 /** Same clock and same draw on every run. */
 async function freeze(page: Page) {
-  await page.clock.setFixedTime(new Date("2026-10-27T21:07:00+01:00"));
+  await page.clock.setFixedTime(FROZEN_NOW);
   await page.addInitScript(() => {
     Math.random = () => 0;
   });
@@ -34,6 +44,8 @@ test.describe("rendu visuel", () => {
     test.skip(test.info().project.name !== "desktop");
     await freeze(app);
     await swipe(app, ["keep", "keep", "keep"]);
+    // The fiche shows « Ajouté le … », stamped by the server.
+    await decidedOn(FROZEN_NOW);
   });
 
   for (const format of FORMATS) {
