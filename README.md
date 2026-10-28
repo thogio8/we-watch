@@ -6,7 +6,7 @@
   <a href="https://github.com/thogio8/we-watch/actions/workflows/ci.yml"><img src="https://github.com/thogio8/we-watch/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/thogio8/we-watch/releases"><img src="https://img.shields.io/github/v/release/thogio8/we-watch?label=version&color=ff3fa4" alt="Version"></a>
   <img src="https://img.shields.io/badge/Next.js-16-1b1b6b" alt="Next.js 16">
-  <img src="https://img.shields.io/badge/PWA-iPhone-ffe600?labelColor=1b1b6b" alt="PWA iPhone">
+  <img src="https://img.shields.io/badge/PWA-installable-ffe600?labelColor=1b1b6b" alt="PWA installable">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-2f6bff" alt="Licence MIT"></a>
 </p>
 
@@ -86,9 +86,13 @@ Il n'y a pas de comptes : un code partagé (`ACCESS_CODE`), saisi une fois par a
 
 > Une vraie authentification est en préparation pour la prochaine version.
 
-## L'installer sur iPhone
+## L'installer comme une appli
 
-Dans Safari : Partager → « Sur l'écran d'accueil ». L'appli s'ouvre alors en plein écran, avec son icône de ticket.
+C'est une PWA : une fois installée, elle s'ouvre en plein écran depuis son icône de ticket, comme une appli.
+
+- **iPhone / iPad** (Safari) : Partager → « Sur l'écran d'accueil ».
+- **Android** (Chrome) : menu ⋮ → « Installer l'application ».
+- **Ordinateur** (Chrome, Edge) : icône d'installation dans la barre d'adresse.
 
 ## Sous le capot
 

@@ -2,7 +2,7 @@
 
 # we-watch
 
-Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installée sur iPhone, protégée par un code d'accès partagé, sans comptes. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
+Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installable (iPhone, Android, ordinateur), protégée par un code d'accès partagé, sans comptes. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
 
 - Prod : Vercel (région des fonctions dans `vercel.json`, au plus près de la base) + base Turso (libSQL). L'adresse de prod est la variable de dépôt GitHub `PROD_URL` (`gh variable list`), jamais écrite en dur.
 - Spec de référence, versions comprises : `docs/superpowers/specs/2026-10-23-we-watch-design.md` (§1-10 V1/V1.1, §11 V1.2, §12 V1.2.1, §13 V1.2.2+). **La lire avant toute fonctionnalité** et y ajouter une section pour chaque nouvelle version.
