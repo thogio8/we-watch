@@ -99,14 +99,14 @@ jobs:
       cancel-in-progress: false
     environment:
       name: production
-      url: https://we-watch-lac.vercel.app
+      url: ${{ vars.PROD_URL }}
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      PROD_URL: https://we-watch-lac.vercel.app
+      PROD_URL: ${{ vars.PROD_URL }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
       - uses: actions/checkout@v7

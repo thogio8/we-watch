@@ -1,9 +1,13 @@
 // Navigation timings as you feel them on a phone, on any deployment.
 // Read-only: opens pages and comes back, never changes the list.
-// Usage: ACCESS_CODE=… node scripts/measure-nav.mjs [https://we-watch-lac.vercel.app]
+// Usage: ACCESS_CODE=… node scripts/measure-nav.mjs https://your-deployment
 import { chromium } from "@playwright/test";
 
-const BASE = process.argv[2] ?? "https://we-watch-lac.vercel.app";
+const BASE = process.argv[2];
+if (!BASE) {
+  console.error("Usage: ACCESS_CODE=… node scripts/measure-nav.mjs <url>");
+  process.exit(1);
+}
 const ROUNDS = 3;
 
 const browser = await chromium.launch();
