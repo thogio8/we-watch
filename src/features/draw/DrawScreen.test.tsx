@@ -9,6 +9,8 @@ import type { Movie } from "@/domain/movie";
 import { DrawScreen } from "./DrawScreen";
 import { DrawSessionProvider } from "./DrawSessionProvider";
 
+vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
+
 const movie = (tmdbId: number, title: string, overrides: Partial<Movie> = {}) =>
   aMovie(tmdbId, {
     title,

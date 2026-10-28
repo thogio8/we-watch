@@ -1,4 +1,4 @@
-import { expect, swipe, test } from "./fixtures";
+import { expect, settled, swipe, test } from "./fixtures";
 
 test.describe("tirer", () => {
   test("liste vide : rien à tirer", async ({ app }) => {
@@ -41,6 +41,47 @@ test.describe("tirer", () => {
     ).toBeVisible();
     await app.getByRole("button", { name: "TIRER PARMI 1" }).click();
     await expect(app.getByRole("heading", { level: 2 })).toHaveText("Parasite");
+  });
+
+  // Next keeps visited pages in memory, asleep: the draw must follow a list
+  // changed elsewhere instead of staying on its last screen.
+  test("revenir sur TIRER suit la liste changée ailleurs", async ({ app }) => {
+    await swipe(app, ["keep", "keep"]);
+    await app.goto("/");
+    await app.getByRole("button", { name: "TIRER UN FILM" }).click();
+    const drawn =
+      (await app.getByRole("heading", { level: 2 }).textContent()) ?? "";
+
+    await app.getByRole("link", { name: "LISTE", exact: true }).click();
+    await app.getByRole("link", { name: new RegExp(drawn) }).click();
+    await app.getByRole("button", { name: "ON L’A VU" }).click();
+    await app.waitForURL("/list");
+    await settled(app);
+    await app.getByRole("link", { name: "TIRER", exact: true }).click();
+
+    await expect(
+      app.getByRole("button", { name: "TIRER UN FILM" }),
+    ).toBeVisible();
+    await expect(app.getByText(/1 FILM À REGARDER · 1 VU/i)).toBeVisible();
+  });
+
+  test("tirer sur une liste vide, swiper, revenir : on peut tirer", async ({
+    app,
+  }) => {
+    await app.goto("/");
+    await app.getByRole("button", { name: "TIRER UN FILM" }).click();
+    await expect(
+      app.getByRole("heading", { name: "RIEN À TIRER CE SOIR" }),
+    ).toBeVisible();
+
+    await app.getByRole("link", { name: "SWIPER", exact: true }).click();
+    await app.getByRole("button", { name: "ON LE VEUT ♥" }).click();
+    await settled(app);
+    await app.getByRole("link", { name: "TIRER", exact: true }).click();
+
+    await expect(
+      app.getByRole("button", { name: "TIRER UN FILM" }),
+    ).toBeVisible();
   });
 
   test("← RETOUR et ↺ RESSORTIR : on peut revenir sur ses pas", async ({

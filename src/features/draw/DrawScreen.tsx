@@ -6,6 +6,7 @@ import {
   useIsPresent,
   useReducedMotion,
 } from "motion/react";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { Movie } from "@/domain/movie";
 import { Headline } from "@/ui/Headline";
@@ -54,48 +55,56 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
   const reduce = useReducedMotion() ?? false;
   const draw = useDraw(toWatch, onWatched);
   const { view } = draw;
+  // Once left, Next keeps this page in memory, asleep: an exit animation
+  // started there never ends and would freeze the old screen. Off screen,
+  // views swap at once; back on screen, AnimatePresence starts afresh.
+  const onScreen = usePathname() === "/";
 
+  const screen = (
+    <Screen key={viewKey(view)} reduce={reduce}>
+      {view.phase === "home" && (
+        <DrawHome
+          hasList={toWatch.length > 0}
+          counts={counts}
+          filters={draw.filters}
+          platforms={draw.platforms}
+          onFiltersChange={draw.setFilters}
+          filtering={draw.filtering}
+          eligibleCount={draw.eligibleCount}
+          now={draw.now}
+          onDraw={() => draw.draw("draw")}
+          onClearFilters={draw.clearFilters}
+        />
+      )}
+      {view.phase === "result" && (
+        <DrawResult
+          movie={view.movie}
+          now={draw.now}
+          reduce={reduce}
+          ticketRef={draw.ticketRef}
+          pile={draw.pile}
+          isWatching={draw.isWatching}
+          onBack={draw.back}
+          onReject={() => draw.draw("reject")}
+          onWatch={() => draw.watch(view.movie.tmdbId)}
+        />
+      )}
+      {view.phase === "exhausted" && (
+        <DrawExhausted
+          pile={draw.pile}
+          eligibleCount={draw.eligibleCount}
+          filtering={draw.filtering}
+          onResetPile={() => draw.draw("reset_pile")}
+          onClearFilters={draw.clearFilters}
+        />
+      )}
+      {view.phase === "empty" && <DrawEmpty />}
+    </Screen>
+  );
+  if (!onScreen) return screen;
   return (
     <AnimatePresence mode="wait" custom={draw.exit} initial={false}>
-      <Screen key={viewKey(view)} reduce={reduce}>
-        {view.phase === "home" && (
-          <DrawHome
-            hasList={toWatch.length > 0}
-            counts={counts}
-            filters={draw.filters}
-            platforms={draw.platforms}
-            onFiltersChange={draw.setFilters}
-            filtering={draw.filtering}
-            eligibleCount={draw.eligibleCount}
-            now={draw.now}
-            onDraw={() => draw.draw("draw")}
-            onClearFilters={draw.clearFilters}
-          />
-        )}
-        {view.phase === "result" && (
-          <DrawResult
-            movie={view.movie}
-            now={draw.now}
-            reduce={reduce}
-            ticketRef={draw.ticketRef}
-            pile={draw.pile}
-            isWatching={draw.isWatching}
-            onBack={draw.back}
-            onReject={() => draw.draw("reject")}
-            onWatch={() => draw.watch(view.movie.tmdbId)}
-          />
-        )}
-        {view.phase === "exhausted" && (
-          <DrawExhausted
-            pile={draw.pile}
-            eligibleCount={draw.eligibleCount}
-            filtering={draw.filtering}
-            onResetPile={() => draw.draw("reset_pile")}
-            onClearFilters={draw.clearFilters}
-          />
-        )}
-        {view.phase === "empty" && <DrawEmpty />}
-      </Screen>
+      {screen}
     </AnimatePresence>
   );
 }
