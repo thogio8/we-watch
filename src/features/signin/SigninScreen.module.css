@@ -112,11 +112,13 @@
   text-wrap: balance;
 }
 
-/* No passkeys in this browser: the explanation stands where the buttons were. */
+/*
+ * No passkeys in this browser: the explanation stands where the buttons were.
+ * Only adds what the alert lacks, so the order of the two sheets never matters.
+ */
 .unsupported {
   composes: alert from "../../ui/Alert.module.css";
   width: 100%;
-  margin: 0;
 }
 
 /* Phone held sideways: one-line title, tighter spacing. */
