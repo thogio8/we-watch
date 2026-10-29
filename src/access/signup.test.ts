@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { signupRight, submittedOwnerCode } from "./signup";
+import { signupRight } from "./signup";
 
 const OWNER_CODE = "code-proprietaire-123";
 
@@ -80,32 +80,19 @@ describe("signupRight", () => {
     ).toEqual({ ok: true, owner: true });
   });
 
-  it("ferme l'inscription en mode invitation avec un mauvais code", () => {
+  it("refuse un mauvais code en mode invitation", () => {
     expect(
       signupRight({
         mode: "invite",
         ownerCode: OWNER_CODE,
         submittedCode: "autre-code-12345",
       }),
-    ).toEqual({ ok: false, reason: "closed" });
+    ).toEqual({ ok: false, reason: "wrong_code" });
   });
 
-  it("ferme l'inscription en mode invitation sans code propriétaire configuré", () => {
+  it("refuse un code soumis en mode invitation sans code propriétaire configuré", () => {
     expect(
       signupRight({ mode: "invite", submittedCode: "quelque-chose" }),
-    ).toEqual({ ok: false, reason: "closed" });
-  });
-});
-
-describe("submittedOwnerCode", () => {
-  it.each([undefined, "", "   "])(
-    "un code vide (%o) n'est pas un code",
-    (code) => {
-      expect(submittedOwnerCode(code)).toBeNull();
-    },
-  );
-
-  it("garde le code tapé, sans les espaces autour", () => {
-    expect(submittedOwnerCode("  le code ")).toBe("le code");
+    ).toEqual({ ok: false, reason: "wrong_code" });
   });
 });

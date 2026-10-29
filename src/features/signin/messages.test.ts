@@ -39,14 +39,11 @@ describe("errorField", () => {
 });
 
 describe("refusalMessage", () => {
-  it.each([undefined, "", "   "])(
-    "sans code tapé (%o) : les inscriptions sont fermées",
-    (code) => {
-      expect(refusalMessage(code)).toBe(CLOSED_ERROR);
-    },
-  );
+  it("inscriptions fermées : message de fermeture", () => {
+    expect(refusalMessage("closed")).toBe(CLOSED_ERROR);
+  });
 
-  it("avec un code tapé et refusé : mauvais code", () => {
-    expect(refusalMessage(" pas le bon ")).toBe(WRONG_CODE_ERROR);
+  it("code tapé et refusé : mauvais code", () => {
+    expect(refusalMessage("wrong_code")).toBe(WRONG_CODE_ERROR);
   });
 });

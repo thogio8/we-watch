@@ -49,7 +49,7 @@ export async function prepareSignup(
     );
     return { ok: true, ticket };
   }
-  const error = refusalMessage(submittedCode);
+  const error = refusalMessage(right.reason);
   if (error === WRONG_CODE_ERROR) {
     await new Promise((resolve) => setTimeout(resolve, WRONG_CODE_DELAY_MS));
   }

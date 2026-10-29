@@ -1,4 +1,4 @@
-import { submittedOwnerCode } from "@/access/signup";
+import type { SignupRight } from "@/access/signup";
 
 /** Error texts of the sign-in screen (spec §9). Raw error text is never shown. */
 export const NAME_ERROR = "UN PRÉNOM DE 1 À 30 CARACTÈRES";
@@ -19,14 +19,11 @@ export function signinFailure(error: object | null | undefined): string {
     : CANCELLED_ERROR;
 }
 
-/**
- * A refused signup: with a typed owner code, the code was wrong (in either
- * mode); without one, signup is closed. Blank means no code (signup.ts).
- */
-export function refusalMessage(submittedCode: string | undefined): string {
-  return submittedOwnerCode(submittedCode) === null
-    ? CLOSED_ERROR
-    : WRONG_CODE_ERROR;
+/** The message of a refused signup: a typed code was wrong, or signup is closed. */
+export function refusalMessage(
+  reason: Extract<SignupRight, { ok: false }>["reason"],
+): string {
+  return reason === "wrong_code" ? WRONG_CODE_ERROR : CLOSED_ERROR;
 }
 
 /** Which form field an error is about, so it can be flagged and focused. */
