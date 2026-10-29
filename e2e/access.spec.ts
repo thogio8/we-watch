@@ -38,7 +38,12 @@ test.describe("connexion", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("une session supprimée renvoie vers la connexion", async ({ app }) => {
+  // Before any page sets the session cache cookie (session_data): with it,
+  // a deleted session is still accepted for up to 5 minutes (cookieCache in
+  // src/auth/create-auth.ts), a known lag left for piece 5.
+  test("une session supprimée, sans cache de session, renvoie vers la connexion", async ({
+    app,
+  }) => {
     await deleteSessions();
 
     await app.goto("/");

@@ -2,7 +2,14 @@ import { expect, type Page, test as base } from "@playwright/test";
 import { testUtils } from "better-auth/plugins";
 import { sql } from "drizzle-orm";
 import { createAuth } from "../src/auth/create-auth";
-import { passkey, session, user } from "../src/db/auth-schema";
+import {
+  account,
+  passkey,
+  session,
+  signupTicketUse,
+  user,
+  verification,
+} from "../src/db/auth-schema";
 import { createDatabase } from "../src/db/create-database";
 import { movies } from "../src/db/schema";
 import { appUrl, databaseOf, E2E_AUTH_SECRET } from "./env";
@@ -18,11 +25,17 @@ function db() {
   return databases.get(worker)!;
 }
 
-/** Empties the worker's database, children before the users they point to. */
+/**
+ * Empties the worker's database (movies and every Better Auth table), the
+ * children before the users they point to.
+ */
 async function wipe() {
   await db().delete(movies);
   await db().delete(passkey);
   await db().delete(session);
+  await db().delete(account);
+  await db().delete(verification);
+  await db().delete(signupTicketUse);
   await db().delete(user);
 }
 
