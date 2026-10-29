@@ -248,6 +248,9 @@ describe("Better Auth (fonctionnel)", () => {
       expect(await db.select().from(passkey)).toContainEqual(
         expect.objectContaining({ userId: session?.user.id }),
       );
+      // Ids written through the adapter keep Better Auth's default format.
+      expect(session?.user.id).toMatch(/^[A-Za-z0-9]{32}$/);
+      expect(session?.session.id).toMatch(/^[A-Za-z0-9]{32}$/);
     });
 
     it.each([

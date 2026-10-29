@@ -6,7 +6,8 @@ import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
 import { group, membership } from "@/db/group-schema";
 import { parseDisplayName } from "@/domain/display-name";
-import { generateId, groupModels } from "./legacy-group-join";
+import { generateId } from "./ids";
+import { groupModels } from "./legacy-group-join";
 import { passkeySignup, signupTicketUses } from "./passkey-signup";
 
 export type AuthConfig<Plugins extends BetterAuthPlugin[] = []> = {

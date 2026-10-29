@@ -3,23 +3,10 @@ import {
   type BetterAuthPlugin,
   type DBAdapter,
 } from "better-auth";
-import { generateRandomString } from "better-auth/crypto";
 import { LEGACY_GROUP_ID } from "@/domain/group";
 
 const GROUPS = "group";
 const MEMBERSHIPS = "membership";
-
-/**
- * Better Auth gives every row it creates an `id`; a membership has none (its
- * key is group + user). `false` lets the row go in without one, as the
- * `generateId` option documents; every other model keeps Better Auth's
- * default id (32 letters and digits).
- */
-export function generateId({ model, size }: { model: string; size?: number }) {
-  return model === MEMBERSHIPS
-    ? false
-    : generateRandomString(size ?? 32, "a-z", "A-Z", "0-9");
-}
 
 /**
  * Declares the group and membership tables (src/db/group-schema.ts) to
@@ -37,7 +24,8 @@ export const groupModels = {
     },
     [MEMBERSHIPS]: {
       // Owned by the app's migrations. Also spares it Better Auth's schema
-      // check, which expects an `id` column on every table it writes.
+      // check, which expects an `id` column on every table it writes (the
+      // insert leaves the id out: see ids.ts).
       disableMigration: true,
       fields: {
         groupId: { type: "string", required: true },
