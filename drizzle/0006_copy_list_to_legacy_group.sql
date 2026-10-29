@@ -1,7 +1,7 @@
--- 2.2: the pre-accounts list becomes the group « NOUS DEUX » (id and name:
--- LEGACY_GROUP_ID / LEGACY_GROUP_NAME in src/domain/group.ts). Additive: the
--- table movies is only read, kept for a rollback to 1.3.x. A database without
--- movies (new instance, tests) gets no group.
+-- 2.0, groups: the pre-accounts list becomes the group « NOUS DEUX » (id
+-- and name: LEGACY_GROUP_ID / LEGACY_GROUP_NAME in src/domain/group.ts).
+-- Additive: the table movies is only read, kept for a rollback to 1.3.x. A
+-- database without movies (new instance, tests) gets no group.
 INSERT INTO `movie_snapshot` (`tmdb_id`, `title`, `release_year`, `runtime_minutes`, `overview`, `poster_path`, `vote_average`, `providers`, `genre_ids`, `trailer_key`)
   SELECT `tmdb_id`, `title`, `release_year`, `runtime_minutes`, `overview`, `poster_path`, `vote_average`, `providers`, `genre_ids`, `trailer_key` FROM `movies`;
 --> statement-breakpoint

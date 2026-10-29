@@ -15,9 +15,9 @@ import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
 import { createDatabase } from "./create-database";
 import { group } from "./group-schema";
 
-// The 2.2 migration runs on the production list (1.3.x rows) before the new
-// code: it applies the real SQL files, in journal order, on a database
-// seeded the way 1.3.x left it.
+// The groups migration (2.0, piece 2) runs on the production list (1.3.x
+// rows) before the new code: it applies the real SQL files, in journal order,
+// on a database seeded the way 1.3.x left it.
 
 type Journal = { entries: { idx: number; tag: string }[] };
 const journal = JSON.parse(
@@ -136,7 +136,7 @@ beforeEach(async () => {
 });
 
 describe("migration de la liste vers « NOUS DEUX »", () => {
-  it("applique exactement 0005 à 0007 après les migrations de la 2.1", () => {
+  it("applique exactement 0005 à 0007 après celles des comptes (morceau 1 de la 2.0)", () => {
     expect(BEFORE_GROUPS.at(-1)).toBe("0004_signup_ticket_use");
     expect(GROUPS[0]).toMatch(/^0005_/);
     expect(GROUPS[1]).toBe(COPY);
@@ -282,8 +282,8 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
     // A copy of drizzle/ whose journal stops at 0004: the state of the
-    // production database under 2.1, as recorded by the migrator.
-    function migrationsUpTo2_1() {
+    // database before the groups (2.0, piece 2), as recorded by the migrator.
+    function migrationsBeforeGroups() {
       const folder = join(dir, "drizzle");
       cpSync("drizzle", folder, { recursive: true });
       writeFileSync(
@@ -305,7 +305,7 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
           )
         ).n;
 
-      await migrate(db, { migrationsFolder: migrationsUpTo2_1() });
+      await migrate(db, { migrationsFolder: migrationsBeforeGroups() });
       expect(await recorded()).toBe(5);
       await client.batch(OLD_ROWS, "write");
       const movies = await allMovies();
