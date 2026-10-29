@@ -24,9 +24,9 @@ describe("parseGroupName", () => {
 
   it("refuse vide, invisible, contrôles, bidi et non-texte", () => {
     expect(parseGroupName("")).toBeNull();
-    expect(parseGroupName("​⁠")).toBeNull();
+    expect(parseGroupName("\u200B\u2060")).toBeNull();
     expect(parseGroupName("Gro\u0000upe")).toBeNull();
-    expect(parseGroupName("‮groupe")).toBeNull();
+    expect(parseGroupName("\u202Egroupe")).toBeNull();
     expect(parseGroupName(null)).toBeNull();
     expect(parseGroupName(7)).toBeNull();
   });

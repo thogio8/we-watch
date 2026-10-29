@@ -10,10 +10,17 @@ describe("parseLabel", () => {
 
   it("refuse le vide, l'invisible, les contrôles et le non-texte", () => {
     expect(parseLabel("   ", 30)).toBeNull();
-    expect(parseLabel("​", 30)).toBeNull();
+    expect(parseLabel("\u200B", 30)).toBeNull();
     expect(parseLabel("Lé\u0000a", 30)).toBeNull();
-    expect(parseLabel("‮abc", 30)).toBeNull();
+    expect(parseLabel("\u202Eabc", 30)).toBeNull();
     expect(parseLabel(42, 30)).toBeNull();
+  });
+
+  it("garde un emoji composé avec un joiner et refuse un accent isolé", () => {
+    expect(parseLabel("\u{1F468}\u200D\u{1F469}\u200D\u{1F467}", 30)).toBe(
+      "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}",
+    );
+    expect(parseLabel("\u0301", 30)).toBeNull();
   });
 
   it("compte les points de code et normalise en NFC", () => {

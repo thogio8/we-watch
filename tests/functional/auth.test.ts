@@ -82,7 +82,7 @@ describe("Better Auth (fonctionnel)", () => {
   });
 
   it("un nom invisible est refusé à la création", async () => {
-    await expect(saveUser("​")).rejects.toMatchObject({
+    await expect(saveUser("\u200B")).rejects.toMatchObject({
       statusCode: 400,
     });
   });
@@ -92,7 +92,7 @@ describe("Better Auth (fonctionnel)", () => {
     const user = await saveUser("Léa");
 
     await expect(
-      ctx.internalAdapter.updateUser(user.id, { name: "​" }),
+      ctx.internalAdapter.updateUser(user.id, { name: "\u200B" }),
     ).rejects.toMatchObject({ statusCode: 400 });
     expect((await ctx.internalAdapter.findUserById(user.id))?.name).toBe("Léa");
   });

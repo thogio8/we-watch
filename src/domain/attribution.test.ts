@@ -5,8 +5,9 @@ import {
   watchedLine,
   wantedLine,
 } from "./attribution";
-import { formatShortDate } from "./time";
+import { formatLongDate, formatShortDate } from "./time";
 
+// Noon UTC stays on the 12th in Paris; OCT_18 is local time, as the short date is.
 const OCT_12 = new Date("2026-10-12T10:00:00Z");
 const OCT_18 = new Date(2026, 9, 18);
 
@@ -72,8 +73,8 @@ describe("watchedLine", () => {
   });
 
   it("accepte le format long de la fiche", () => {
-    expect(
-      watchedLine({ ...seen, legacy: true }, (d) => `le ${d.getDate()}`),
-    ).toBe("vu le le 18");
+    expect(watchedLine({ ...seen, legacy: true }, formatLongDate)).toBe(
+      "vu le 18 octobre 2026",
+    );
   });
 });

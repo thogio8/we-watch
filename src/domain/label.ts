@@ -1,5 +1,5 @@
 // C0/C1 controls and bidi marks/overrides/isolates (spoofing).
-const FORBIDDEN = /[\p{Cc}‎‏‪-‮⁦-⁩]/u;
+const FORBIDDEN = /[\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
 const VISIBLE = /[\p{L}\p{N}\p{S}\p{P}]/u;
 
 /**
