@@ -66,7 +66,7 @@ export function SigninHome({
             disabled={pending}
             onClick={onOpenForm}
           >
-            {"J'AI UN CODE PROPRIÉTAIRE"}
+            J’AI UN CODE PROPRIÉTAIRE
           </button>
         )}
       </div>

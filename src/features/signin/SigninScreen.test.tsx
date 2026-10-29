@@ -56,7 +56,7 @@ async function openForm(
   signup: "open" | "invite" = "open",
 ) {
   const label =
-    signup === "open" ? "CRÉER UN COMPTE" : "J'AI UN CODE PROPRIÉTAIRE";
+    signup === "open" ? "CRÉER UN COMPTE" : "J’AI UN CODE PROPRIÉTAIRE";
   await user.click(screen.getByRole("button", { name: label }));
 }
 
@@ -86,7 +86,7 @@ describe("SigninScreen, accueil", () => {
       screen.queryByRole("button", { name: "CRÉER UN COMPTE" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "J'AI UN CODE PROPRIÉTAIRE" }),
+      screen.getByRole("button", { name: "J’AI UN CODE PROPRIÉTAIRE" }),
     ).toBeInTheDocument();
   });
 
@@ -130,13 +130,16 @@ describe("SigninScreen, accueil", () => {
     },
   );
 
-  it("les boutons sont désactivés pendant la cérémonie", async () => {
+  it("pendant la cérémonie, les boutons sont désactivés : une seule connexion", async () => {
     signInPasskey.mockReturnValue(new Promise(() => {}));
     const user = renderScreen();
+    const faceId = screen.getByRole("button", { name: FACE_ID });
 
-    await user.click(screen.getByRole("button", { name: FACE_ID }));
+    await user.click(faceId);
+    await user.click(faceId);
 
-    expect(screen.getByRole("button", { name: FACE_ID })).toBeDisabled();
+    expect(signInPasskey).toHaveBeenCalledOnce();
+    expect(faceId).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "CRÉER UN COMPTE" }),
     ).toBeDisabled();
@@ -158,7 +161,7 @@ describe("SigninScreen, création de compte", () => {
     expect(screen.getByRole("button", { name: CREATE })).toBeEnabled();
   });
 
-  it("J'AI UN CODE PROPRIÉTAIRE montre le champ du code", async () => {
+  it("J’AI UN CODE PROPRIÉTAIRE montre le champ du code", async () => {
     const user = renderScreen("invite");
 
     await openForm(user, "invite");
@@ -243,6 +246,34 @@ describe("SigninScreen, création de compte", () => {
     expect(code).toHaveFocus();
     expect(addPasskey).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["la préparation", false],
+    ["Face ID", true],
+  ])(
+    "pendant %s, CRÉER AVEC FACE ID est désactivé : une seule création",
+    async (_label, prepared) => {
+      const never = () => new Promise(() => {});
+      if (prepared) {
+        prepareSignup.mockResolvedValue({ ok: true, ticket: "le-ticket" });
+        addPasskey.mockImplementation(never);
+      } else {
+        prepareSignup.mockImplementation(never);
+      }
+      const user = renderScreen();
+      await openForm(user);
+      await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
+      const create = screen.getByRole("button", { name: CREATE });
+
+      await user.click(create);
+      await user.click(create);
+
+      expect(prepareSignup).toHaveBeenCalledOnce();
+      expect(addPasskey).toHaveBeenCalledTimes(prepared ? 1 : 0);
+      expect(create).toBeDisabled();
+      expect(screen.getByRole("button", { name: "← RETOUR" })).toBeDisabled();
+    },
+  );
 
   it("RETOUR revient à l'accueil, sans l'erreur", async () => {
     prepareSignup.mockResolvedValue({ ok: false, error: "MAUVAIS CODE" });

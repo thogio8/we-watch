@@ -5,6 +5,7 @@ import {
   errorField,
   NAME_ERROR,
   NO_ACCOUNT_ERROR,
+  refusalMessage,
   signinFailure,
   WRONG_CODE_ERROR,
 } from "./messages";
@@ -34,5 +35,18 @@ describe("errorField", () => {
     [null, null],
   ] as const)("%s concerne le champ %s", (error, field) => {
     expect(errorField(error)).toBe(field);
+  });
+});
+
+describe("refusalMessage", () => {
+  it.each([undefined, "", "   "])(
+    "sans code tapé (%o) : les inscriptions sont fermées",
+    (code) => {
+      expect(refusalMessage(code)).toBe(CLOSED_ERROR);
+    },
+  );
+
+  it("avec un code tapé et refusé : mauvais code", () => {
+    expect(refusalMessage(" pas le bon ")).toBe(WRONG_CODE_ERROR);
   });
 });

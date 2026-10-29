@@ -4,7 +4,7 @@ import { signupRight } from "@/access/signup";
 import { createSignupTicket } from "@/access/signup-ticket";
 import { parseDisplayName } from "@/domain/display-name";
 import { getServerEnv } from "@/env";
-import { CLOSED_ERROR, NAME_ERROR, WRONG_CODE_ERROR } from "./messages";
+import { NAME_ERROR, refusalMessage, WRONG_CODE_ERROR } from "./messages";
 
 export type PrepareSignupResult =
   { ok: true; ticket: string } | { ok: false; error: string };
@@ -49,11 +49,9 @@ export async function prepareSignup(
     );
     return { ok: true, ticket };
   }
-  // A refused code is a wrong code in either mode (signupRight reads it as
-  // "closed" in "invite"); the person did type one, so say so, after a pause.
-  if ((submittedCode?.trim() ?? "") !== "") {
+  const error = refusalMessage(submittedCode);
+  if (error === WRONG_CODE_ERROR) {
     await new Promise((resolve) => setTimeout(resolve, WRONG_CODE_DELAY_MS));
-    return { ok: false, error: WRONG_CODE_ERROR };
   }
-  return { ok: false, error: CLOSED_ERROR };
+  return { ok: false, error };
 }

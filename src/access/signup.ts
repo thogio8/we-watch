@@ -9,6 +9,12 @@ type SignupInput = {
   submittedCode?: string;
 };
 
+/** The owner code a person typed, trimmed; null when blank (no code at all). */
+export function submittedOwnerCode(submittedCode?: string): string | null {
+  const submitted = submittedCode?.trim() ?? "";
+  return submitted === "" ? null : submitted;
+}
+
 /**
  * Decides who may create an account. A valid owner code always grants the
  * owner role. Without one, signup is allowed only in "open" mode; a wrong code
@@ -19,8 +25,8 @@ export function signupRight({
   ownerCode,
   submittedCode,
 }: SignupInput): SignupRight {
-  const submitted = submittedCode?.trim() ?? "";
-  if (submitted === "") {
+  const submitted = submittedOwnerCode(submittedCode);
+  if (submitted === null) {
     return mode === "open"
       ? { ok: true, owner: false }
       : { ok: false, reason: "closed" };

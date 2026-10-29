@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { signupRight } from "./signup";
+import { signupRight, submittedOwnerCode } from "./signup";
 
 const OWNER_CODE = "code-proprietaire-123";
 
@@ -94,5 +94,18 @@ describe("signupRight", () => {
     expect(
       signupRight({ mode: "invite", submittedCode: "quelque-chose" }),
     ).toEqual({ ok: false, reason: "closed" });
+  });
+});
+
+describe("submittedOwnerCode", () => {
+  it.each([undefined, "", "   "])(
+    "un code vide (%o) n'est pas un code",
+    (code) => {
+      expect(submittedOwnerCode(code)).toBeNull();
+    },
+  );
+
+  it("garde le code tapé, sans les espaces autour", () => {
+    expect(submittedOwnerCode("  le code ")).toBe("le code");
   });
 });
