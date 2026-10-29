@@ -51,12 +51,19 @@ Il faut **Node.js 24** et un jeton d'accès TMDB gratuit (themoviedb.org → Par
 ```bash
 git clone https://github.com/thogio8/we-watch.git && cd we-watch
 npm install
-cp .env.example .env.local   # renseigner TMDB_ACCESS_TOKEN et ACCESS_CODE
+cp .env.example .env.local   # renseigner TMDB_ACCESS_TOKEN et BETTER_AUTH_SECRET
 npm run db:migrate           # crée la base SQLite locale (local.db)
 npm run dev                  # http://localhost:3000
 ```
 
-L'appli demande alors le code d'accès choisi dans `ACCESS_CODE`, puis s'ouvre sur TIRER : la liste est vide, direction SWIPER.
+Dans `.env.local` :
+
+- `BETTER_AUTH_SECRET` : le secret des sessions, 32 caractères au moins (`openssl rand -hex 32`) ;
+- `BETTER_AUTH_URL` : l'adresse de l'appli, `http://localhost:3000` en local ;
+- `SIGNUP` : `open` (par défaut, tout le monde peut créer un compte) ou `invite` ;
+- `OWNER_CODE` : le code propriétaire, utile seulement avec `SIGNUP=invite`.
+
+L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, Face ID (ou l'empreinte, ou le code de l'ordinateur), et c'est parti sur TIRER : la liste est vide, direction SWIPER.
 
 ## Héberger votre propre WeWatch
 
@@ -72,7 +79,8 @@ Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base
 
 2. **Vercel** : créer le projet depuis votre copie du dépôt, sans le déployer.
    - `npx vercel link` crée le projet ; `.vercel/project.json` donne `orgId` et `projectId`.
-   - Variables d'environnement **Production** : `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `ACCESS_CODE` et `CRON_SECRET` (`openssl rand -hex 32`). Ne pas les donner aux previews : elles écriraient dans la même base.
+   - Variables d'environnement **Production** : `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET` et `BETTER_AUTH_SECRET` (chacun `openssl rand -hex 32`), `BETTER_AUTH_URL` (l'adresse de production, la même que `PROD_URL`), et au besoin `SIGNUP` et `OWNER_CODE` (voir « Les comptes »). Ne pas les donner aux previews : elles écriraient dans la même base.
+   - `ACCESS_CODE`, l'ancien code partagé, reste dans Vercel jusqu'à la 2.1 : un retour arrière vers la 1.3.x en a encore besoin. La 2.0 l'ignore.
    - Un jeton dans Account Settings → Tokens.
    - La région des fonctions (`vercel.json`, `dub1` = Dublin) se règle au plus près de la base.
 3. **GitHub** (Settings → Secrets and variables → Actions) :
@@ -80,11 +88,16 @@ Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base
    - variable : `PROD_URL`, l'adresse de production (par exemple `https://votre-projet.vercel.app`).
 4. **Pousser sur `main`** : la CI crée la table au premier passage, puis chaque push déploie.
 
-## Le code d'accès
+## Les comptes
 
-Il n'y a pas de comptes : un code partagé (`ACCESS_CODE`), saisi une fois par appareil, protège toute l'appli. Choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée : c'est sa longueur qui la protège. Changer le code déconnecte tous les appareils.
+Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre avec une passkey, c'est-à-dire Face ID, l'empreinte ou le code de l'appareil. Rien à retenir, rien à se faire voler, aucun email envoyé. Sans compte, toutes les pages mènent à **ENTRE DANS WEWATCH**.
 
-> Une vraie authentification est en préparation pour la prochaine version.
+- **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis Face ID. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
+- **Revenir** : « SE CONNECTER AVEC FACE ID ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est en bas de LISTE.
+- **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et seul le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) ouvre la création : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée.
+- Les passkeys sont liées à l'adresse de l'appli (`BETTER_AUTH_URL`) : changer d'adresse oblige à recréer les comptes.
+
+> À venir : les invitations, la connexion avec Google et une page « mon compte ».
 
 ## L'installer comme une appli
 
@@ -110,7 +123,8 @@ src/
   domain/    règles métier pures : films, tirage, filtres « ce soir », transitions de statut
   db/        schéma Drizzle et repository
   tmdb/      client TMDB, validation, mapping, thèmes de swipe
-  access/    code d'accès : jeton, cookie, décision du proxy
+  auth/      comptes Better Auth : passkeys, sessions
+  access/    qui entre : décision du proxy, inscription ouverte ou sur invitation
   server/    assemblage base + TMDB (un seul endroit)
   features/  un dossier par écran : composants, actions serveur, logique testée
   ui/        composants partagés sans logique métier

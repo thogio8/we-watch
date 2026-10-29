@@ -1,24 +1,24 @@
 # Couverture et tests
 
-Date : 2026-10-23 · mise à jour : 2026-10-27 (V1.2.4, qualité)
+Date : 2026-10-23 · mise à jour : 2026-10-29 (V2.0, comptes et passkeys)
 
 ## Les trois niveaux de tests
 
 | Niveau | Où | Ce qui est vrai | Ce qui est simulé | Commande |
 | --- | --- | --- | --- | --- |
 | Unitaires | `src/**/*.test.ts(x)` | une fonction, un composant (Testing Library) | ses dépendances | `npm test` |
-| Fonctionnels | `tests/functional/` | actions serveur → container → repository → SQLite, client TMDB → zod → mapping | TMDB (faux catalogue `tests/fake-tmdb/`), le cookie d'accès | `npm test` |
-| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe | TMDB (même faux catalogue, servi en HTTP) | `npm run test:e2e` |
+| Fonctionnels | `tests/functional/` | actions serveur → container → repository → SQLite, client TMDB → zod → mapping | TMDB (faux catalogue `tests/fake-tmdb/`), la session (`@/server/session`) | `npm test` |
+| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe, les passkeys (Face ID virtuel, WebAuthn via CDP) | TMDB (même faux catalogue, servi en HTTP) ; la session des parcours hors connexion (écrite en base) | `npm run test:e2e` |
 
 Tout tourne dans `npm run ci` (hook `pre-push`, et GitHub Actions en filet).
 
 ## Porte de couverture
 
-`npm run test:coverage` : 485 tests, 52 fichiers, **100 %** partout.
+`npm run test:coverage` : 702 tests, 61 fichiers, **100 %** partout.
 
-Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
+Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`, la route `/api/auth/*` et le client navigateur de Better Auth `features/signin/authClient.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
 
-Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3.
+Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 702 (+ 61 e2e, dont 28 captures visuelles) après la V2.0 (comptes et passkeys).
 
 ## Seuils
 
@@ -34,17 +34,23 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | --- | --- | --- | --- | --- |
 | **Total** | 100% | 100% | 100% | 100% |
 | src/env.ts | 100% | 100% | 100% | 100% |
-| src/access/assert-unlocked.ts | 100% | 100% | 100% | 100% |
-| src/access/cookie.ts | 100% | 100% | 100% | 100% |
 | src/access/cron.ts | 100% | 100% | 100% | 100% |
 | src/access/decision.ts | 100% | 100% | 100% | 100% |
 | src/access/paths.ts | 100% | 100% | 100% | 100% |
+| src/access/signed-in.ts | 100% | 100% | 100% | 100% |
+| src/access/signup-ticket.ts | 100% | 100% | 100% | 100% |
+| src/access/signup.ts | 100% | 100% | 100% | 100% |
 | src/access/token.ts | 100% | 100% | 100% | 100% |
 | src/app/api/cron/refresh-movies/route.ts | 100% | 100% | 100% | 100% |
+| src/auth/create-auth.ts | 100% | 100% | 100% | 100% |
+| src/auth/passkey-signup.ts | 100% | 100% | 100% | 100% |
+| src/db/auth-schema.ts | 100% | 100% | 100% | 100% |
 | src/db/create-database.ts | 100% | 100% | 100% | 100% |
 | src/db/movies-repository.ts | 100% | 100% | 100% | 100% |
 | src/db/schema.ts | 100% | 100% | 100% | 100% |
+| src/domain/display-name.ts | 100% | 100% | 100% | 100% |
 | src/domain/draw-session.ts | 100% | 100% | 100% | 100% |
+| src/domain/genres.ts | 100% | 100% | 100% | 100% |
 | src/domain/movie.ts | 100% | 100% | 100% | 100% |
 | src/domain/time.ts | 100% | 100% | 100% | 100% |
 | src/domain/tonight.ts | 100% | 100% | 100% | 100% |
@@ -59,14 +65,18 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/features/list/searchAnswer.ts | 100% | 100% | 100% | 100% |
 | src/features/list/tabs.ts | 100% | 100% | 100% | 100% |
 | src/features/list/toWatchMeta.ts | 100% | 100% | 100% | 100% |
+| src/features/movie/load.ts | 100% | 100% | 100% | 100% |
 | src/features/refresh/refresh-movies.ts | 100% | 100% | 100% | 100% |
+| src/features/signin/actions.ts | 100% | 100% | 100% | 100% |
+| src/features/signin/messages.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/deck.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/deckState.ts | 100% | 100% | 100% | 100% |
-| src/features/unlock/actions.ts | 100% | 100% | 100% | 100% |
-| src/features/unlock/state.ts | 100% | 100% | 100% | 100% |
+| src/server/revalidate.ts | 100% | 100% | 100% | 100% |
+| src/server/session.ts | 100% | 100% | 100% | 100% |
 | src/server/validate.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/client.ts | 100% | 100% | 100% | 100% |
+| src/tmdb/credits.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/decks.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/images.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/movies.ts | 100% | 100% | 100% | 100% |
