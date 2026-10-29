@@ -2,11 +2,7 @@
   margin-bottom: 21px;
 }
 
-/* A plain line under the button (the shared alert box is already used by MovieRow). */
 .failed {
-  margin: 13px 0 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
+  composes: alert from "../../ui/Alert.module.css";
   text-transform: uppercase;
 }
