@@ -1,6 +1,7 @@
 import { type Page } from "@playwright/test";
 import {
   decidedOn,
+  emptyNameRefused,
   expect,
   listTitles,
   settled,
@@ -31,7 +32,11 @@ async function freeze(page: Page) {
   });
 }
 
-/** Captures once the screen is final: data loaded, fonts in, no request left. */
+/**
+ * Captures once the screen is final: data loaded, fonts in, no request left.
+ * In a fullPage capture the fixed bottom nav sits where the first viewport
+ * ends, so it may cover content in the image only (the shell pads for it).
+ */
 async function shoot(page: Page, name: string) {
   await settled(page);
   await page.evaluate(() => document.fonts.ready);
@@ -81,6 +86,8 @@ test.describe("rendu visuel", () => {
         app.getByRole("button", { name: "SE CONNECTER AVEC FACE ID" }),
       ).toBeVisible();
       await shoot(app, `${format.name}-6-connexion`);
+      await emptyNameRefused(app);
+      await shoot(app, `${format.name}-6b-connexion-erreur`);
     });
   }
 });

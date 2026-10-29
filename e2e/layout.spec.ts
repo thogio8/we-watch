@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
-import { expect, swipe, test } from "./fixtures";
+import { emptyNameRefused, expect, swipe, test } from "./fixtures";
 
 /** Formats from spec §12: small and large phones, sideways, tablet, desktop. */
 const VIEWPORTS = [
@@ -15,7 +15,10 @@ const VIEWPORTS = [
 const PAGES = ["/", "/swipe", "/list"];
 const SIGNIN = "/connexion";
 
-/** Every page, the sign-in one last and signed out (cookies cleared). */
+/**
+ * Every page, then the sign-in one signed out (cookies cleared): its home,
+ * then its signup form showing an error.
+ */
 async function* visitAll(page: Page) {
   for (const path of PAGES) {
     await page.goto(path);
@@ -24,6 +27,8 @@ async function* visitAll(page: Page) {
   await page.context().clearCookies();
   await page.goto(SIGNIN);
   yield SIGNIN;
+  await emptyNameRefused(page);
+  yield `${SIGNIN} (formulaire refusé)`;
 }
 
 test.describe("mise en page et accessibilité", () => {

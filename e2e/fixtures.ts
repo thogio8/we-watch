@@ -61,20 +61,29 @@ export async function accountNames() {
 /**
  * Gives the page a device with Face ID: a virtual platform authenticator
  * (Chromium, through CDP) that keeps its passkeys and always says yes.
+ * Returns how to take it away again.
  */
 async function faceId(page: Page) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("WebAuthn.enable");
-  await cdp.send("WebAuthn.addVirtualAuthenticator", {
-    options: {
-      protocol: "ctap2",
-      transport: "internal",
-      hasResidentKey: true,
-      hasUserVerification: true,
-      isUserVerified: true,
-      automaticPresenceSimulation: true,
+  const { authenticatorId } = await cdp.send(
+    "WebAuthn.addVirtualAuthenticator",
+    {
+      options: {
+        protocol: "ctap2",
+        transport: "internal",
+        hasResidentKey: true,
+        hasUserVerification: true,
+        isUserVerified: true,
+        automaticPresenceSimulation: true,
+      },
     },
-  });
+  );
+  return async () => {
+    await cdp.send("WebAuthn.removeVirtualAuthenticator", { authenticatorId });
+    await cdp.send("WebAuthn.disable");
+    await cdp.detach();
+  };
 }
 
 /**
@@ -92,12 +101,27 @@ export const test = base.extend<{ app: Page; visitor: Page }>({
   },
   visitor: async ({ page }, use) => {
     await wipe();
-    await faceId(page);
+    const removeFaceId = await faceId(page);
     await use(page);
+    await removeFaceId();
   },
 });
 
 export { expect };
+
+/** Fills the « CRÉER UN COMPTE » form of /connexion and submits it. */
+export async function signUpAs(page: Page, name: string) {
+  await page.goto("/connexion");
+  await page.getByRole("button", { name: "CRÉER UN COMPTE" }).click();
+  await page.getByLabel("TON PRÉNOM OU SURNOM").fill(name);
+  await page.getByRole("button", { name: "CRÉER AVEC FACE ID" }).click();
+}
+
+/** Submits the form with an empty name and waits for the refusal. */
+export async function emptyNameRefused(page: Page) {
+  await signUpAs(page, "");
+  await expect(page.getByText("UN PRÉNOM DE 1 À 30 CARACTÈRES")).toBeVisible();
+}
 
 /** The card on top of the swipe deck. */
 export const topCard = (page: Page) =>
