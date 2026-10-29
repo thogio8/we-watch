@@ -56,7 +56,7 @@ npm run db:migrate           # crée la base SQLite locale (local.db)
 npm run dev                  # http://localhost:3000
 ```
 
-Dans `.env.local` :
+Dans `.env.local` (`BETTER_AUTH_URL` et `SIGNUP` sont déjà préremplis par `.env.example`) :
 
 - `BETTER_AUTH_SECRET` : le secret des sessions, 32 caractères au moins (`openssl rand -hex 32`) ;
 - `BETTER_AUTH_URL` : l'adresse de l'appli, `http://localhost:3000` en local ;
