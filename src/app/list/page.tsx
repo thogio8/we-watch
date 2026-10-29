@@ -25,37 +25,31 @@ async function ListData() {
     list.listByStatus(groupId, "watched"),
   ]);
   return (
-    <>
-      <GroupPill
-        active={active.group}
-        groups={active.groups}
-        choose={chooseGroup}
-        create={createGroup}
-      />
-      <ListScreen
-        toWatch={toWatch}
-        watched={watched}
-        onRemove={removeFromList.bind(null, groupId)}
-        onUnwatch={unwatch.bind(null, groupId)}
-        search={{
-          search: searchCatalog.bind(null, groupId),
-          add: addFromSearch.bind(null, groupId),
-        }}
-      />
-    </>
+    <ListScreen
+      toWatch={toWatch}
+      watched={watched}
+      onRemove={removeFromList.bind(null, groupId)}
+      onUnwatch={unwatch.bind(null, groupId)}
+      pill={
+        <GroupPill
+          active={active.group}
+          groups={active.groups}
+          choose={chooseGroup}
+          create={createGroup}
+        />
+      }
+
+      search={{
+        search: searchCatalog.bind(null, groupId),
+        add: addFromSearch.bind(null, groupId),
+      }}
+    />
   );
 }
 
 export default function ListPage() {
   return (
-    <Suspense
-      fallback={
-        <>
-          <GroupPillFallback />
-          <ListScreenFallback />
-        </>
-      }
-    >
+    <Suspense fallback={<ListScreenFallback pill={<GroupPillFallback />} />}>
       <ListData />
     </Suspense>
   );

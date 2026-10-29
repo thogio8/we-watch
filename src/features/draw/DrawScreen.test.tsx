@@ -29,14 +29,21 @@ interface Props {
   toWatch: Movie[];
   watched?: number;
   onWatched?: (tmdbId: number) => Promise<void>;
+  pill?: ReactNode;
 }
 
-function screenFor({ toWatch, watched = 0, onWatched }: Props): ReactNode {
+function screenFor({
+  toWatch,
+  watched = 0,
+  onWatched,
+  pill,
+}: Props): ReactNode {
   return (
     <DrawScreen
       toWatch={toWatch}
       counts={{ toWatch: toWatch.length, watched }}
       onWatched={onWatched ?? (() => Promise.resolve())}
+      pill={pill}
     />
   );
 }
@@ -70,6 +77,26 @@ beforeEach(() => {
 });
 
 describe("DrawScreen", () => {
+  it("garde la pastille du groupe dans le landmark main, hors des écrans animés", async () => {
+    const { user } = renderDraw({
+      toWatch: [CHIHIRO],
+      pill: <button type="button">PASTILLE</button>,
+    });
+    const pill = within(screen.getByRole("main")).getByRole("button", {
+      name: "PASTILLE",
+    });
+
+    await user.click(drawButton());
+    await screen.findByRole("button", { name: "RETIRER" });
+
+    // Same node: the pill was neither re-mounted nor re-animated.
+    expect(
+      within(screen.getByRole("main")).getByRole("button", {
+        name: "PASTILLE",
+      }),
+    ).toBe(pill);
+  });
+
   it("l'accueil affiche les compteurs et l'heure courante", () => {
     renderDraw({ toWatch: [CHIHIRO, WHIPLASH], watched: 1 });
 

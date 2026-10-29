@@ -158,11 +158,12 @@ describe("GroupPill", () => {
     expect(pill()).toHaveFocus();
   });
 
-  it("toucher à côté ferme le panneau et rend le focus à la pastille", async () => {
+  it("toucher à côté (le voile) ferme le panneau et rend le focus à la pastille", async () => {
     const { user } = renderPill();
 
     await user.click(pill());
-    await user.click(screen.getByText("Le reste de l’écran"));
+    // iOS only sends the tap to a clickable element: the scrim itself closes.
+    await user.click(screen.getByTestId("group-scrim"));
 
     expect(queryPanel()).not.toBeInTheDocument();
     expect(pill()).toHaveFocus();

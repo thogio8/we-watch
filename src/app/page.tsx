@@ -20,33 +20,25 @@ async function DrawData() {
     list.counts(groupId),
   ]);
   return (
-    // The pill stays outside the draw's animated screens.
-    <>
-      <GroupPill
-        active={active.group}
-        groups={active.groups}
-        choose={chooseGroup}
-        create={createGroup}
-      />
-      <DrawScreen
-        toWatch={toWatch}
-        counts={counts}
-        onWatched={markWatched.bind(null, groupId)}
-      />
-    </>
+    <DrawScreen
+      toWatch={toWatch}
+      counts={counts}
+      onWatched={markWatched.bind(null, groupId)}
+      pill={
+        <GroupPill
+          active={active.group}
+          groups={active.groups}
+          choose={chooseGroup}
+          create={createGroup}
+        />
+      }
+    />
   );
 }
 
 export default function DrawPage() {
   return (
-    <Suspense
-      fallback={
-        <>
-          <GroupPillFallback />
-          <DrawScreenFallback />
-        </>
-      }
-    >
+    <Suspense fallback={<DrawScreenFallback pill={<GroupPillFallback />} />}>
       <DrawData />
     </Suspense>
   );

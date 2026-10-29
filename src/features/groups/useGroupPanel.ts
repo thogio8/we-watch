@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { CHOOSE_FAILED } from "./messages";
+import { takePillFocus } from "./pillFocus";
 
 interface GroupPanelOptions {
   activeId: string;
@@ -34,33 +35,25 @@ const inside = (
   );
 
 /**
- * While open: focus on the displayed group; Escape or a touch beside the
- * panel closes it and gives the focus back to the pill.
+ * While open: focus on the displayed group; Escape closes the panel and gives
+ * the focus back to the pill. A touch beside it lands on the scrim (dismiss).
  */
-function useDismiss(
+function useEscape(
   open: boolean,
-  refs: Refs,
+  activeRef: Refs["activeRef"],
   close: (focus: boolean) => void,
 ) {
-  const { pillRef, panelRef, activeRef } = refs;
   useEffect(() => {
     if (!open) return;
     activeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close(true);
     };
-    // A click, not a pointerdown: the scrim takes the whole tap, so the
-    // screen under it never receives a ghost click.
-    const onClick = (event: MouseEvent) => {
-      if (!inside({ pillRef, panelRef }, event.target)) close(true);
-    };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("click", onClick);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("click", onClick);
     };
-  }, [open, close, pillRef, panelRef, activeRef]);
+  }, [open, close, activeRef]);
 }
 
 /**
@@ -86,7 +79,11 @@ export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
     setError(null);
     if (restoreFocus) pillRef.current?.focus();
   }, []);
-  useDismiss(open, refs, close);
+  useEscape(open, activeRef, close);
+
+  useEffect(() => {
+    if (takePillFocus()) pillRef.current?.focus();
+  }, []);
 
   /** Tabbing out of the panel folds it, focus left where it went. */
   const onBlur = (event: FocusEvent) => {
@@ -115,6 +112,8 @@ export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
   return {
     open,
     toggle: () => (open ? close(false) : setOpen(true)),
+    /** A touch on the scrim (iOS only sends taps to clickable elements). */
+    dismiss: () => close(true),
     creating,
     toggleCreating: () => setCreating(!creating),
     pending,

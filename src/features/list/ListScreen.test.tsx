@@ -62,6 +62,24 @@ function renderList({
 const panel = () => screen.getByRole("tabpanel");
 
 describe("ListScreen", () => {
+  it("place la pastille du groupe dans le landmark main", () => {
+    render(
+      <ListScreen
+        toWatch={[]}
+        watched={[]}
+        onRemove={vi.fn<Act>()}
+        onUnwatch={vi.fn<Act>()}
+        pill={<button type="button">PASTILLE</button>}
+      />,
+    );
+
+    expect(
+      within(screen.getByRole("main")).getByRole("button", {
+        name: "PASTILLE",
+      }),
+    ).toBeVisible();
+  });
+
   it("ne propose plus de se déconnecter (c’est dans le panneau du groupe)", () => {
     renderList();
 

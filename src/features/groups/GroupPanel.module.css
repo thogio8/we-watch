@@ -13,6 +13,34 @@
   background: var(--white);
   box-shadow: var(--shadow-offset);
   text-align: left;
+  /*
+   * Within one screen, the form unfolded included: the viewport less the
+   * panel's top (the shell's top padding, the pill, the gap; see globals.css)
+   * and a bottom margin for the shadow. The page is at its top when the pill
+   * is tapped.
+   */
+  --panel-top: calc(20px + env(safe-area-inset-top) + var(--touch-min) + 12px);
+  max-height: calc(100dvh - var(--panel-top) - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 760px) {
+  .panel {
+    --panel-top: calc(
+      var(--nav-top-height) + 28px + env(safe-area-inset-top) +
+        var(--touch-min) + 12px
+    );
+  }
+}
+
+@media (min-width: 760px) and (max-height: 520px) {
+  .panel {
+    --panel-top: calc(
+      var(--nav-top-height) + 14px + env(safe-area-inset-top) +
+        var(--touch-min) + 12px
+    );
+  }
 }
 
 .title {

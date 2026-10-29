@@ -45,7 +45,12 @@ export function GroupPill({ active, groups, choose, create }: GroupPillProps) {
       {panel.open && (
         <>
           {/* A touch beside the panel lands here and closes it. */}
-          <div className={styles.scrim} aria-hidden="true" />
+          <div
+            className={styles.scrim}
+            aria-hidden="true"
+            data-testid="group-scrim"
+            onClick={panel.dismiss}
+          />
           <GroupPanel
             id={panel.panelId}
             active={active}

@@ -21,21 +21,21 @@ async function SwipeData({ deck }: { deck: DeckId }) {
   // Same path as the client's later loads: a TMDB error gives { ok: false }.
   const initial = await loadMoreCards(groupId, deck, 1);
   return (
-    <>
-      <GroupPill
-        active={active.group}
-        groups={active.groups}
-        choose={chooseGroup}
-        create={createGroup}
-      />
-      <SwipeDeck
-        deck={deck}
-        initial={initial}
-        decide={decideSwipe.bind(null, groupId)}
-        undo={undoSwipe.bind(null, groupId)}
-        loadMore={loadMoreCards.bind(null, groupId)}
-      />
-    </>
+    <SwipeDeck
+      deck={deck}
+      initial={initial}
+      decide={decideSwipe.bind(null, groupId)}
+      undo={undoSwipe.bind(null, groupId)}
+      loadMore={loadMoreCards.bind(null, groupId)}
+      pill={
+        <GroupPill
+          active={active.group}
+          groups={active.groups}
+          choose={chooseGroup}
+          create={createGroup}
+        />
+      }
+    />
   );
 }
 
@@ -52,12 +52,7 @@ async function SwipeTheme({
     // Keyed by deck: switching theme starts a fresh deck and fallback.
     <Suspense
       key={deck}
-      fallback={
-        <>
-          <GroupPillFallback />
-          <SwipeDeckFallback deck={deck} />
-        </>
-      }
+      fallback={<SwipeDeckFallback deck={deck} pill={<GroupPillFallback />} />}
     >
       <SwipeData deck={deck} />
     </Suspense>
@@ -67,12 +62,7 @@ async function SwipeTheme({
 export default function SwipePage({ searchParams }: PageProps<"/swipe">) {
   return (
     <Suspense
-      fallback={
-        <>
-          <GroupPillFallback />
-          <SwipeDeckFallback deck={null} />
-        </>
-      }
+      fallback={<SwipeDeckFallback deck={null} pill={<GroupPillFallback />} />}
     >
       <SwipeTheme searchParams={searchParams} />
     </Suspense>

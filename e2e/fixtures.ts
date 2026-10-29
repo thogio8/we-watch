@@ -69,9 +69,10 @@ export async function deleteSessions() {
 /**
  * Signs Léa in without a passkey ceremony: a user and a session written
  * straight to the worker's database, their cookies given to the browser.
- * She is the only member of « NOUS DEUX », displayed through its cookie.
+ * She is the only member of « NOUS DEUX », displayed through its cookie;
+ * `withGroup: false` leaves her a newcomer without any group.
  */
-async function signIn(page: Page) {
+async function signIn(page: Page, { withGroup = true } = {}) {
   const worker = base.info().parallelIndex;
   const auth = createAuth({
     db: db(),
@@ -81,12 +82,20 @@ async function signIn(page: Page) {
   });
   const { test: helpers } = await auth.$context;
   const lea = await helpers.saveUser(helpers.createUser({ name: "Léa" }));
+  const cookies = await helpers.getCookies({
+    userId: lea.id,
+    domain: "localhost",
+  });
+  if (!withGroup) {
+    await page.context().addCookies(cookies);
+    return;
+  }
   await db().insert(group).values(LEAS_GROUP);
   await db()
     .insert(membership)
     .values({ groupId: LEAS_GROUP.id, userId: lea.id });
   await page.context().addCookies([
-    ...(await helpers.getCookies({ userId: lea.id, domain: "localhost" })),
+    ...cookies,
     // The e2e server runs in production mode over http: not `secure`.
     {
       name: GROUP_COOKIE,
@@ -137,16 +146,25 @@ async function virtualAuthenticator(page: Page) {
 
 /**
  * `app`: every test starts signed in, on an empty list, on its worker's
- * server. `visitor`: an empty database, no session, a device that unlocks
- * passkeys.
+ * server. `newcomer`: signed in, but in no group yet. `visitor`: an empty
+ * database, no session, a device that unlocks passkeys.
  */
-export const test = base.extend<{ app: Page; visitor: Page }>({
+export const test = base.extend<{
+  app: Page;
+  newcomer: Page;
+  visitor: Page;
+}>({
   baseURL: async ({}, use, testInfo) => {
     await use(appUrl(testInfo.parallelIndex));
   },
   app: async ({ page }, use) => {
     await wipe();
     await signIn(page);
+    await use(page);
+  },
+  newcomer: async ({ page }, use) => {
+    await wipe();
+    await signIn(page, { withGroup: false });
     await use(page);
   },
   visitor: async ({ page }, use) => {

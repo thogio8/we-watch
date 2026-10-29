@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer } from "react";
+import { type ReactNode, useReducer } from "react";
 import { type DeckId, deckLabel } from "@/tmdb/decks";
 import type { LoadCards, LoadMoreResult, SendSwipe } from "./actions";
 import { CardStack } from "./CardStack";
@@ -19,6 +19,8 @@ interface SwipeDeckProps {
   decide: SendSwipe;
   undo: SendSwipe;
   loadMore: LoadCards;
+  /** The group pill, first in the landmark. */
+  pill?: ReactNode;
 }
 
 const TOAST_MS = 4000;
@@ -31,6 +33,7 @@ export function SwipeDeck({
   decide,
   undo,
   loadMore,
+  pill,
 }: SwipeDeckProps) {
   const [state, dispatch] = useReducer(deckReducer, initial, initDeck);
   const { queue, toast, undoable } = state;
@@ -48,6 +51,7 @@ export function SwipeDeck({
 
   return (
     <main className={styles.screen}>
+      {pill}
       <h1 className={styles.kicker}>{deckLabel(deck)}</h1>
       <DeckChips deck={deck} />
 
@@ -73,9 +77,16 @@ export function SwipeDeck({
  * Shown while the first batch loads on the server. `deck` is null in the
  * static shell, before the request's `?deck=` is read.
  */
-export function SwipeDeckFallback({ deck }: { deck: DeckId | null }) {
+export function SwipeDeckFallback({
+  deck,
+  pill,
+}: {
+  deck: DeckId | null;
+  pill?: ReactNode;
+}) {
   return (
     <main className={styles.screen}>
+      {pill}
       <h1 className={styles.kicker}>{deck === null ? " " : deckLabel(deck)}</h1>
       <DeckChips deck={deck} />
       <LoadingTicket />

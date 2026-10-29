@@ -6,6 +6,7 @@ import { Headline } from "@/ui/Headline";
 import type { CreateGroupResult } from "./actions";
 import { CreateGroupForm } from "./CreateGroupForm";
 import styles from "./FirstGroupScreen.module.css";
+import { requestPillFocus } from "./pillFocus";
 
 interface FirstGroupScreenProps {
   create: (formData: FormData) => Promise<CreateGroupResult>;
@@ -22,7 +23,13 @@ export function FirstGroupScreen({ create }: FirstGroupScreenProps) {
       <Headline lines={["CRÉER TON", "PREMIER GROUPE"]} size="medium" />
       <section className={styles.sheet} aria-label="Nouveau groupe">
         {/* The actions revalidate the pages; refresh shows the new group now. */}
-        <CreateGroupForm create={create} onCreated={() => router.refresh()} />
+        <CreateGroupForm
+          create={create}
+          onCreated={() => {
+            requestPillFocus();
+            router.refresh();
+          }}
+        />
       </section>
       <div className={styles.signOut}>
         <SignOutButton />

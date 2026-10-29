@@ -2,6 +2,8 @@
 .group {
   position: relative;
   display: flex;
+  /* Full width even in a centring flex column: the panel spans it. */
+  align-self: stretch;
   justify-content: center;
   min-height: var(--touch-min);
   margin-bottom: 14px;
@@ -81,6 +83,8 @@
   position: fixed;
   inset: 0;
   background: var(--scrim);
+  /* iOS delivers taps only to elements that look clickable. */
+  cursor: pointer;
 }
 
 /* Phone held sideways: every pixel of height counts. */
