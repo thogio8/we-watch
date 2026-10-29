@@ -72,8 +72,9 @@ export async function accountNames() {
 }
 
 /**
- * Gives the page a device with Face ID: a virtual platform authenticator
- * (Chromium, through CDP) that keeps its passkeys and always says yes.
+ * Gives the page a device that unlocks passkeys: a virtual platform
+ * authenticator (Chromium, through CDP) that keeps its passkeys and always
+ * says yes.
  * Returns how to take it away again.
  */
 async function faceId(page: Page) {
@@ -101,7 +102,8 @@ async function faceId(page: Page) {
 
 /**
  * `app`: every test starts signed in, on an empty list, on its worker's
- * server. `visitor`: an empty database, no session, a device with Face ID.
+ * server. `visitor`: an empty database, no session, a device that unlocks
+ * passkeys.
  */
 export const test = base.extend<{ app: Page; visitor: Page }>({
   baseURL: async ({}, use, testInfo) => {
@@ -127,7 +129,7 @@ export async function signUpAs(page: Page, name: string) {
   await page.goto("/connexion");
   await page.getByRole("button", { name: "CRÉER UN COMPTE" }).click();
   await page.getByLabel("TON PRÉNOM OU SURNOM").fill(name);
-  await page.getByRole("button", { name: "CRÉER AVEC FACE ID" }).click();
+  await page.getByRole("button", { name: "CRÉER MON COMPTE" }).click();
 }
 
 /** Submits the form with an empty name and waits for the refusal. */

@@ -83,7 +83,7 @@ test.describe("rendu visuel", () => {
       await app.context().clearCookies();
       await app.goto("/connexion");
       await expect(
-        app.getByRole("button", { name: "SE CONNECTER AVEC FACE ID" }),
+        app.getByRole("button", { name: "SE CONNECTER" }),
       ).toBeVisible();
       await shoot(app, `${format.name}-6-connexion`);
       await emptyNameRefused(app);

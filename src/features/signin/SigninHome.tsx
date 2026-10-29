@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Button } from "@/ui/Button";
+import { PasskeyActions } from "./PasskeyActions";
 import styles from "./SigninScreen.module.css";
 import { SigninTicket } from "./SigninTicket";
 
@@ -15,7 +16,7 @@ interface SigninHomeProps {
   onOpenForm: () => void;
 }
 
-/** Face ID sign-in, then a way to create an account (or the invitation note). */
+/** Passkey sign-in, then a way to create an account (or the invitation note). */
 export function SigninHome({
   signup,
   error,
@@ -24,9 +25,9 @@ export function SigninHome({
   onSignIn,
   onOpenForm,
 }: SigninHomeProps) {
-  const faceId = useRef<HTMLButtonElement>(null);
+  const signIn = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (error !== null) faceId.current?.focus();
+    if (error !== null) signIn.current?.focus();
   }, [error]);
 
   return (
@@ -36,19 +37,16 @@ export function SigninHome({
           <p className={styles.note}>WEWATCH SE REJOINT SUR INVITATION</p>
         )}
       </SigninTicket>
-      <div className={styles.actions}>
+      <PasskeyActions>
         <Button
-          ref={faceId}
+          ref={signIn}
           variant="primary"
           className={styles.wide}
           disabled={pending}
           autoFocus={returning}
           onClick={onSignIn}
         >
-          {/* One flex item, so the label wraps as text, before « FACE ID ». */}
-          <span>
-            SE CONNECTER AVEC <span className={styles.nowrap}>FACE ID</span>
-          </span>
+          SE CONNECTER
         </Button>
         {signup === "open" ? (
           <Button
@@ -69,7 +67,7 @@ export function SigninHome({
             J’AI UN CODE PROPRIÉTAIRE
           </button>
         )}
-      </div>
+      </PasskeyActions>
     </div>
   );
 }

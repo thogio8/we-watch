@@ -18,7 +18,7 @@ function field(formData: FormData, name: string): string | undefined {
 }
 
 /**
- * « CRÉER AVEC FACE ID », first step: checks the name and the right to sign
+ * « CRÉER MON COMPTE », first step: checks the name and the right to sign
  * up, then hands out a short-lived signed ticket that the passkey ceremony
  * carries to Better Auth.
  *

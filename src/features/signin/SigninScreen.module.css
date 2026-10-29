@@ -91,7 +91,7 @@
   align-items: center;
   gap: 14px;
   width: 100%;
-  margin-top: 30px;
+  margin-top: 14px;
 }
 
 .wide {
@@ -102,9 +102,21 @@
   composes: textAction from "../../ui/TextAction.module.css";
 }
 
-/* « FACE ID » never splits across two lines (narrowest phones). */
-.nowrap {
-  white-space: nowrap;
+/* What unlocks the account, quiet under the ticket (spec §9). */
+.hint {
+  margin: 18px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-align: center;
+  /* Two even lines on the narrowest phones, never a lone word. */
+  text-wrap: balance;
+}
+
+/* No passkeys in this browser: the explanation stands where the buttons were. */
+.unsupported {
+  composes: alert from "../../ui/Alert.module.css";
+  width: 100%;
+  margin: 0;
 }
 
 /* Phone held sideways: one-line title, tighter spacing. */
@@ -117,9 +129,14 @@
     margin-top: 16px;
   }
 
+  /* Clear of the ticket's offset shadow. */
+  .hint {
+    margin-top: 14px;
+  }
+
   .actions {
     gap: 8px;
-    margin-top: 16px;
+    margin-top: 8px;
   }
 }
 

@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SigninScreen } from "./SigninScreen";
+import { SignupForm } from "./SignupForm";
 
 const signInPasskey = vi.fn();
 const addPasskey = vi.fn();
@@ -16,9 +17,12 @@ vi.mock("./authClient", () => ({
   },
 }));
 
-const FACE_ID = "SE CONNECTER AVEC FACE ID";
-const CREATE = "CRÉER AVEC FACE ID";
-const CANCELLED = "FACE ID ANNULÉ, RÉESSAIE";
+const SIGN_IN = "SE CONNECTER";
+const CREATE = "CRÉER MON COMPTE";
+const CANCELLED = "VALIDATION ANNULÉE, RÉESSAIE";
+const HINT = "Face ID, empreinte ou code de ton téléphone";
+const UNSUPPORTED =
+  "CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL.";
 
 /** A ceremony that fails: an error object from the client, or a throw. */
 const FAILED_CEREMONIES = [
@@ -39,6 +43,8 @@ beforeEach(() => {
   prepareSignup.mockReset();
   replace.mockReset();
   vi.stubGlobal("location", { replace });
+  // jsdom has no WebAuthn: every test but the unsupported ones gets it.
+  vi.stubGlobal("PublicKeyCredential", class {});
 });
 
 afterEach(() => {
@@ -67,10 +73,11 @@ describe("SigninScreen, accueil", () => {
     expect(
       screen.getByRole("heading", { name: "ENTRE DANS WEWATCH" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: FACE_ID })).toBeEnabled();
+    expect(screen.getByRole("button", { name: SIGN_IN })).toBeEnabled();
     expect(
       screen.getByRole("button", { name: "CRÉER UN COMPTE" }),
     ).toBeEnabled();
+    expect(screen.getByText(HINT)).toBeInTheDocument();
     expect(
       screen.queryByText("WEWATCH SE REJOINT SUR INVITATION"),
     ).not.toBeInTheDocument();
@@ -90,11 +97,11 @@ describe("SigninScreen, accueil", () => {
     ).toBeInTheDocument();
   });
 
-  it("se connecter avec Face ID ouvre l'appli", async () => {
+  it("se connecter ouvre l'appli", async () => {
     signInPasskey.mockResolvedValue({ data: { session: {} }, error: null });
     const user = renderScreen();
 
-    await user.click(screen.getByRole("button", { name: FACE_ID }));
+    await user.click(screen.getByRole("button", { name: SIGN_IN }));
 
     expect(signInPasskey).toHaveBeenCalledOnce();
     expect(replace).toHaveBeenCalledWith("/");
@@ -107,39 +114,39 @@ describe("SigninScreen, accueil", () => {
     });
     const user = renderScreen();
 
-    await user.click(screen.getByRole("button", { name: FACE_ID }));
+    await user.click(screen.getByRole("button", { name: SIGN_IN }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "AUCUN COMPTE SUR CET APPAREIL",
     );
-    expect(screen.getByRole("button", { name: FACE_ID })).toHaveFocus();
+    expect(screen.getByRole("button", { name: SIGN_IN })).toHaveFocus();
     expect(replace).not.toHaveBeenCalled();
   });
 
   it.each(FAILED_CEREMONIES)(
-    "une connexion %s affiche FACE ID ANNULÉ, sans le texte brut",
+    "une connexion %s affiche VALIDATION ANNULÉE, sans le texte brut",
     async (_label, outcome) => {
       signInPasskey.mockImplementation(outcome);
       const user = renderScreen();
 
-      await user.click(screen.getByRole("button", { name: FACE_ID }));
+      await user.click(screen.getByRole("button", { name: SIGN_IN }));
 
       expect(await screen.findByRole("alert")).toHaveTextContent(CANCELLED);
       expect(screen.queryByText(/raw text/)).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: FACE_ID })).toBeEnabled();
+      expect(screen.getByRole("button", { name: SIGN_IN })).toBeEnabled();
     },
   );
 
   it("pendant la cérémonie, les boutons sont désactivés : une seule connexion", async () => {
     signInPasskey.mockReturnValue(new Promise(() => {}));
     const user = renderScreen();
-    const faceId = screen.getByRole("button", { name: FACE_ID });
+    const signIn = screen.getByRole("button", { name: SIGN_IN });
 
-    await user.click(faceId);
-    await user.click(faceId);
+    await user.click(signIn);
+    await user.click(signIn);
 
     expect(signInPasskey).toHaveBeenCalledOnce();
-    expect(faceId).toBeDisabled();
+    expect(signIn).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "CRÉER UN COMPTE" }),
     ).toBeDisabled();
@@ -159,6 +166,7 @@ describe("SigninScreen, création de compte", () => {
       screen.queryByLabelText("CODE PROPRIÉTAIRE"),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: CREATE })).toBeEnabled();
+    expect(screen.getByText(HINT)).toBeInTheDocument();
   });
 
   it("J’AI UN CODE PROPRIÉTAIRE montre le champ du code", async () => {
@@ -195,7 +203,7 @@ describe("SigninScreen, création de compte", () => {
   });
 
   it.each(FAILED_CEREMONIES)(
-    "une cérémonie %s : FACE ID ANNULÉ, et le prénom reste",
+    "une cérémonie %s : VALIDATION ANNULÉE, et le prénom reste",
     async (_label, outcome) => {
       prepareSignup.mockResolvedValue({ ok: true, ticket: "le-ticket" });
       addPasskey.mockImplementation(outcome);
@@ -249,9 +257,9 @@ describe("SigninScreen, création de compte", () => {
 
   it.each([
     ["la préparation", false],
-    ["Face ID", true],
+    ["la validation", true],
   ])(
-    "pendant %s, CRÉER AVEC FACE ID est désactivé : une seule création",
+    "pendant %s, CRÉER MON COMPTE est désactivé : une seule création",
     async (_label, prepared) => {
       const never = () => new Promise(() => {});
       if (prepared) {
@@ -284,7 +292,47 @@ describe("SigninScreen, création de compte", () => {
 
     await user.click(screen.getByRole("button", { name: "← RETOUR" }));
 
-    expect(screen.getByRole("button", { name: FACE_ID })).toHaveFocus();
+    expect(screen.getByRole("button", { name: SIGN_IN })).toHaveFocus();
     expect(screen.queryByText("MAUVAIS CODE")).not.toBeInTheDocument();
+  });
+});
+
+describe("SigninScreen, navigateur sans clés d’accès", () => {
+  beforeEach(() => {
+    vi.stubGlobal("PublicKeyCredential", undefined);
+  });
+
+  it.each(["open", "invite"] as const)(
+    "accueil (%s) : le message à la place des boutons",
+    (signup) => {
+      renderScreen(signup);
+
+      expect(screen.getByText(UNSUPPORTED)).toBeInTheDocument();
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+      expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    },
+  );
+
+  it("formulaire : le message à la place de CRÉER MON COMPTE, RETOUR reste", async () => {
+    const onBack = vi.fn();
+    render(
+      <SignupForm
+        withCode={false}
+        error={null}
+        pending={false}
+        onSubmit={vi.fn()}
+        onBack={onBack}
+      />,
+    );
+
+    expect(screen.getByText(UNSUPPORTED)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: CREATE }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "← RETOUR" }));
+    expect(onBack).toHaveBeenCalledOnce();
   });
 });

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
 import { accountNames, expect, signUpAs, test } from "./fixtures";
 
@@ -9,15 +10,17 @@ async function expectInApp(page: Page) {
   ).toBeVisible();
 }
 
-test.describe("comptes et Face ID", () => {
-  test("créer un compte avec Face ID ouvre l'appli", async ({ visitor }) => {
+test.describe("comptes et passkeys", () => {
+  test("créer un compte avec une passkey ouvre l'appli", async ({
+    visitor,
+  }) => {
     await signUpAs(visitor, "  Léa  ");
 
     await expectInApp(visitor);
     expect(await accountNames()).toEqual(["Léa"]);
   });
 
-  test("se déconnecter puis revenir avec Face ID", async ({ visitor }) => {
+  test("se déconnecter puis revenir avec sa passkey", async ({ visitor }) => {
     await signUpAs(visitor, "Léa");
     await expectInApp(visitor);
 
@@ -27,9 +30,7 @@ test.describe("comptes et Face ID", () => {
     await visitor.goto("/");
     await expect(visitor).toHaveURL("/connexion");
 
-    await visitor
-      .getByRole("button", { name: "SE CONNECTER AVEC FACE ID" })
-      .click();
+    await visitor.getByRole("button", { name: "SE CONNECTER" }).click();
 
     await expectInApp(visitor);
     expect(await accountNames()).toEqual(["Léa"]);
@@ -44,5 +45,28 @@ test.describe("comptes et Face ID", () => {
     await expect(visitor.getByLabel("TON PRÉNOM OU SURNOM")).toBeFocused();
     await expect(visitor).toHaveURL("/connexion");
     expect(await accountNames()).toEqual([]);
+  });
+
+  test("un navigateur sans clés d’accès l’explique, sans bouton", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential;
+    });
+
+    await page.goto("/connexion");
+
+    await expect(
+      page.getByText(
+        "CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole("button")).toHaveCount(0);
+    const { violations } = await new AxeBuilder({ page }).analyze();
+    expect(
+      violations.filter(
+        (v) => v.impact === "serious" || v.impact === "critical",
+      ),
+    ).toEqual([]);
   });
 });

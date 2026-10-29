@@ -11,7 +11,7 @@ interface SigninScreenProps {
   prepareSignup: PrepareSignup;
 }
 
-/** The only page without a session: sign in with Face ID, or create an account. */
+/** The only page without a session: sign in with a passkey, or create an account. */
 export function SigninScreen({ signup, prepareSignup }: SigninScreenProps) {
   const signin = useSignin(prepareSignup);
   const { view, error, pending } = signin;

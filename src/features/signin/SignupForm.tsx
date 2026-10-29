@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useRef } from "react";
 import { Button } from "@/ui/Button";
 import { errorField } from "./messages";
+import { PasskeyActions } from "./PasskeyActions";
 import styles from "./SigninScreen.module.css";
 import { SIGNIN_ERROR_ID, SigninTicket } from "./SigninTicket";
 
@@ -16,9 +17,9 @@ interface SignupFormProps {
 }
 
 /**
- * The display name (and owner code), then Face ID creates the account.
- * Submitted by hand rather than through a form action, which would reset the
- * fields: after a cancelled Face ID, the name stays.
+ * The display name (and owner code), then the device lock creates the
+ * account's passkey. Submitted by hand rather than through a form action,
+ * which would reset the fields: after a cancelled validation, the name stays.
  */
 export function SignupForm({
   withCode,
@@ -80,7 +81,18 @@ export function SignupForm({
           </label>
         )}
       </SigninTicket>
-      <div className={styles.actions}>
+      <PasskeyActions
+        after={
+          <button
+            type="button"
+            className={styles.textAction}
+            disabled={pending}
+            onClick={onBack}
+          >
+            ← RETOUR
+          </button>
+        }
+      >
         <Button
           ref={create}
           type="submit"
@@ -88,19 +100,9 @@ export function SignupForm({
           className={styles.wide}
           disabled={pending}
         >
-          <span>
-            CRÉER AVEC <span className={styles.nowrap}>FACE ID</span>
-          </span>
+          CRÉER MON COMPTE
         </Button>
-        <button
-          type="button"
-          className={styles.textAction}
-          disabled={pending}
-          onClick={onBack}
-        >
-          ← RETOUR
-        </button>
-      </div>
+      </PasskeyActions>
     </form>
   );
 }

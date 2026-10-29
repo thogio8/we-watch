@@ -4,11 +4,11 @@ import { submittedOwnerCode } from "@/access/signup";
 export const NAME_ERROR = "UN PRÉNOM DE 1 À 30 CARACTÈRES";
 export const CLOSED_ERROR = "WEWATCH SE REJOINT SUR INVITATION";
 export const WRONG_CODE_ERROR = "MAUVAIS CODE";
-export const CANCELLED_ERROR = "FACE ID ANNULÉ, RÉESSAIE";
+export const CANCELLED_ERROR = "VALIDATION ANNULÉE, RÉESSAIE";
 export const NO_ACCOUNT_ERROR = "AUCUN COMPTE SUR CET APPAREIL";
 
 /**
- * A failed Face ID sign-in. The server only answers PASSKEY_NOT_FOUND when
+ * A failed passkey sign-in. The server only answers PASSKEY_NOT_FOUND when
  * the device offered a passkey it does not know (account gone); everything
  * else (closed sheet, no passkey picked, network) reads as a cancellation.
  */

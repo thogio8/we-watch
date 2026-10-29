@@ -16,14 +16,14 @@ export type SigninView =
 /** A ceremony resolves to the error to show, or null once signed in. */
 type Ceremony = () => Promise<string | null>;
 
-/** Face ID sign-in: the device picks one of its passkeys for this site. */
-async function signInWithFaceId(): Promise<string | null> {
+/** Passkey sign-in: the device picks one of its passkeys for this site. */
+async function signInWithPasskey(): Promise<string | null> {
   const { error } = await authClient.signIn.passkey();
   return error ? signinFailure(error) : null;
 }
 
 /** Ticket first (name, signup right), then the passkey that creates the account. */
-async function signUpWithFaceId(
+async function signUpWithPasskey(
   prepareSignup: PrepareSignup,
   formData: FormData,
 ): Promise<string | null> {
@@ -74,9 +74,9 @@ export function useSignin(prepareSignup: PrepareSignup) {
     view,
     error,
     pending,
-    signIn: () => run(signInWithFaceId),
+    signIn: () => run(signInWithPasskey),
     signUp: (formData: FormData) =>
-      run(() => signUpWithFaceId(prepareSignup, formData)),
+      run(() => signUpWithPasskey(prepareSignup, formData)),
     openForm: () => show({ name: "form" }),
     back: () => show({ name: "home", returning: true }),
   };
