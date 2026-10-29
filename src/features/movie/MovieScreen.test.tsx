@@ -41,6 +41,10 @@ function renderMovie(
 const fact = (label: string) =>
   screen.getByText(label, { selector: "dt" }).nextElementSibling;
 
+/** Each line of a fact, as shown one under the other. */
+const lines = (label: string) =>
+  [...(fact(label)?.children ?? [])].map((line) => line.textContent);
+
 describe("fiche d'un film", () => {
   it("montre le ticket, le résumé complet et le détail du film", () => {
     renderMovie();
@@ -51,24 +55,60 @@ describe("fiche d'un film", () => {
     expect(fact("GENRES")).toHaveTextContent("Comédie · Thriller · Drame");
     expect(fact("RÉALISATION")).toHaveTextContent("Bong Joon-ho");
     expect(fact("AVEC")).toHaveTextContent("Song Kang-ho, Lee Sun-kyun");
-    expect(fact("CHEZ NOUS")).toHaveTextContent("Ajouté le 3 octobre 2026");
+    expect(lines("CHEZ NOUS")).toEqual([
+      "ajouté par un ancien membre le 3 octobre 2026",
+    ]);
     expect(screen.getByRole("link", { name: "← LA LISTE" })).toHaveAttribute(
       "href",
       "/list",
     );
   });
 
-  it("un film vu raconte aussi quand on l'a vu", () => {
-    renderMovie({
-      ...PARASITE,
-      status: "watched",
-      watchedAt: new Date("2026-10-27T20:00:00Z"),
-    });
+  it.each([
+    [
+      "son auteur, qui le voulait, l’a marqué vu",
+      { addedBy: "Léa", wantedBy: ["Léa"], watchedBy: "Léa" },
+      [
+        "ajouté par Léa le 3 octobre 2026",
+        "voulu par Léa",
+        "vu le 27 octobre 2026 · marqué par Léa",
+      ],
+    ],
+    [
+      "sans auteur (liste d’avant)",
+      { legacy: true },
+      ["ajouté le 3 octobre 2026", "vu le 27 octobre 2026"],
+    ],
+    [
+      "un compte supprimé",
+      {},
+      [
+        "ajouté par un ancien membre le 3 octobre 2026",
+        "vu le 27 octobre 2026 · marqué par un ancien membre",
+      ],
+    ],
+    [
+      "voulu par deux",
+      { addedBy: "Hugo", wantedBy: ["Hugo", "Léa"], watchedBy: "Hugo" },
+      [
+        "ajouté par Hugo le 3 octobre 2026",
+        "voulu par Hugo et Léa",
+        "vu le 27 octobre 2026 · marqué par Hugo",
+      ],
+    ],
+  ])(
+    "CHEZ NOUS, une ligne par fait : %s",
+    (_label, overrides: Partial<Movie>, expected) => {
+      renderMovie({
+        ...PARASITE,
+        status: "watched",
+        watchedAt: new Date("2026-10-27T20:00:00Z"),
+        ...overrides,
+      });
 
-    expect(fact("CHEZ NOUS")).toHaveTextContent(
-      "Ajouté le 3 octobre 2026 · Vu le 27 octobre 2026",
-    );
-  });
+      expect(lines("CHEZ NOUS")).toEqual(expected);
+    },
+  );
 
   it("sans générique TMDB, la fiche s'affiche quand même", () => {
     renderMovie(PARASITE, null);

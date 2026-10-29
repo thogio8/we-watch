@@ -13,10 +13,14 @@ interface SigninHomeProps {
   /** Back from the form: focus returns to the main button. */
   returning: boolean;
   onSignIn: () => void;
-  onOpenForm: () => void;
+  /** `withCode`: the form also asks for the owner code. */
+  onOpenForm: (withCode: boolean) => void;
 }
 
-/** Passkey sign-in, then a way to create an account (or the invitation note). */
+/**
+ * Passkey sign-in, then a way to create an account (or the invitation note),
+ * and in either mode the owner code, which joins « NOUS DEUX ».
+ */
 export function SigninHome({
   signup,
   error,
@@ -48,25 +52,24 @@ export function SigninHome({
         >
           SE CONNECTER
         </Button>
-        {signup === "open" ? (
+        {signup === "open" && (
           <Button
             variant="secondary"
             className={styles.wide}
             disabled={pending}
-            onClick={onOpenForm}
+            onClick={() => onOpenForm(false)}
           >
             CRÉER UN COMPTE
           </Button>
-        ) : (
-          <button
-            type="button"
-            className={styles.textAction}
-            disabled={pending}
-            onClick={onOpenForm}
-          >
-            J’AI UN CODE PROPRIÉTAIRE
-          </button>
         )}
+        <button
+          type="button"
+          className={styles.textAction}
+          disabled={pending}
+          onClick={() => onOpenForm(true)}
+        >
+          J’AI UN CODE PROPRIÉTAIRE
+        </button>
       </PasskeyActions>
     </div>
   );

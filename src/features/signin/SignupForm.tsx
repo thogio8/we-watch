@@ -8,7 +8,7 @@ import styles from "./SigninScreen.module.css";
 import { SIGNIN_ERROR_ID, SigninTicket } from "./SigninTicket";
 
 interface SignupFormProps {
-  /** "invite": the owner code field is the only way in. */
+  /** The owner code field: the only way in on invitation, optional when open. */
   withCode: boolean;
   error: string | null;
   pending: boolean;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { addedLine, wantedLine, watchedLine } from "@/domain/attribution";
 import type { Movie } from "@/domain/movie";
 import { formatShortDate } from "@/domain/time";
 import { MovieRow, RowButton, RowMeta } from "./MovieRow";
@@ -21,7 +22,7 @@ export function ListRow({ movie, run, onRemove, onUnwatch }: ListRowProps) {
     startTransition(() => run(action, movie.tmdbId));
 
   if (movie.status === "watched") {
-    // « Vu le JJ/MM » is on the device's clock. These rows are never
+    // « vu le JJ/MM » is on the device's clock. These rows are never
     // server-rendered (À VOIR is the default tab), so no time-zone mismatch.
     return (
       <MovieRow
@@ -41,10 +42,7 @@ export function ListRow({ movie, run, onRemove, onUnwatch }: ListRowProps) {
           </RowButton>
         }
       >
-        <RowMeta>
-          Vu le
-          {movie.watchedAt && ` ${formatShortDate(movie.watchedAt)}`}
-        </RowMeta>
+        <RowMeta>{watchedLine(movie, formatShortDate) ?? "vu"}</RowMeta>
       </MovieRow>
     );
   }
@@ -66,6 +64,7 @@ export function ListRow({ movie, run, onRemove, onUnwatch }: ListRowProps) {
       }
     >
       <RowMeta>{toWatchMeta(movie)}</RowMeta>
+      <RowMeta>{wantedLine(movie.wantedBy) ?? addedLine(movie)}</RowMeta>
     </MovieRow>
   );
 }

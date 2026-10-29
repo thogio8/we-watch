@@ -4,7 +4,9 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
+import { group, membership } from "@/db/group-schema";
 import { parseDisplayName } from "@/domain/display-name";
+import { generateId, groupModels } from "./legacy-group-join";
 import { passkeySignup, signupTicketUses } from "./passkey-signup";
 
 export type AuthConfig<Plugins extends BetterAuthPlugin[] = []> = {
@@ -83,7 +85,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     // its session together, or nothing at all.
     database: drizzleAdapter(db, {
       provider: "sqlite",
-      schema: authSchema,
+      schema: { ...authSchema, group, membership },
       transaction: true,
     }),
     session: {
@@ -94,6 +96,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
       // disableCookieCache. See CLAUDE.md « Pièges ».
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
+    advanced: { database: { generateId } },
     emailAndPassword: { enabled: false },
     disabledPaths: DISABLED_PATHS,
     hooks: { before: alwaysCreateSession },
@@ -118,6 +121,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
         registration: passkeySignup(secret),
       }),
       signupTicketUses,
+      groupModels,
       ...(plugins ?? []),
     ],
   });

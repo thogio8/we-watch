@@ -19,6 +19,7 @@ vi.mock("./authClient", () => ({
 
 const SIGN_IN = "SE CONNECTER";
 const CREATE = "CRÉER MON COMPTE";
+const OWNER_CODE = "J’AI UN CODE PROPRIÉTAIRE";
 const CANCELLED = "VALIDATION ANNULÉE, RÉESSAIE";
 const HINT = "Face ID, empreinte ou code de ton téléphone";
 const UNSUPPORTED =
@@ -81,6 +82,7 @@ describe("SigninScreen, accueil", () => {
     expect(
       screen.queryByText("WEWATCH SE REJOINT SUR INVITATION"),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: OWNER_CODE })).toBeEnabled();
   });
 
   it("sur invitation : le message d'invitation, pas de CRÉER UN COMPTE", () => {
@@ -179,6 +181,35 @@ describe("SigninScreen, création de compte", () => {
       "type",
       "password",
     );
+  });
+
+  it("inscriptions ouvertes : J’AI UN CODE PROPRIÉTAIRE ajoute le champ du code, facultatif", async () => {
+    prepareSignup.mockResolvedValue({ ok: true, ticket: "le-ticket" });
+    addPasskey.mockResolvedValue({ data: { id: "p1" }, error: null });
+    const user = renderScreen("open");
+
+    await user.click(screen.getByRole("button", { name: OWNER_CODE }));
+    await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
+    await user.click(screen.getByRole("button", { name: CREATE }));
+
+    expect(screen.getByLabelText("CODE PROPRIÉTAIRE")).toHaveValue("");
+    const formData = prepareSignup.mock.calls[0]?.[0] as FormData;
+    expect(formData.get("ownerCode")).toBe("");
+    expect(replace).toHaveBeenCalledWith("/");
+  });
+
+  it("inscriptions ouvertes : un mauvais code donne MAUVAIS CODE", async () => {
+    prepareSignup.mockResolvedValue({ ok: false, error: "MAUVAIS CODE" });
+    const user = renderScreen("open");
+    await user.click(screen.getByRole("button", { name: OWNER_CODE }));
+
+    await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
+    await user.type(screen.getByLabelText("CODE PROPRIÉTAIRE"), "faux code");
+    await user.click(screen.getByRole("button", { name: CREATE }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("MAUVAIS CODE");
+    expect(screen.getByLabelText("CODE PROPRIÉTAIRE")).toHaveFocus();
+    expect(addPasskey).not.toHaveBeenCalled();
   });
 
   it("crée la passkey avec le ticket puis ouvre l'appli", async () => {

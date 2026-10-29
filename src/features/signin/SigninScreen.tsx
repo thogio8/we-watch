@@ -29,7 +29,7 @@ export function SigninScreen({ signup, prepareSignup }: SigninScreenProps) {
         />
       ) : (
         <SignupForm
-          withCode={signup === "invite"}
+          withCode={view.withCode}
           error={error}
           pending={pending}
           onSubmit={signin.signUp}

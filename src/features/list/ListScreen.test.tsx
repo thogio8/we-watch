@@ -28,10 +28,12 @@ const DUNE_1984 = movie(841, "DUNE", { runtimeMinutes: null, providers: [] });
 const INTERSTELLAR = movie(157336, "INTERSTELLAR", {
   status: "watched",
   watchedAt: new Date(2026, 9, 18, 22, 40),
+  watchedBy: "Hugo",
 });
 const LALALAND = movie(313369, "LA LA LAND", {
   status: "watched",
   watchedAt: new Date(2026, 9, 11, 21, 5),
+  legacy: true,
 });
 
 type Act = (tmdbId: number) => Promise<void>;
@@ -126,7 +128,37 @@ describe("ListScreen", () => {
     expect(onRemove).toHaveBeenCalledExactlyOnceWith(244786);
   });
 
-  it("onglet VUS affiche « Vu le 18/10 » et ↺ À VOIR appelle onUnwatch", async () => {
+  it.each([
+    ["son auteur", { addedBy: "Léa" }, "ajouté par Léa le 1 octobre 2026"],
+    [
+      "sans auteur (liste d’avant)",
+      { legacy: true },
+      "ajouté le 1 octobre 2026",
+    ],
+    ["un compte supprimé", {}, "ajouté par un ancien membre le 1 octobre 2026"],
+  ])(
+    "ligne à voir sans « voulu » : %s",
+    (_label, overrides: Partial<Movie>, line) => {
+      renderList({ toWatch: [{ ...CHIHIRO, ...overrides }] });
+
+      const [row] = within(panel()).getAllByRole("listitem");
+      expect(row).toHaveTextContent("2h05 · Netflix");
+      expect(row).toHaveTextContent(line);
+    },
+  );
+
+  it("ligne à voir voulue par deux : leurs prénoms, dans l’ordre, sans « ajouté »", () => {
+    renderList({
+      toWatch: [{ ...CHIHIRO, addedBy: "Léa", wantedBy: ["Léa", "Hugo"] }],
+    });
+
+    const [row] = within(panel()).getAllByRole("listitem");
+    expect(row).toHaveTextContent("2h05 · Netflix");
+    expect(row).toHaveTextContent("voulu par Léa et Hugo");
+    expect(row).not.toHaveTextContent("ajouté");
+  });
+
+  it("onglet VUS affiche « vu le 18/10 · marqué par Hugo » et ↺ À VOIR appelle onUnwatch", async () => {
     const { user, onUnwatch } = renderList();
 
     await user.click(screen.getByRole("tab", { name: "VUS · 2" }));
@@ -137,8 +169,9 @@ describe("ListScreen", () => {
     );
     const rows = within(panel()).getAllByRole("listitem");
     expect(rows[0]).toHaveTextContent("INTERSTELLAR");
-    expect(rows[0]).toHaveTextContent("Vu le 18/10");
-    expect(rows[1]).toHaveTextContent("Vu le 11/10");
+    expect(rows[0]).toHaveTextContent("vu le 18/10 · marqué par Hugo");
+    expect(rows[1]).toHaveTextContent("vu le 11/10");
+    expect(rows[1]).not.toHaveTextContent("marqué");
     expect(
       within(panel()).queryByRole("button", { name: /^Retirer/ }),
     ).not.toBeInTheDocument();
