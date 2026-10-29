@@ -1,7 +1,7 @@
 // Navigation timings as you feel them on a phone, on any deployment.
 // Read-only: opens pages and comes back, never changes the list.
 // Usage: SESSION_TOKEN=… node scripts/measure-nav.mjs https://your-deployment
-// A headless browser has no Face ID: sign in on that deployment in your own
+// A headless browser has no passkey: sign in on that deployment in your own
 // browser, then copy the value of the `better-auth.session_token` cookie
 // (`__Secure-better-auth.session_token` over https) from the developer tools.
 // The value is a secret: it is only handed to the browser, never printed.

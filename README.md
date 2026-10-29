@@ -63,7 +63,7 @@ Dans `.env.local` (`BETTER_AUTH_URL` et `SIGNUP` sont déjà préremplis par `.e
 - `SIGNUP` : `open` (par défaut, tout le monde peut créer un compte) ou `invite` ;
 - `OWNER_CODE` : le code propriétaire, utile seulement avec `SIGNUP=invite`.
 
-L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, Face ID (ou l'empreinte, ou le code de l'ordinateur), et c'est parti sur TIRER : la liste est vide, direction SWIPER.
+L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, « CRÉER MON COMPTE » (Face ID, empreinte ou code de l'appareil), et c'est parti sur TIRER : la liste est vide, direction SWIPER.
 
 ## Héberger votre propre WeWatch
 
@@ -90,11 +90,12 @@ Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base
 
 ## Les comptes
 
-Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre avec une passkey, c'est-à-dire Face ID, l'empreinte ou le code de l'appareil. Rien à retenir, rien à se faire voler, aucun email envoyé. Sans compte, toutes les pages mènent à **ENTRE DANS WEWATCH**.
+Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre avec une passkey, c'est-à-dire Face ID, empreinte ou code du téléphone ; sur un ordinateur sans rien de tout ça, le navigateur propose un QR code à scanner avec son téléphone. Rien à retenir, rien à se faire voler, aucun email envoyé. Sans compte, toutes les pages mènent à **ENTRE DANS WEWATCH**.
 
-- **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis Face ID. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
-- **Revenir** : « SE CONNECTER AVEC FACE ID ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est en bas de LISTE.
+- **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis « CRÉER MON COMPTE » et le verrou de l'appareil. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
+- **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est en bas de LISTE.
 - **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et seul le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) ouvre la création : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée.
+- Un navigateur trop ancien pour les passkeys affiche « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS… » à la place des boutons.
 - Les passkeys sont liées à l'adresse de l'appli (`BETTER_AUTH_URL`) : changer d'adresse oblige à recréer les comptes.
 
 > À venir : les invitations, la connexion avec Google et une page « mon compte ».

@@ -57,8 +57,8 @@ C'est une **version majeure** : le code d'accès disparaît, la liste unique dev
 
 Bibliothèque : **Better Auth** (1.7.x, compatible Next 16 et Drizzle, stockage dans notre base Turso, gratuit et auto-hébergé). *(Choix de conception.)*
 
-- **Créer un compte par passkey** : on tape son **nom affiché** (prénom ou surnom), puis Face ID / empreinte enregistre une passkey. Ni email ni mot de passe. Si Better Auth ne sait pas créer un compte à partir d'une passkey seule, le builder passe par un compte provisoire (plugin `anonymous`) auquel la passkey est ajoutée aussitôt ; rien ne change pour l'utilisateur.
-- **Se connecter** : « SE CONNECTER AVEC FACE ID ». Les passkeys se synchronisent d'elles-mêmes entre les appareils d'une personne (trousseau iCloud, gestionnaire de mots de passe Google) ; sur un appareil qui n'est pas à soi, le navigateur propose de scanner un QR code avec son téléphone. Plusieurs passkeys possibles par compte.
+- **Créer un compte par passkey** : on tape son **nom affiché** (prénom ou surnom), puis le verrou de l'appareil (Face ID, empreinte ou code du téléphone) enregistre une passkey. Ni email ni mot de passe. Si Better Auth ne sait pas créer un compte à partir d'une passkey seule, le builder passe par un compte provisoire (plugin `anonymous`) auquel la passkey est ajoutée aussitôt ; rien ne change pour l'utilisateur.
+- **Se connecter** : « SE CONNECTER ». Les passkeys se synchronisent d'elles-mêmes entre les appareils d'une personne (trousseau iCloud, gestionnaire de mots de passe Google) ; sur un appareil qui n'est pas à soi, le navigateur propose de scanner un QR code avec son téléphone. Plusieurs passkeys possibles par compte.
 - **Google** (facultatif) : « CONTINUER AVEC GOOGLE » crée un compte ou s'y connecte ; un compte créé par passkey peut **lier** Google depuis « Mon compte » (et inversement ajouter une passkey). Google sert ainsi aussi de secours.
   - Si la connexion Google ne revient pas dans la **PWA installée sur iPhone**, le bouton n'est affiché que dans le navigateur. À vérifier sur un vrai iPhone **au début** du morceau Google. *(Choix de conception, accepté par le mainteneur.)*
 - **Compte perdu** (plus aucune passkey, pas de Google lié) : pas de récupération. On crée un nouveau compte et on revient dans ses groupes par leur lien d'invitation ; les listes appartiennent aux groupes, on ne perd que ses BOF. L'ancien compte reste un membre fantôme qu'un membre peut retirer. *(Choix de conception : un lien de récupération généré par un autre membre lui donnerait la main sur le compte.)*
@@ -109,11 +109,11 @@ Règle d'or : **un oui suffit, un BOF ne vaut que pour soi.**
 Toute la DA reste celle de la spec historique (§5) ; les nouveaux écrans sont des tickets riso comme `/unlock` aujourd'hui.
 
 - **Pastille du groupe (option A, choisie)** : au-dessus du titre de TIRER, SWIPER et LISTE, « ● NOUS DEUX ▾ ». La toucher ouvre un panneau : mes groupes (avec le nombre de membres, ✓ sur le groupe affiché), « + CRÉER UN GROUPE », « MEMBRES ET INVITATION », puis « MON COMPTE » et « SE DÉCONNECTER ». *(Ces deux dernières entrées : choix de conception.)*
-- **Connexion** : un ticket « ENTRE DANS WEWATCH » : « SE CONNECTER AVEC FACE ID », « CONTINUER AVEC GOOGLE » (sauf PWA iPhone si §5 l'exige), et « CRÉER UN COMPTE ». En mode `invite`, « CRÉER UN COMPTE » n'apparaît qu'en arrivant par une invitation ; ailleurs, un message clair (« WEWATCH SE REJOINT SUR INVITATION ») et un lien discret « J'AI UN CODE PROPRIÉTAIRE ».
-- **Créer un compte** : nom affiché, puis Face ID ; ensuite « CRÉER TON PREMIER GROUPE » si on n'en a aucun.
+- **Connexion** : un ticket « ENTRE DANS WEWATCH », dessous une ligne discrète « Face ID, empreinte ou code de ton téléphone », puis « SE CONNECTER », « CONTINUER AVEC GOOGLE » (sauf PWA iPhone si §5 l'exige), et « CRÉER UN COMPTE ». En mode `invite`, « CRÉER UN COMPTE » n'apparaît qu'en arrivant par une invitation ; ailleurs, un message clair (« WEWATCH SE REJOINT SUR INVITATION ») et un lien discret « J'AI UN CODE PROPRIÉTAIRE ». Validation annulée : « VALIDATION ANNULÉE, RÉESSAIE ». Un navigateur sans passkeys (pas de WebAuthn) voit, à la place des boutons, « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL. »
+- **Créer un compte** : nom affiché, la même ligne discrète, puis « CRÉER MON COMPTE » (Face ID, empreinte ou code du téléphone ; sur un ordinateur sans rien de tout ça, le navigateur propose un QR code à scanner avec son téléphone) ; ensuite « CRÉER TON PREMIER GROUPE » si on n'en a aucun.
 - **Invitation** (`/invitation/<jeton>`) : « TU ES INVITÉ·E DANS « … » » + REJOINDRE.
 - **Groupe** (« MEMBRES ET INVITATION ») : nom (modifiable), membres (nom, « toi », depuis quand), « COPIER LE LIEN D'INVITATION », « RÉGÉNÉRER LE LIEN », « RETIRER » à côté de chaque membre, « QUITTER LE GROUPE ».
-- **Mon compte** : nom affiché, Face ID (activer / liste des passkeys / supprimer), Google (lié ou non), **appareils connectés** (déconnecter un appareil), « SE DÉCONNECTER », « SUPPRIMER MON COMPTE » (confirmation forte).
+- **Mon compte** : nom affiché, passkeys (en ajouter / liste / supprimer), Google (lié ou non), **appareils connectés** (déconnecter un appareil), « SE DÉCONNECTER », « SUPPRIMER MON COMPTE » (confirmation forte).
 
 Le détail visuel de ces écrans est laissé au builder, dans la DA, vérifié sur les 6 formats habituels.
 
@@ -146,7 +146,7 @@ Le détail visuel de ces écrans est laissé au builder, dans la DA, vérifié s
 
 Branche `release/2.0.0` depuis `main` ; un morceau = une branche `feat/v2-…` → **PR vers `release/2.0.0`**, CI complète (checks + e2e) obligatoire, relue par le mainteneur, fusionnée en squash avec un titre Conventional Commits. `main` et la prod restent en 1.3.x pendant ce temps. Chaque morceau laisse `release/2.0.0` **fonctionnelle de bout en bout** (tests verts, appli utilisable en local).
 
-1. **Comptes et passkeys** : Better Auth, créer un compte (nom + Face ID), se connecter, se déconnecter, `OWNER_CODE` ; remplace le code d'accès et `assertUnlocked()`. Une liste unique encore, derrière la connexion.
+1. **Comptes et passkeys** : Better Auth, créer un compte (nom + passkey), se connecter, se déconnecter, `OWNER_CODE` ; remplace le code d'accès et `assertUnlocked()`. Une liste unique encore, derrière la connexion.
 2. **Groupes** : modèle de données (films partagés, liste par groupe, décisions par personne), pastille et panneau, création, groupe affiché, swipe « un oui suffit, BOF pour soi », qui a fait quoi ; **migration** de la liste actuelle.
 3. **Invitations et inscription** : lien, régénération, rejoindre, quitter, retirer un membre, écran « membres » ; `SIGNUP`.
 4. **Google** : connexion, liaison depuis « Mon compte », vérification dans la PWA iPhone.
