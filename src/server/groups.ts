@@ -49,7 +49,20 @@ const isGroupId = (value: unknown): value is string =>
   value.length <= MAX_GROUP_ID_LENGTH;
 
 /**
- * Second line of every Server Action on a group: a forged or foreign
+ * For reads (pages): whether the signed-in user belongs to `groupId`. False
+ * when signed out or for a forged id, without asking the database.
+ */
+export async function isMemberOf(groupId: unknown): Promise<boolean> {
+  const user = await getCurrentUser();
+  return (
+    user !== null &&
+    isGroupId(groupId) &&
+    getGroups().isMember(groupId, user.userId)
+  );
+}
+
+/**
+ * First line of every Server Action on a group (session included): a forged or foreign
  * groupId is refused before anything is read or written.
  */
 export async function assertMember(

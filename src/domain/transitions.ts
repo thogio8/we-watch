@@ -7,12 +7,7 @@ export type ApplyResult = "applied" | "noop";
 export type SwipeDecision = "keep" | "reject";
 
 export type MovieAction =
-  | "swipe_keep"
-  | "swipe_reject"
-  | "search_add"
-  | "remove"
-  | "mark_watched"
-  | "unwatch";
+  "swipe_keep" | "search_add" | "remove" | "mark_watched" | "unwatch";
 
 /** Where each action takes a movie; "new" = not in the database yet. */
 const TRANSITIONS: Record<
@@ -20,7 +15,6 @@ const TRANSITIONS: Record<
   Partial<Record<MovieStatus | "new", MovieStatus>>
 > = {
   swipe_keep: { new: "to_watch" },
-  swipe_reject: { new: "rejected" },
   search_add: { new: "to_watch", rejected: "to_watch" },
   remove: { to_watch: "rejected" },
   mark_watched: { to_watch: "watched" },
@@ -30,7 +24,8 @@ const TRANSITIONS: Record<
 /**
  * Target status, or null if the action is a no-op.
  * current = null means the movie is not in the database yet.
- * The first swipe decision wins; searching for a rejected movie reverses it.
+ * A keep only brings a movie the list lacks; searching for a set-aside
+ * movie reverses it. « BOF » is not a list action (see decisions).
  */
 export function nextStatus(
   current: MovieStatus | null,
@@ -44,18 +39,6 @@ export function nextStatus(
   }
   return targets[current ?? "new"] ?? null;
 }
-
-/**
- * What a swipe decision does: its action, and the status it gives a movie
- * never decided before (the only movies a swipe applies to).
- */
-export const SWIPES = {
-  keep: { action: "swipe_keep", status: "to_watch" },
-  reject: { action: "swipe_reject", status: "rejected" },
-} as const satisfies Record<
-  SwipeDecision,
-  { action: MovieAction; status: MovieStatus }
->;
 
 export function isSwipeDecision(value: unknown): value is SwipeDecision {
   return value === "keep" || value === "reject";

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assertSignedIn } from "@/server/session";
+import { assertMember } from "@/server/groups";
 import { revalidateListPages } from "@/server/revalidate";
 import { aSnapshot } from "@tests/helpers/movies";
+import { expectRefusedFirst } from "@tests/helpers/refused";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
 import {
@@ -17,9 +18,9 @@ const searchMovies = vi.fn();
 const getMovieSnapshot = vi.fn();
 const client = { get: vi.fn() };
 
-vi.mock("@/server/session");
+vi.mock("@/server/groups");
 vi.mock("@/server/container", () => ({
-  getMoviesRepository: () => ({ apply, statusesOf }),
+  getGroupList: () => ({ apply, statusesOf }),
   getTmdbClient: () => client,
 }));
 vi.mock("@/tmdb/movies", () => ({
@@ -34,11 +35,10 @@ const snapshot = (tmdbId: number, title: string): MovieSnapshot =>
 const DUNE_2021 = snapshot(438631, "Dune");
 const DUNE_2 = snapshot(693134, "Dune : Deuxième partie");
 const DUNE_1984 = snapshot(841, "Dune");
+const GROUP = "groupe-1";
 
 beforeEach(() => {
-  vi.mocked(assertSignedIn)
-    .mockReset()
-    .mockResolvedValue({ userId: "user-1", name: "Léa" });
+  vi.mocked(assertMember).mockClear();
   apply.mockReset().mockResolvedValue("applied");
   statusesOf.mockReset().mockResolvedValue(new Map());
   vi.mocked(revalidateListPages).mockReset();
@@ -51,16 +51,22 @@ describe.each([
   ["unwatch", unwatch, "unwatch"],
 ] as const)("%s", (_name, action, movieAction) => {
   it(`applique « ${movieAction} » et ne rafraîchit que /list (R10)`, async () => {
-    await action(129);
+    await action(GROUP, 129);
 
-    expect(apply).toHaveBeenCalledExactlyOnceWith(movieAction, 129);
+    expect(assertMember).toHaveBeenCalledWith(GROUP);
+    expect(apply).toHaveBeenCalledExactlyOnceWith({
+      groupId: GROUP,
+      userId: "user-1",
+      action: movieAction,
+      tmdbId: 129,
+    });
     expect(revalidateListPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "129" as unknown as number])(
     "refuse un identifiant invalide (%s)",
     async (tmdbId) => {
-      await expect(action(tmdbId)).rejects.toThrow("invalid tmdbId");
+      await expect(action(GROUP, tmdbId)).rejects.toThrow("invalid tmdbId");
       expect(apply).not.toHaveBeenCalled();
       expect(revalidateListPages).not.toHaveBeenCalled();
     },
@@ -77,7 +83,7 @@ describe("searchCatalog", () => {
       ]),
     );
 
-    await expect(searchCatalog("  dune ")).resolves.toEqual({
+    await expect(searchCatalog(GROUP, "  dune ")).resolves.toEqual({
       ok: true,
       results: [
         { ...DUNE_2021, status: null },
@@ -86,12 +92,12 @@ describe("searchCatalog", () => {
       ],
     });
     expect(searchMovies).toHaveBeenCalledWith(client, "dune");
-    expect(statusesOf).toHaveBeenCalledWith([438631, 693134, 841]);
+    expect(statusesOf).toHaveBeenCalledWith(GROUP, [438631, 693134, 841]);
     expect(revalidateListPages).not.toHaveBeenCalled();
   });
 
   it("requête vide ou d'espaces → aucun appel TMDB", async () => {
-    await expect(searchCatalog("   ")).resolves.toEqual({
+    await expect(searchCatalog(GROUP, "   ")).resolves.toEqual({
       ok: true,
       results: [],
     });
@@ -101,19 +107,21 @@ describe("searchCatalog", () => {
   it("une erreur TMDB devient { ok: false }", async () => {
     searchMovies.mockRejectedValue(new TmdbError(503, "TMDB responded 503"));
 
-    await expect(searchCatalog("dune")).resolves.toEqual({ ok: false });
+    await expect(searchCatalog(GROUP, "dune")).resolves.toEqual({ ok: false });
   });
 
   it("laisse remonter une panne qui ne vient pas de TMDB", async () => {
     searchMovies.mockRejectedValue(new TypeError("bug"));
 
-    await expect(searchCatalog("dune")).rejects.toThrow("bug");
+    await expect(searchCatalog(GROUP, "dune")).rejects.toThrow("bug");
   });
 
   it("laisse remonter les autres erreurs", async () => {
     statusesOf.mockRejectedValue(new Error("database is locked"));
 
-    await expect(searchCatalog("dune")).rejects.toThrow("database is locked");
+    await expect(searchCatalog(GROUP, "dune")).rejects.toThrow(
+      "database is locked",
+    );
   });
 
   it.each([
@@ -121,44 +129,54 @@ describe("searchCatalog", () => {
     null as unknown as string,
     "x".repeat(101),
   ])("refuse une requête invalide (%s)", async (query) => {
-    await expect(searchCatalog(query)).rejects.toThrow("invalid query");
+    await expect(searchCatalog(GROUP, query)).rejects.toThrow("invalid query");
     expect(searchMovies).not.toHaveBeenCalled();
   });
 });
 
 describe("addFromSearch", () => {
   it("ajoute le film avec un snapshot pris côté serveur et rafraîchit /list", async () => {
-    await addFromSearch(841);
+    await addFromSearch(GROUP, 841);
 
+    expect(assertMember).toHaveBeenCalledWith(GROUP);
     expect(getMovieSnapshot).toHaveBeenCalledWith(client, 841);
-    expect(apply).toHaveBeenCalledExactlyOnceWith("search_add", 841, DUNE_1984);
+    expect(apply).toHaveBeenCalledExactlyOnceWith({
+      groupId: GROUP,
+      userId: "user-1",
+      action: "search_add",
+      tmdbId: 841,
+      snapshot: DUNE_1984,
+    });
     expect(revalidateListPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "841" as unknown as number])(
     "refuse un identifiant invalide (%s)",
     async (tmdbId) => {
-      await expect(addFromSearch(tmdbId)).rejects.toThrow("invalid tmdbId");
+      await expect(addFromSearch(GROUP, tmdbId)).rejects.toThrow(
+        "invalid tmdbId",
+      );
       expect(getMovieSnapshot).not.toHaveBeenCalled();
       expect(apply).not.toHaveBeenCalled();
     },
   );
 });
 
-describe("sans session", () => {
+describe("hors du groupe, ou sans session", () => {
   it.each([
-    ["removeFromList", () => removeFromList(841)],
-    ["unwatch", () => unwatch(841)],
-    ["searchCatalog", () => searchCatalog("dune")],
-    ["addFromSearch", () => addFromSearch(841)],
-  ] as const)("%s refuse sans rien appliquer", async (_name, call) => {
-    vi.mocked(assertSignedIn).mockRejectedValue(new Error("not signed in"));
-
-    await expect(call()).rejects.toThrow("not signed in");
-    expect(apply).not.toHaveBeenCalled();
-    expect(searchMovies).not.toHaveBeenCalled();
-    expect(getMovieSnapshot).not.toHaveBeenCalled();
-    expect(statusesOf).not.toHaveBeenCalled();
-    expect(revalidateListPages).not.toHaveBeenCalled();
-  });
+    ["removeFromList", () => removeFromList("groupe-b", 0)],
+    ["unwatch", () => unwatch("groupe-b", 0)],
+    ["searchCatalog", () => searchCatalog("groupe-b", 42 as unknown as string)],
+    ["addFromSearch", () => addFromSearch("groupe-b", 0)],
+  ] as const)(
+    "%s refuse avant toute validation, sans rien faire",
+    (_name, call) =>
+      expectRefusedFirst(call, [
+        apply,
+        searchMovies,
+        getMovieSnapshot,
+        statusesOf,
+        vi.mocked(revalidateListPages),
+      ]),
+  );
 });

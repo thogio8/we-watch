@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GROUP_COOKIE, type GroupSummary } from "@/domain/group";
-import { assertMember, getActiveGroup, rememberGroup } from "./groups";
+import {
+  assertMember,
+  getActiveGroup,
+  isMemberOf,
+  rememberGroup,
+} from "./groups";
 import { assertSignedIn, getCurrentUser } from "./session";
 
 const groupsOf = vi.fn();
@@ -150,6 +155,35 @@ describe("assertMember", () => {
     await expect(assertMember("g-1")).rejects.toThrow(
       "Server Action refused: not signed in",
     );
+    expect(isMember).not.toHaveBeenCalled();
+  });
+});
+
+describe("isMemberOf (lectures)", () => {
+  it("vrai pour un groupe dont je suis membre", async () => {
+    await expect(isMemberOf("g-1")).resolves.toBe(true);
+    expect(isMember).toHaveBeenCalledWith("g-1", "user-1");
+  });
+
+  it("faux pour un groupe étranger", async () => {
+    isMember.mockResolvedValue(false);
+
+    await expect(isMemberOf("g-3")).resolves.toBe(false);
+  });
+
+  it.each([
+    ["une chaîne vide", ""],
+    ["65 caractères", "g".repeat(65)],
+    ["un objet", {}],
+  ])("faux pour %s, sans interroger la base", async (_, groupId) => {
+    await expect(isMemberOf(groupId)).resolves.toBe(false);
+    expect(isMember).not.toHaveBeenCalled();
+  });
+
+  it("faux sans session, sans interroger la base", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValueOnce(null);
+
+    await expect(isMemberOf("g-1")).resolves.toBe(false);
     expect(isMember).not.toHaveBeenCalled();
   });
 });

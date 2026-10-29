@@ -53,7 +53,7 @@ Règles :
 
 - **Sens des dépendances** : `domain` ← `db`/`tmdb` ← `server` ← `features` ← `app`. `access` ne dépend que de `domain` (et de l'env) ; `auth` de `domain`, `db` et `access` ; seul `server` assemble Better Auth. Un composant client n'importe jamais un module serveur : la page lui passe les actions serveur en props.
 - Modules serveur marqués `import "server-only"`.
-- **Server Actions** = endpoints publics : chacune commence par `await assertSignedIn()` (`server/session.ts`) puis valide ses arguments. Convention d'erreur : une **lecture** qui dépend de TMDB renvoie `{ ok: false }` (panne attendue, affichée dans la DA) ; une **écriture** lève une exception (le client la rattrape et affiche un message).
+- **Server Actions** = endpoints publics : chacune commence par `await assertSignedIn()` (`server/session.ts`), ou, si elle porte sur un groupe, par `await assertMember(groupId)` (`server/groups.ts` : session **et** appartenance ; le `groupId` arrive en premier argument, lié par la page au groupe affiché, jamais lu dans le cookie), puis valide ses arguments. Une page lit le groupe affiché avec `getActiveGroup()` (sous `<Suspense>`, après `connection()`). Convention d'erreur : une **lecture** qui dépend de TMDB renvoie `{ ok: false }` (panne attendue, affichée dans la DA) ; une **écriture** lève une exception (le client la rattrape et affiche un message).
 - Logique non triviale = fonction pure dans `domain/` ou `features/x/*.ts`, testée à part ; les composants restent de l'affichage.
 - Ces règles de couches sont **vérifiées par ESLint** (`eslint.config.mjs`, `no-restricted-imports`) : un import interdit casse la CI.
 
@@ -67,7 +67,7 @@ Concrètement, sur ce repo :
 - **KISS** : pas d'abstraction « au cas où », pas de framework maison, pas de dépendance pour trois lignes. Le plus simple qui passe les tests.
 - **DRY** : avant d'écrire, chercher l'existant. Briques partagées :
   - UI : `ui/Headline` (titres riso), `ui/cx` (classes), `ui/Tab.module.css` (onglets, via `composes`), `ui/Ticket`, `ui/TicketDetails`, `ui/Button`, `ui/Chip`, `ui/Stamp`, `ui/Lines`.
-  - Serveur : `server/validate.ts` (contrôles d'entrée), `SWIPES` (domain).
+  - Serveur : `server/validate.ts` (contrôles d'entrée), `server/groups.ts` (`assertMember`, `getActiveGroup`).
   - Tests : `tests/helpers/movies.ts` (`aSnapshot`, `aMovie`, `NETFLIX`…), `tests/helpers/dom.ts` (`stubMatchMedia`), `tests/setup.ts` (nettoyage commun), mocks `vi.mock("@/server/session")` / `vi.mock("next/cache")` (dossiers `__mocks__`), `tests/helpers/functional.ts`, `tests/fake-tmdb/`, `e2e/fixtures.ts`.
 - **Garde-fous automatiques** (ESLint, erreur = CI rouge) : 200 lignes max par fichier, 80 par fonction, complexité 10, imbrication 3, 4 paramètres max (sinon un objet), `===`, pas de ternaire imbriqué. **jscpd** refuse tout bloc dupliqué (6 lignes / 60 tokens), **knip** tout export ou dépendance inutilisé. Ne jamais contourner une règle (`eslint-disable`, seuil relevé) sans l'accord du mainteneur : découper plutôt.
 

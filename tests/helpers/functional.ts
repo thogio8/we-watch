@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { vi } from "vitest";
+import { beforeAll, beforeEach, vi } from "vitest";
 import { user } from "@/db/auth-schema";
 import { createDatabase, type Database } from "@/db/create-database";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/db/group-schema";
 import { movies } from "@/db/schema";
 import { fakeTmdb } from "../fake-tmdb/handler";
+import { aGroup } from "./groups";
 
 export const CRON_SECRET = "functional-cron-secret";
 
@@ -61,4 +62,20 @@ export async function startServerStack(): Promise<{
       }
     },
   };
+}
+
+/**
+ * startServerStack for a file about one group: before each test, the lists
+ * are emptied and Léa gets a fresh group « NOUS DEUX ». Read `id` and `db`
+ * inside the tests.
+ */
+export function withLeasGroup(): { id: string; db: Database } {
+  const mine = { id: "", db: undefined as unknown as Database };
+  let reset: () => Promise<void>;
+  beforeAll(async () => ({ db: mine.db, reset } = await startServerStack()));
+  beforeEach(async () => {
+    await reset();
+    mine.id = await aGroup(mine.db, "NOUS DEUX", [LEA.id]);
+  });
+  return mine;
 }

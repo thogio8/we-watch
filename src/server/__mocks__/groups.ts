@@ -15,3 +15,4 @@ export const assertMember = vi.fn(async (groupId: unknown) => ({
   groupId: groupId as string,
 }));
 export const rememberGroup = vi.fn(async (): Promise<void> => {});
+export const isMemberOf = vi.fn(async (): Promise<boolean> => true);

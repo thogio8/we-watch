@@ -1,6 +1,7 @@
 import "server-only";
 import type { Movie } from "@/domain/movie";
-import { getMoviesRepository, getTmdbClient } from "@/server/container";
+import { getGroupList, getTmdbClient } from "@/server/container";
+import { isMemberOf } from "@/server/groups";
 import { isPositiveInt } from "@/server/validate";
 import { TmdbError } from "@/tmdb/client";
 import { getMovieCredits, type MovieCredits } from "@/tmdb/credits";
@@ -20,14 +21,18 @@ async function creditsOrNull(tmdbId: number): Promise<MovieCredits | null> {
   }
 }
 
-/** The page of a movie of our list, from its URL segment; null: not found. */
+/**
+ * The page of a movie of the group's list, from its URL segment; null: not
+ * found, also for a group I am not a member of.
+ */
 export async function loadMoviePage(
+  groupId: string,
   segment: string,
 ): Promise<MoviePage | null> {
   const tmdbId = Number(segment);
-  if (!isPositiveInt(tmdbId)) return null;
+  if (!isPositiveInt(tmdbId) || !(await isMemberOf(groupId))) return null;
   const [movie, credits] = await Promise.all([
-    getMoviesRepository().findInList(tmdbId),
+    getGroupList().findInList(groupId, tmdbId),
     creditsOrNull(tmdbId),
   ]);
   return movie ? { movie, credits } : null;

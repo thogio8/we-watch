@@ -11,7 +11,16 @@ import {
   verification,
 } from "../src/db/auth-schema";
 import { createDatabase } from "../src/db/create-database";
+import {
+  group,
+  groupMovie,
+  membership,
+  movieRejection,
+  movieSnapshot,
+  movieWant,
+} from "../src/db/group-schema";
 import { movies } from "../src/db/schema";
+import { GROUP_COOKIE } from "../src/domain/group";
 import { appUrl, databaseOf, E2E_AUTH_SECRET } from "./env";
 
 const databases = new Map<number, ReturnType<typeof createDatabase>>();
@@ -26,18 +35,31 @@ function db() {
 }
 
 /**
- * Empties the worker's database (movies and every Better Auth table), the
- * children before the users they point to.
+ * Empties the worker's database (lists, groups, movies and every Better Auth
+ * table), the children before the rows they point to.
  */
 async function wipe() {
-  await db().delete(movies);
-  await db().delete(passkey);
-  await db().delete(session);
-  await db().delete(account);
-  await db().delete(verification);
-  await db().delete(signupTicketUse);
-  await db().delete(user);
+  for (const table of [
+    movieWant,
+    movieRejection,
+    groupMovie,
+    membership,
+    group,
+    movieSnapshot,
+    movies,
+    passkey,
+    session,
+    account,
+    verification,
+    signupTicketUse,
+    user,
+  ]) {
+    await db().delete(table);
+  }
 }
+
+/** Léa's group in every `app` test (Task 9 adds other members). */
+const LEAS_GROUP = { id: "groupe-e2e", name: "NOUS DEUX" };
 
 /** Deletes every session of the worker's database, as a sign-out elsewhere would. */
 export async function deleteSessions() {
@@ -47,6 +69,7 @@ export async function deleteSessions() {
 /**
  * Signs Léa in without a passkey ceremony: a user and a session written
  * straight to the worker's database, their cookies given to the browser.
+ * She is the only member of « NOUS DEUX », displayed through its cookie.
  */
 async function signIn(page: Page) {
   const worker = base.info().parallelIndex;
@@ -58,11 +81,23 @@ async function signIn(page: Page) {
   });
   const { test: helpers } = await auth.$context;
   const lea = await helpers.saveUser(helpers.createUser({ name: "Léa" }));
-  await page
-    .context()
-    .addCookies(
-      await helpers.getCookies({ userId: lea.id, domain: "localhost" }),
-    );
+  await db().insert(group).values(LEAS_GROUP);
+  await db()
+    .insert(membership)
+    .values({ groupId: LEAS_GROUP.id, userId: lea.id });
+  await page.context().addCookies([
+    ...(await helpers.getCookies({ userId: lea.id, domain: "localhost" })),
+    // The e2e server runs in production mode over http: not `secure`.
+    {
+      name: GROUP_COOKIE,
+      value: LEAS_GROUP.id,
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: false,
+    },
+  ]);
 }
 
 /** Names of the accounts in the worker's database. */
@@ -187,8 +222,8 @@ export const listTitles = (page: Page) =>
  */
 export async function decidedOn(date: Date) {
   await db()
-    .update(movies)
+    .update(groupMovie)
     .set({
-      decidedAt: sql`${movies.decidedAt} - (select max(${movies.decidedAt}) from ${movies}) + ${date.getTime()}`,
+      decidedAt: sql`${groupMovie.decidedAt} - (select max(${groupMovie.decidedAt}) from ${groupMovie}) + ${date.getTime()}`,
     });
 }

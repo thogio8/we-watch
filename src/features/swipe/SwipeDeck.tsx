@@ -2,12 +2,7 @@
 
 import { useReducer } from "react";
 import { type DeckId, deckLabel } from "@/tmdb/decks";
-import type {
-  decideSwipe,
-  LoadMoreResult,
-  loadMoreCards,
-  undoSwipe,
-} from "./actions";
+import type { LoadCards, LoadMoreResult, SendSwipe } from "./actions";
 import { CardStack } from "./CardStack";
 import { DeckChips } from "./DeckChips";
 import { DeckNotice } from "./DeckNotice";
@@ -21,9 +16,9 @@ import { useSwipeSync } from "./useSwipeSync";
 interface SwipeDeckProps {
   deck: DeckId;
   initial: LoadMoreResult;
-  decide: typeof decideSwipe;
-  undo: typeof undoSwipe;
-  loadMore: typeof loadMoreCards;
+  decide: SendSwipe;
+  undo: SendSwipe;
+  loadMore: LoadCards;
 }
 
 const TOAST_MS = 4000;

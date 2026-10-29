@@ -46,7 +46,6 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/auth/passkey-signup.ts | 100% | 100% | 100% | 100% |
 | src/db/auth-schema.ts | 100% | 100% | 100% | 100% |
 | src/db/create-database.ts | 100% | 100% | 100% | 100% |
-| src/db/movies-repository.ts | 100% | 100% | 100% | 100% |
 | src/db/schema.ts | 100% | 100% | 100% | 100% |
 | src/domain/display-name.ts | 100% | 100% | 100% | 100% |
 | src/domain/draw-session.ts | 100% | 100% | 100% | 100% |

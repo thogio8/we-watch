@@ -17,7 +17,7 @@ import {
 import { upsertSnapshot } from "./snapshots";
 
 /** What a member does on the list itself (swipes: see decisions). */
-type ListAction = Exclude<MovieAction, "swipe_keep" | "swipe_reject">;
+type ListAction = Exclude<MovieAction, "swipe_keep">;
 
 interface ApplyInput {
   groupId: string;

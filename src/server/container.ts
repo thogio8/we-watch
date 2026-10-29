@@ -2,12 +2,9 @@ import "server-only";
 import { nextCookies } from "better-auth/next-js";
 import { createAuth } from "@/auth/create-auth";
 import { createDatabase, type Database } from "@/db/create-database";
+import { createDecisions, type Decisions } from "@/db/decisions";
 import { createGroupList, type GroupList } from "@/db/group-list";
 import { createGroups, type Groups } from "@/db/groups";
-import {
-  createMoviesRepository,
-  type MoviesRepository,
-} from "@/db/movies-repository";
 import { createSnapshots, type Snapshots } from "@/db/snapshots";
 import { getServerEnv } from "@/env";
 import type { RefreshDeps } from "@/features/refresh/refresh-movies";
@@ -17,7 +14,7 @@ import type { DeckId } from "@/tmdb/decks";
 import { discoverDeck, getMovieSnapshot } from "@/tmdb/movies";
 
 let database: Database | undefined;
-let repository: MoviesRepository | undefined;
+let decisions: Decisions | undefined;
 let groupList: GroupList | undefined;
 let groups: Groups | undefined;
 let snapshots: Snapshots | undefined;
@@ -30,9 +27,9 @@ function getDatabase(): Database {
   return database;
 }
 
-export function getMoviesRepository(): MoviesRepository {
-  repository ??= createMoviesRepository(getDatabase());
-  return repository;
+export function getDecisions(): Decisions {
+  decisions ??= createDecisions(getDatabase());
+  return decisions;
 }
 
 export function getGroupList(): GroupList {
@@ -77,13 +74,17 @@ export function getTmdbClient(): TmdbClient {
   return tmdbClient;
 }
 
-export function getDeckDeps(deck: DeckId): DeckDeps {
+/** The deck of `userId` in `groupId`: membership is checked by the caller. */
+export function getDeckDeps(
+  deck: DeckId,
+  groupId: string,
+  userId: string,
+): DeckDeps {
   const client = getTmdbClient();
-  const repo = getMoviesRepository();
   return {
     discover: (page) => discoverDeck(client, deck, page),
     snapshot: (id) => getMovieSnapshot(client, id),
-    decidedIds: () => repo.decidedIds(),
+    decidedIds: () => getDecisions().deckExclusions(groupId, userId),
   };
 }
 

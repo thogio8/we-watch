@@ -1,35 +1,26 @@
 import { describe, expect, it } from "vitest";
 import type { MovieStatus } from "./movie";
-import {
-  isSwipeDecision,
-  type MovieAction,
-  nextStatus,
-  SWIPES,
-} from "./transitions";
+import { isSwipeDecision, type MovieAction, nextStatus } from "./transitions";
 
 type Current = MovieStatus | null;
 
 const table: [Current, MovieAction, MovieStatus | null][] = [
   [null, "swipe_keep", "to_watch"],
-  [null, "swipe_reject", "rejected"],
   [null, "search_add", "to_watch"],
   [null, "remove", null],
   [null, "mark_watched", null],
   [null, "unwatch", null],
   ["to_watch", "swipe_keep", null],
-  ["to_watch", "swipe_reject", null],
   ["to_watch", "search_add", null],
   ["to_watch", "remove", "rejected"],
   ["to_watch", "mark_watched", "watched"],
   ["to_watch", "unwatch", null],
   ["watched", "swipe_keep", null],
-  ["watched", "swipe_reject", null],
   ["watched", "search_add", null],
   ["watched", "remove", null],
   ["watched", "mark_watched", null],
   ["watched", "unwatch", "to_watch"],
   ["rejected", "swipe_keep", null],
-  ["rejected", "swipe_reject", null],
   ["rejected", "search_add", "to_watch"],
   ["rejected", "remove", null],
   ["rejected", "mark_watched", null],
@@ -48,15 +39,7 @@ describe("nextStatus", () => {
   });
 });
 
-describe("SWIPES", () => {
-  it.each(["keep", "reject"] as const)(
-    "%s : le statut annoncé est bien celui de nextStatus",
-    (decision) => {
-      const { action, status } = SWIPES[decision];
-      expect(nextStatus(null, action)).toBe(status);
-    },
-  );
-
+describe("isSwipeDecision", () => {
   it("reconnaît les décisions de swipe, refuse le reste", () => {
     expect(isSwipeDecision("keep")).toBe(true);
     expect(isSwipeDecision("reject")).toBe(true);

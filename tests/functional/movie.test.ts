@@ -1,26 +1,22 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { decideSwipe } from "@/features/swipe/actions";
 import { loadMoviePage } from "@/features/movie/load";
 import { setTmdbDown } from "../fake-tmdb/handler";
-import { startServerStack } from "../helpers/functional";
+import { withLeasGroup } from "../helpers/functional";
 
 vi.mock("@/server/session");
 vi.mock("next/cache");
 
 const PARASITE = 496243;
 
-let reset: () => Promise<void>;
-beforeAll(async () => ({ reset } = await startServerStack()));
-beforeEach(async () => {
-  await reset();
-  setTmdbDown(false);
-});
+const mine = withLeasGroup();
+beforeEach(() => setTmdbDown(false));
 
 describe("fiche d'un film (fonctionnel)", () => {
   it("un film gardé : sa fiche, avec réalisation et têtes d'affiche", async () => {
-    await decideSwipe(PARASITE, "keep");
+    await decideSwipe(mine.id, PARASITE, "keep");
 
-    const page = await loadMoviePage(String(PARASITE));
+    const page = await loadMoviePage(mine.id, String(PARASITE));
 
     expect(page?.movie).toMatchObject({
       title: "Parasite",
@@ -33,17 +29,17 @@ describe("fiche d'un film (fonctionnel)", () => {
   });
 
   it("TMDB en panne : la fiche vient de la base, sans générique", async () => {
-    await decideSwipe(PARASITE, "keep");
+    await decideSwipe(mine.id, PARASITE, "keep");
     setTmdbDown(true);
 
-    const page = await loadMoviePage(String(PARASITE));
+    const page = await loadMoviePage(mine.id, String(PARASITE));
 
     expect(page).toMatchObject({ movie: { title: "Parasite" }, credits: null });
   });
 
-  it("un film refusé n'a pas de fiche", async () => {
-    await decideSwipe(PARASITE, "reject");
+  it("un film que j’ai trouvé BOF n'a pas de fiche", async () => {
+    await decideSwipe(mine.id, PARASITE, "reject");
 
-    await expect(loadMoviePage(String(PARASITE))).resolves.toBeNull();
+    await expect(loadMoviePage(mine.id, String(PARASITE))).resolves.toBeNull();
   });
 });
