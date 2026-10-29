@@ -5,9 +5,15 @@ import {
   type MovieAction,
   nextStatus,
 } from "@/domain/transitions";
-import type { Database } from "./create-database";
-import { groupMovie, movieRejection } from "./group-schema";
-import { listRow, rejectionOf, selectMovies } from "./list-queries";
+import type { Database, Executor } from "./create-database";
+import { groupMovie, movieRejection, movieWant } from "./group-schema";
+import {
+  changed,
+  listRow,
+  rejectionOf,
+  selectMovies,
+  wishesOf,
+} from "./list-queries";
 import { upsertSnapshot } from "./snapshots";
 
 /** What a member does on the list itself (swipes: see decisions). */
@@ -108,40 +114,67 @@ export function createGroupList(db: Database): GroupList {
   };
 }
 
-/** Reads the current status and writes the transition in one transaction. */
+/**
+ * One transaction: searching for a movie reverses my « BOF » on it, even when
+ * the list row stays as it is; then the transition is written.
+ */
 function applyAction(db: Database, input: ApplyInput): Promise<ApplyResult> {
-  const { groupId, userId, action, tmdbId, snapshot } = input;
+  const { userId, action, tmdbId } = input;
   const now = input.now ?? new Date();
   return db.transaction(async (tx) => {
-    const [current] = await tx
-      .select({ status: groupMovie.status })
-      .from(groupMovie)
-      .where(listRow(groupId, tmdbId));
-    const target = nextStatus(current?.status ?? null, action);
-    if (target === null) return "noop";
-    if (current === undefined && snapshot === undefined) {
-      throw new Error(
-        `apply(${action}): snapshot required for new movie ${tmdbId}`,
-      );
-    }
+    const cleared =
+      action === "search_add"
+        ? await tx
+            .delete(movieRejection)
+            .where(rejectionOf(userId, tmdbId))
+            .returning({ id: movieRejection.tmdbId })
+        : [];
+    return changed(cleared, await writeTransition(tx, { ...input, now }));
+  });
+}
 
-    if (snapshot !== undefined) await upsertSnapshot(tx, snapshot);
-    const changes = { status: target, ...CHANGES[action]({ userId, now }) };
-    if (current === undefined) {
-      await tx.insert(groupMovie).values({
+/** Reads the current status and writes the transition: the rows written. */
+async function writeTransition(
+  tx: Executor,
+  input: ApplyInput & { now: Date },
+): Promise<unknown[]> {
+  const { groupId, userId, action, tmdbId, snapshot, now } = input;
+  const [current] = await tx
+    .select({ status: groupMovie.status })
+    .from(groupMovie)
+    .where(listRow(groupId, tmdbId));
+  const target = nextStatus(current?.status ?? null, action);
+  if (target === null) return [];
+  if (current === undefined && snapshot === undefined) {
+    throw new Error(
+      `apply(${action}): snapshot required for new movie ${tmdbId}`,
+    );
+  }
+
+  if (snapshot !== undefined) await upsertSnapshot(tx, snapshot);
+  const changes = { status: target, ...CHANGES[action]({ userId, now }) };
+  if (current === undefined) {
+    // Only a search brings a new movie here (swipes: see decisions);
+    // another member may have added it since the read: theirs stays.
+    return tx
+      .insert(groupMovie)
+      .values({
         groupId,
         tmdbId,
         decidedAt: now,
         addedVia: "search",
         ...changes,
-      });
-    } else {
-      await tx.update(groupMovie).set(changes).where(listRow(groupId, tmdbId));
-    }
-    // Searching for a movie and adding it reverses my « BOF » on it.
-    if (action === "search_add") {
-      await tx.delete(movieRejection).where(rejectionOf(userId, tmdbId));
-    }
-    return "applied";
-  });
+      })
+      .onConflictDoNothing()
+      .returning({ id: groupMovie.tmdbId });
+  }
+  // A set-aside movie added again starts fresh: earlier wishes go.
+  if (current.status === "rejected") {
+    await tx.delete(movieWant).where(wishesOf(groupId, tmdbId));
+  }
+  return tx
+    .update(groupMovie)
+    .set(changes)
+    .where(listRow(groupId, tmdbId))
+    .returning({ id: groupMovie.tmdbId });
 }

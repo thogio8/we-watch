@@ -3,7 +3,7 @@ import type { MovieSnapshot } from "@/domain/movie";
 import type { ApplyResult, SwipeDecision } from "@/domain/transitions";
 import type { Database } from "./create-database";
 import { groupMovie, movieRejection, movieWant } from "./group-schema";
-import { listRow, rejectionOf } from "./list-queries";
+import { changed, listRow, rejectionOf, wishesOf } from "./list-queries";
 import { upsertSnapshot } from "./snapshots";
 
 interface SwipeInput {
@@ -30,15 +30,8 @@ export interface Decisions {
   deckExclusions(groupId: string, userId: string): Promise<Set<number>>;
 }
 
-const changed = (...results: unknown[][]): ApplyResult =>
-  results.some((rows) => rows.length > 0) ? "applied" : "noop";
-
 const myWant = ({ groupId, userId, tmdbId }: UndoInput) =>
-  and(
-    eq(movieWant.groupId, groupId),
-    eq(movieWant.tmdbId, tmdbId),
-    eq(movieWant.userId, userId),
-  );
+  and(wishesOf(groupId, tmdbId), eq(movieWant.userId, userId));
 
 function keep(db: Database, input: SwipeInput): Promise<ApplyResult> {
   const { groupId, userId, tmdbId, snapshot } = input;
@@ -87,13 +80,7 @@ function undoKeep(db: Database, input: UndoInput): Promise<ApplyResult> {
     const otherWishes = tx
       .select()
       .from(movieWant)
-      .where(
-        and(
-          eq(movieWant.groupId, groupId),
-          eq(movieWant.tmdbId, tmdbId),
-          ne(movieWant.userId, userId),
-        ),
-      );
+      .where(and(wishesOf(groupId, tmdbId), ne(movieWant.userId, userId)));
     const unlisted = await tx
       .delete(groupMovie)
       .where(

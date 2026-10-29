@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
 import { aSnapshot, NETFLIX } from "@tests/helpers/movies";
@@ -175,8 +175,57 @@ describe("liste du groupe", () => {
       status: "to_watch",
       decidedAt: T2,
       addedBy: "Hugo",
+      wantedBy: [],
     });
     expect(await decisions.deckExclusions(groupB, hugo)).toEqual(new Set());
+  });
+
+  it("search_add efface toujours le BOF de qui cherche, même sur un film déjà listé", async () => {
+    await decisions.swipe({
+      groupId: groupB,
+      userId: hugo,
+      tmdbId: 1,
+      decision: "reject",
+      snapshot: aSnapshot(1),
+    });
+    await keep(1);
+
+    expect(await search(1, hugo, T2)).toBe("applied");
+
+    expect(await list.findInList(groupA, 1)).toMatchObject({
+      status: "to_watch",
+      decidedAt: T0,
+      addedBy: "Léa",
+    });
+    expect(await decisions.deckExclusions(groupB, hugo)).toEqual(new Set());
+    expect(await search(1, hugo, T2)).toBe("noop");
+  });
+
+  it("search_add d’un nouveau film qu’un autre membre vient d’ajouter : rien de plus", async () => {
+    // Hugo's add lands between Léa's read and her insert (the in-memory
+    // client has one connection, so the race is staged with a trigger).
+    await db.run(
+      sql.raw(`
+      CREATE TEMP TRIGGER hugo_adds_first AFTER INSERT ON movie_snapshot
+      BEGIN
+        INSERT INTO group_movie (group_id, tmdb_id, status, decided_at, added_by, added_via)
+        VALUES ('${groupA}', NEW.tmdb_id, 'to_watch', 0, '${hugo}', 'search');
+      END`),
+    );
+
+    expect(await search(1, lea)).toBe("noop");
+    expect(await list.findInList(groupA, 1)).toMatchObject({
+      addedBy: "Hugo",
+    });
+  });
+
+  it("wantedBy ne compte que les souhaits du groupe", async () => {
+    await keep(1, groupA, lea);
+    await aGroup(db, "C", [hugo]).then((groupC) => keep(1, groupC, hugo));
+
+    expect(await list.findInList(groupA, 1)).toMatchObject({
+      wantedBy: ["Léa"],
+    });
   });
 
   it("refuse d’ajouter un film inconnu sans instantané", async () => {

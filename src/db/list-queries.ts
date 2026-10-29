@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { Movie } from "@/domain/movie";
+import type { ApplyResult } from "@/domain/transitions";
 import { user } from "./auth-schema";
 import type { Database } from "./create-database";
 import {
@@ -24,9 +25,17 @@ import {
 export const listRow = (groupId: string, tmdbId: number) =>
   and(eq(groupMovie.groupId, groupId), eq(groupMovie.tmdbId, tmdbId));
 
+/** The wishes of every member on a movie of a group's list. */
+export const wishesOf = (groupId: string, tmdbId: number) =>
+  and(eq(movieWant.groupId, groupId), eq(movieWant.tmdbId, tmdbId));
+
 /** A member's « BOF » on a movie. */
 export const rejectionOf = (userId: string, tmdbId: number) =>
   and(eq(movieRejection.userId, userId), eq(movieRejection.tmdbId, tmdbId));
+
+/** "applied" iff one of the writes returned a row. */
+export const changed = (...results: unknown[][]): ApplyResult =>
+  results.some((rows) => rows.length > 0) ? "applied" : "noop";
 
 const adder = alias(user, "adder");
 const watcher = alias(user, "watcher");
