@@ -18,4 +18,6 @@ export const e2eEnv = (worker: number) => ({
   TMDB_API_URL: `http://localhost:${FAKE_TMDB_PORT}/3`,
   ACCESS_CODE,
   CRON_SECRET: "e2e-cron-secret-0123456789",
+  BETTER_AUTH_SECRET: "e2e-auth-secret-0123456789abcdef0123",
+  BETTER_AUTH_URL: `http://localhost:${appPort(worker)}`,
 });

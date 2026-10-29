@@ -15,6 +15,13 @@
       "when": 1793094453963,
       "tag": "0001_v1_2_genres_trailer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793272306845,
+      "tag": "0002_outstanding_cammi",
+      "breakpoints": true
     }
   ]
 }
