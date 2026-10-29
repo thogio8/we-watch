@@ -88,6 +88,9 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     session: {
       expiresIn: 60 * DAY_SECONDS,
       updateAge: DAY_SECONDS,
+      // Known lag: while this signed cookie is valid, a deleted session is
+      // still accepted (up to 5 minutes). Piece 5 reads sensitive data with
+      // disableCookieCache. See CLAUDE.md « Pièges ».
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
     emailAndPassword: { enabled: false },
