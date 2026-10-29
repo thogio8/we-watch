@@ -192,19 +192,40 @@
   }
 }
 
-/* Phone held sideways: one-line title, a smaller button, tighter spacing. */
+/*
+ * Small screens (320 x 568): tighter gaps under the « ce soir » panel, so the
+ * group pill, the title, the button and the clock all show above the nav.
+ */
+@media (max-height: 620px) {
+  .compact {
+    margin-top: 20px;
+  }
+
+  .clock {
+    margin-top: 18px;
+  }
+}
+
+/*
+ * Phone held sideways: one-line title, a smaller button, tighter spacing;
+ * the whole home (group pill included) holds in one view.
+ */
 @media (min-width: 760px) and (max-height: 520px) {
   .brand :global(span) {
     display: inline;
   }
 
   .compact {
-    width: min(200px, calc(100dvh - 210px));
-    font-size: var(--text-2xl);
+    width: min(200px, calc(100dvh - 240px));
+    font-size: var(--text-xl);
+  }
+
+  .split .main {
+    padding-top: 4px;
   }
 
   .clock {
-    margin-top: 14px;
+    margin-top: 8px;
   }
 
   .actions {

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 import { emptyNameRefused, expect, swipe, test } from "./fixtures";
 
 /** Formats from spec §12: small and large phones, sideways, tablet, desktop. */
@@ -80,6 +80,47 @@ test.describe("mise en page et accessibilité", () => {
     });
   }
 });
+
+test.describe("TIRER tient sur un écran", () => {
+  test.beforeEach(async ({ app }) => {
+    test.skip(test.info().project.name !== "desktop");
+    await swipe(app, ["keep", "keep"]);
+  });
+
+  for (const viewport of VIEWPORTS.filter(({ name }) => name !== "iPad")) {
+    test(`le bouton et l’heure, sans défiler ni passer sous la nav : ${viewport.name}`, async ({
+      app,
+    }) => {
+      await app.setViewportSize(viewport);
+      await app.goto("/");
+      const clock = app.getByText(/^Il est \d/);
+      await expect(clock).toBeVisible();
+      const nav = await box(
+        app.getByRole("navigation", { name: "Navigation principale" }),
+      );
+      // The nav sits at the bottom on phones, at the top on wide screens.
+      const navAtBottom = nav.y > viewport.height / 2;
+      const top = navAtBottom ? 0 : nav.y + nav.height;
+      const bottom = navAtBottom ? nav.y : viewport.height;
+      for (const [name, element] of [
+        ["TIRER", app.getByRole("button", { name: "TIRER UN FILM" })],
+        ["l’heure", clock],
+      ] as const) {
+        const { y, height } = await box(element);
+        expect(y, `${name} commence sous la nav`).toBeGreaterThanOrEqual(top);
+        expect(y + height, `${name} finit avant la nav`).toBeLessThanOrEqual(
+          bottom,
+        );
+      }
+    });
+  }
+});
+
+async function box(locator: Locator) {
+  const found = await locator.boundingBox();
+  expect(found).not.toBeNull();
+  return found!;
+}
 
 test.describe("mise en page et accessibilité, sans groupe", () => {
   test.beforeEach(() => {
