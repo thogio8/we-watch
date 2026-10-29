@@ -1,53 +1,40 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readSignedIn } from "./signed-in";
 
-const cookieHeaders = (...cookies: string[]) => {
-  const headers = new Headers();
-  for (const cookie of cookies) headers.append("set-cookie", cookie);
-  return headers;
-};
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
 describe("readSignedIn", () => {
-  it("une session donne « connecté » et transmet les cookies rafraîchis", async () => {
-    const result = await readSignedIn(async () => ({
-      response: { user: { id: "user-1" } },
-      headers: cookieHeaders("a=1; Path=/", "b=2; Path=/"),
-    }));
-
-    expect(result).toEqual({
-      signedIn: true,
-      setCookies: ["a=1; Path=/", "b=2; Path=/"],
-    });
+  it("une session donne « connecté »", async () => {
+    await expect(
+      readSignedIn(async () => ({ user: { id: "user-1" } })),
+    ).resolves.toBe(true);
   });
 
   it("sans session (absente, expirée ou forgée) : pas connecté", async () => {
-    const result = await readSignedIn(async () => ({
-      response: null,
-      headers: cookieHeaders("expired=; Max-Age=0"),
-    }));
-
-    expect(result).toEqual({
-      signedIn: false,
-      setCookies: ["expired=; Max-Age=0"],
-    });
+    await expect(readSignedIn(async () => null)).resolves.toBe(false);
   });
 
-  it("si la lecture échoue (base injoignable), on reste fermé, sans exception", async () => {
+  it("si la lecture échoue (base injoignable), on reste fermé, sans exception ni détail sensible", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    const failure = new Error("database down");
 
-    const result = await readSignedIn(async () => {
-      throw failure;
-    });
-
-    expect(result).toEqual({ signedIn: false, setCookies: [] });
+    await expect(
+      readSignedIn(async () => {
+        throw new Error("database down");
+      }),
+    ).resolves.toBe(false);
     expect(log).toHaveBeenCalledWith(
       "Session check failed, treated as signed out:",
-      failure,
+      "database down",
+    );
+  });
+
+  it("une valeur levée qui n'est pas une erreur n'est pas journalisée telle quelle", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(
+      readSignedIn(() => Promise.reject("better-auth.session_token=secret")),
+    ).resolves.toBe(false);
+    expect(log).toHaveBeenCalledWith(
+      "Session check failed, treated as signed out:",
+      "unknown error",
     );
   });
 });

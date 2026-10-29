@@ -1,15 +1,28 @@
 import "server-only";
 import { headers } from "next/headers";
+import { logSessionFailure } from "@/access/signed-in";
 import { getAuth } from "./container";
 
 export type CurrentUser = { userId: string; name: string };
 
-/** The signed-in user of the current request, or null. */
+/**
+ * The signed-in user of the current request, or null. A session that cannot
+ * be read (database down, session deleted mid-refresh) counts as none, so an
+ * action is refused as signed out rather than failing with a raw 500.
+ */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const session = await getAuth().api.getSession({ headers: await headers() });
-  return session === null
-    ? null
-    : { userId: session.user.id, name: session.user.name };
+  const requestHeaders = await headers();
+  try {
+    const session = await getAuth().api.getSession({
+      headers: requestHeaders,
+    });
+    return session === null
+      ? null
+      : { userId: session.user.id, name: session.user.name };
+  } catch (error) {
+    logSessionFailure("Session read failed", error);
+    return null;
+  }
 }
 
 /**

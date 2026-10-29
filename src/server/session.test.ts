@@ -29,6 +29,17 @@ describe("getCurrentUser", () => {
     expect(getSession).toHaveBeenCalledWith({ headers: requestHeaders });
   });
 
+  it("si getSession lève (base injoignable, session supprimée) : null, journalisé sans détail sensible", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    getSession.mockRejectedValue(new Error("database down"));
+
+    await expect(getCurrentUser()).resolves.toBeNull();
+    expect(log).toHaveBeenCalledWith(
+      "Session read failed, treated as signed out:",
+      "database down",
+    );
+  });
+
   it("sans session : null", async () => {
     getSession.mockResolvedValue(null);
 
@@ -54,9 +65,12 @@ describe("assertSignedIn", () => {
     );
   });
 
-  it("si la session ne peut être lue, l'action est refusée", async () => {
+  it("si la session ne peut être lue, l'action est refusée comme sans session", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     getSession.mockRejectedValue(new Error("database down"));
 
-    await expect(assertSignedIn()).rejects.toThrow("database down");
+    await expect(assertSignedIn()).rejects.toThrow(
+      "Server Action refused: not signed in",
+    );
   });
 });

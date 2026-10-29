@@ -55,6 +55,26 @@ describe("Better Auth (fonctionnel)", () => {
     expect(await auth.api.getSession({ headers })).toBeNull();
   });
 
+  it("un jeton forgé avec un cache de session bidon ne donne pas de session, sans exception", async () => {
+    const headers = new Headers({
+      cookie:
+        "better-auth.session_token=forge.abc; better-auth.session_data=bidon",
+    });
+
+    await expect(auth.api.getSession({ headers })).resolves.toBeNull();
+  });
+
+  it("le jeton d'une session supprimée ne donne plus de session, sans exception", async () => {
+    const ctx = await auth.$context;
+    const lea = await saveUser("Léa");
+    const { headers, token } = await ctx.test.login({ userId: lea.id });
+    expect(await auth.api.getSession({ headers })).not.toBeNull();
+
+    await ctx.internalAdapter.deleteSession(token);
+
+    await expect(auth.api.getSession({ headers })).resolves.toBeNull();
+  });
+
   it("le nom est normalisé à la création", async () => {
     const user = await saveUser("  Léa   Martin ");
 

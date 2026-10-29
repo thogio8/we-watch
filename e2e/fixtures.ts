@@ -26,6 +26,11 @@ async function wipe() {
   await db().delete(user);
 }
 
+/** Deletes every session of the worker's database, as a sign-out elsewhere would. */
+export async function deleteSessions() {
+  await db().delete(session);
+}
+
 /**
  * Signs Léa in without a passkey ceremony: a user and a session written
  * straight to the worker's database, their cookies given to the browser.

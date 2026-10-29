@@ -53,3 +53,18 @@ export function accessDecision({
   // Pages go to the form; Server Action POSTs cannot follow a redirect.
   return isReadOnly(method) ? "redirect" : "unauthorized";
 }
+
+/**
+ * Reads the session only when it changes the answer: public assets, the
+ * sign-in routes and the cron are decided without touching the database.
+ */
+export async function decideAccess(
+  request: Omit<AccessRequest, "signedIn">,
+  isSignedIn: () => Promise<boolean>,
+): Promise<AccessDecision> {
+  const signedOut = accessDecision({ ...request, signedIn: false });
+  if (signedOut === accessDecision({ ...request, signedIn: true })) {
+    return signedOut;
+  }
+  return accessDecision({ ...request, signedIn: await isSignedIn() });
+}

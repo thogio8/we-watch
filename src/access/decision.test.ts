@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { accessDecision, type AccessDecision } from "./decision";
+import { describe, expect, it, vi } from "vitest";
+import { accessDecision, type AccessDecision, decideAccess } from "./decision";
 
 type Session = "sans session" | "avec session";
 
@@ -113,4 +113,61 @@ describe("accessDecision : route du cron", () => {
       }),
     ).toBe("redirect");
   });
+});
+
+describe("decideAccess : la session n'est lue que si elle change la réponse", () => {
+  const SECRET = "un-secret-de-cron-assez-long";
+
+  it.each([
+    ["/_next/static/chunks/app.js", "GET"],
+    ["/manifest.webmanifest", "GET"],
+    ["/icon/32", "GET"],
+    ["/tmdb-logo.svg", "GET"],
+    ["/connexion", "GET"],
+    ["/connexion", "POST"],
+    ["/api/auth/get-session", "GET"],
+    ["/api/auth/passkey/verify-registration", "POST"],
+    ["/api/cron/refresh-movies", "GET"],
+    ["/api/cron/refresh-movies", "POST"],
+  ])("%s en %s : décidé sans lire la session", async (pathname, method) => {
+    const isSignedIn = vi.fn(async () => true);
+
+    const decision = await decideAccess(
+      {
+        pathname,
+        method,
+        authorization: `Bearer ${SECRET}`,
+        cronSecret: SECRET,
+      },
+      isSignedIn,
+    );
+
+    expect(decision).toBe(
+      accessDecision({
+        pathname,
+        method,
+        signedIn: false,
+        cronSecret: SECRET,
+        authorization: `Bearer ${SECRET}`,
+      }),
+    );
+    expect(isSignedIn).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["/", "GET", true, "allow"],
+    ["/", "GET", false, "redirect"],
+    ["/list", "POST", true, "allow"],
+    ["/list", "POST", false, "unauthorized"],
+  ] as const)(
+    "%s en %s, connecté : %s → %s, après une seule lecture",
+    async (pathname, method, signedIn, expected) => {
+      const isSignedIn = vi.fn(async () => signedIn);
+
+      await expect(
+        decideAccess({ pathname, method }, isSignedIn),
+      ).resolves.toBe(expected);
+      expect(isSignedIn).toHaveBeenCalledOnce();
+    },
+  );
 });

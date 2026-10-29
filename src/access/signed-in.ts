@@ -1,25 +1,23 @@
-/** What Better Auth's `getSession({ returnHeaders: true })` answers. */
-type SessionRead = { response: unknown; headers: Headers };
-
-export type SignedInCheck = { signedIn: boolean; setCookies: string[] };
+/** Logs why a session could not be read, never the value thrown as is. */
+export function logSessionFailure(context: string, error: unknown): void {
+  console.error(
+    `${context}, treated as signed out:`,
+    error instanceof Error ? error.message : "unknown error",
+  );
+}
 
 /**
  * The proxy's session check. Fails closed: if the session cannot be read
  * (database down), the request is treated as signed out, never let through
- * and never a 500. Cookies Better Auth refreshed (session cache, renewed
- * expiry) are returned so the proxy can hand them to the browser.
+ * and never a 500.
  */
 export async function readSignedIn(
-  read: () => Promise<SessionRead>,
-): Promise<SignedInCheck> {
+  read: () => Promise<unknown>,
+): Promise<boolean> {
   try {
-    const { response, headers } = await read();
-    return {
-      signedIn: response !== null,
-      setCookies: headers.getSetCookie(),
-    };
+    return (await read()) !== null;
   } catch (error) {
-    console.error("Session check failed, treated as signed out:", error);
-    return { signedIn: false, setCookies: [] };
+    logSessionFailure("Session check failed", error);
+    return false;
   }
 }
