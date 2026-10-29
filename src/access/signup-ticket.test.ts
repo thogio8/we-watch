@@ -60,10 +60,50 @@ describe("createSignupTicket / readSignupTicket", () => {
 
   it("refuse une signature modifiée", async () => {
     const token = await createSignupTicket(TICKET, SECRET, NOW);
-    const flipped = token.endsWith("A") ? "B" : "A";
-    expect(
-      await readSignupTicket(token.slice(0, -1) + flipped, SECRET, NOW),
-    ).toBeNull();
+    const middle = token.length - 20;
+    const flipped = token[middle] === "A" ? "B" : "A";
+    const tampered = token.slice(0, middle) + flipped + token.slice(middle + 1);
+    expect(await readSignupTicket(tampered, SECRET, NOW)).toBeNull();
+  });
+
+  it("refuse une variante non canonique d'une signature valide", async () => {
+    const token = await createSignupTicket(TICKET, SECRET, NOW);
+    const alphabet =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const last = token.at(-1) as string;
+    // Same decoded bytes: only the 4 padding bits of the last character differ.
+    const base = alphabet.indexOf(last) & ~0b1111;
+    const variant = alphabet[base | ((alphabet.indexOf(last) + 1) & 0b1111)];
+    const forged = token.slice(0, -1) + variant;
+    expect(forged).not.toBe(token);
+    expect(await readSignupTicket(forged, SECRET, NOW)).toBeNull();
+  });
+
+  it("refuse tout si l'heure fournie n'est pas un nombre (NaN)", async () => {
+    const token = await createSignupTicket(TICKET, SECRET, NOW);
+    expect(await readSignupTicket(token, SECRET, Number.NaN)).toBeNull();
+  });
+
+  it("refuse un jeton démesuré avant tout calcul", async () => {
+    expect(await readSignupTicket("a".repeat(513), SECRET, NOW)).toBeNull();
+  });
+
+  it("normalise le nom à la création", async () => {
+    const token = await createSignupTicket(
+      { name: "  Léa   Dupont ", owner: false },
+      SECRET,
+      NOW,
+    );
+    expect(await readSignupTicket(token, SECRET, NOW)).toEqual({
+      name: "Léa Dupont",
+      owner: false,
+    });
+  });
+
+  it("refuse de créer un ticket pour un nom invalide", async () => {
+    await expect(
+      createSignupTicket({ name: "   ", owner: false }, SECRET, NOW),
+    ).rejects.toThrow("Invalid display name");
   });
 
   it("refuse une charge modifiée (owner passé à true)", async () => {

@@ -13,6 +13,8 @@ export type SignupTicket = { name: string; owner: boolean };
 
 const DOMAIN_LABEL = "wewatch:signup-ticket:v1";
 const LIFETIME_MS = 10 * 60 * 1000;
+// Largest legitimate ticket is about 300 characters (30-character name).
+const MAX_TICKET_LENGTH = 512;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 
 const encoder = new TextEncoder();
@@ -31,7 +33,10 @@ function encode(bytes: Uint8Array): string {
     .replaceAll("=", "");
 }
 
-/** Returns null (never throws) on anything that is not canonical base64url. */
+/**
+ * Returns null (never throws) on anything that is not well-formed base64url.
+ * Canonicality is enforced by the signature string comparison, not here.
+ */
 function decode(text: string): Uint8Array | null {
   if (!BASE64URL.test(text)) {
     return null;
@@ -65,8 +70,12 @@ export async function createSignupTicket(
   secret: string,
   now: number = Date.now(),
 ): Promise<string> {
+  const name = parseDisplayName(ticket.name);
+  if (name === null) {
+    throw new Error("Invalid display name for a signup ticket");
+  }
   const payload = {
-    name: ticket.name,
+    name,
     owner: ticket.owner,
     exp: now + LIFETIME_MS,
   };
@@ -92,8 +101,15 @@ export async function readSignupTicket(
   secret: string,
   now: number = Date.now(),
 ): Promise<SignupTicket | null> {
-  const parts = token?.split(".");
-  if (parts?.length !== 2) {
+  if (
+    token === null ||
+    token === undefined ||
+    token.length > MAX_TICKET_LENGTH
+  ) {
+    return null;
+  }
+  const parts = token.split(".");
+  if (parts.length !== 2) {
     return null;
   }
   const [encoded, signature] = parts as [string, string];
@@ -101,7 +117,7 @@ export async function readSignupTicket(
     return null;
   }
   const payload = parsePayload(encoded);
-  if (payload === null || payload.exp < now) {
+  if (payload === null || !(payload.exp >= now)) {
     return null;
   }
   const name = parseDisplayName(payload.name);
