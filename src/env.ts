@@ -16,8 +16,8 @@ const serverEnvSchema = z.object({
     .string()
     .min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   // Public address of the app: its host is the passkey rpID, its origin the
-  // expected origin of every passkey ceremony.
-  BETTER_AUTH_URL: z.url(),
+  // expected origin of every passkey ceremony. Web addresses only.
+  BETTER_AUTH_URL: z.url({ protocol: /^https?$/ }),
   // "invite": signing up requires OWNER_CODE (invitations come later).
   SIGNUP: z.enum(["open", "invite"]).default("open"),
   // Owner's code to sign up when SIGNUP is "invite". Optional, trimmed, blank = unset.

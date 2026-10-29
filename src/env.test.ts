@@ -91,6 +91,22 @@ describe("parseServerEnv", () => {
       parseServerEnv({ ...BASE, BETTER_AUTH_SECRET: "trop-court" }),
     ).toThrow(/BETTER_AUTH_SECRET must be at least 32 characters/);
   });
+  it.each(["http://localhost:3000", "https://wewatch.example.app"])(
+    "accepte BETTER_AUTH_URL en http ou https : %s",
+    (url) => {
+      expect(parseServerEnv({ ...BASE, BETTER_AUTH_URL: url })).toMatchObject({
+        BETTER_AUTH_URL: url,
+      });
+    },
+  );
+  it.each(["ftp://wewatch.example.app", "javascript:alert(1)"])(
+    "refuse BETTER_AUTH_URL hors http(s) : %s",
+    (url) => {
+      expect(() => parseServerEnv({ ...BASE, BETTER_AUTH_URL: url })).toThrow(
+        /BETTER_AUTH_URL/,
+      );
+    },
+  );
   it("SIGNUP vaut open par défaut", () => {
     expect(parseServerEnv(BASE).SIGNUP).toBe("open");
   });
