@@ -2,10 +2,10 @@ import "server-only";
 import { nextCookies } from "better-auth/next-js";
 import { createAuth } from "@/auth/create-auth";
 import { createDatabase, type Database } from "@/db/create-database";
-import {
-  createMoviesRepository,
-  type MoviesRepository,
-} from "@/db/movies-repository";
+import { createDecisions, type Decisions } from "@/db/decisions";
+import { createGroupList, type GroupList } from "@/db/group-list";
+import { createGroups, type Groups } from "@/db/groups";
+import { createSnapshots, type Snapshots } from "@/db/snapshots";
 import { getServerEnv } from "@/env";
 import type { RefreshDeps } from "@/features/refresh/refresh-movies";
 import type { DeckDeps } from "@/features/swipe/deck";
@@ -14,7 +14,10 @@ import type { DeckId } from "@/tmdb/decks";
 import { discoverDeck, getMovieSnapshot } from "@/tmdb/movies";
 
 let database: Database | undefined;
-let repository: MoviesRepository | undefined;
+let decisions: Decisions | undefined;
+let groupList: GroupList | undefined;
+let groups: Groups | undefined;
+let snapshots: Snapshots | undefined;
 let tmdbClient: TmdbClient | undefined;
 let auth: Auth | undefined;
 
@@ -24,9 +27,24 @@ function getDatabase(): Database {
   return database;
 }
 
-export function getMoviesRepository(): MoviesRepository {
-  repository ??= createMoviesRepository(getDatabase());
-  return repository;
+export function getDecisions(): Decisions {
+  decisions ??= createDecisions(getDatabase());
+  return decisions;
+}
+
+export function getGroupList(): GroupList {
+  groupList ??= createGroupList(getDatabase());
+  return groupList;
+}
+
+export function getGroups(): Groups {
+  groups ??= createGroups(getDatabase());
+  return groups;
+}
+
+function getSnapshots(): Snapshots {
+  snapshots ??= createSnapshots(getDatabase());
+  return snapshots;
 }
 
 function buildAuth() {
@@ -56,22 +74,26 @@ export function getTmdbClient(): TmdbClient {
   return tmdbClient;
 }
 
-export function getDeckDeps(deck: DeckId): DeckDeps {
+/** The deck of `userId` in `groupId`: membership is checked by the caller. */
+export function getDeckDeps(
+  deck: DeckId,
+  groupId: string,
+  userId: string,
+): DeckDeps {
   const client = getTmdbClient();
-  const repo = getMoviesRepository();
   return {
     discover: (page) => discoverDeck(client, deck, page),
     snapshot: (id) => getMovieSnapshot(client, id),
-    decidedIds: () => repo.decidedIds(),
+    decidedIds: () => getDecisions().deckExclusions(groupId, userId),
   };
 }
 
 export function getRefreshDeps(): RefreshDeps {
   const client = getTmdbClient();
-  const repo = getMoviesRepository();
+  const store = getSnapshots();
   return {
-    ids: () => repo.idsWithStatus(["to_watch", "watched"]),
+    ids: () => store.listedIds(),
     snapshot: (id) => getMovieSnapshot(client, id, { fresh: true }),
-    save: (snapshot) => repo.refreshSnapshot(snapshot),
+    save: (snapshot) => store.refresh(snapshot),
   };
 }

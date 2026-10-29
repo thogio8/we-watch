@@ -32,9 +32,17 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 
 **📋 LISTE** : notre liste
 
-- Les films « à voir » et « vus », une recherche TMDB pour ajouter un film précis, et une fiche par film : résumé complet, genres, réalisation, têtes d'affiche, date d'ajout, actions.
+- Les films « à voir » et « vus », une recherche TMDB pour ajouter un film précis, et une fiche par film : résumé complet, genres, réalisation, têtes d'affiche, actions.
+- Qui a fait quoi : « voulu par Léa et Hugo », « ajouté par Léa le 12 octobre », « vu le 18/10 · marqué par Hugo » (sur la fiche, le bloc « CHEZ NOUS »).
 - Sur chaque film, **les plateformes de streaming françaises** où il est disponible, ou « PAS EN STREAMING » : une information, jamais un filtre. C'est la liste qui compte, pas le catalogue d'une plateforme.
 - Les données des films (plateformes, durées…) se rafraîchissent chaque jour.
+
+**👥 LES GROUPES** : une liste par groupe
+
+- La pastille « ● NOUS DEUX ▾ », en haut de TIRER, SWIPER et LISTE, dit quel groupe est affiché. Son panneau liste mes groupes (nombre de membres, ✓ sur celui affiché), propose « + CRÉER UN GROUPE » et « SE DÉCONNECTER ».
+- Chaque groupe a sa liste et sa soirée (la pile « PAS CE SOIR », les filtres). Le groupe choisi est retenu sur l'appareil.
+- **ON LE VEUT ♥** met le film dans la liste du groupe et ajoute mon nom à « voulu par ». **✕ BOF** ne vaut que pour moi : le film disparaît de ma pile de swipe, dans tous mes groupes, sans toucher la liste ni la pile des autres. Ajouter un film depuis la recherche efface mon BOF ; **✕** dans la liste l'écarte pour tout le groupe.
+- Un compte sans groupe arrive sur **CRÉER TON PREMIER GROUPE**.
 
 <p align="center">
   <img src="docs/readme/desktop.webp" alt="Le ticket tiré sur un écran large" width="74%">
@@ -61,9 +69,9 @@ Dans `.env.local` (`BETTER_AUTH_URL` et `SIGNUP` sont déjà préremplis par `.e
 - `BETTER_AUTH_SECRET` : le secret des sessions, 32 caractères au moins (`openssl rand -hex 32`) ;
 - `BETTER_AUTH_URL` : l'adresse de l'appli, `http://localhost:3000` en local ;
 - `SIGNUP` : `open` (par défaut, tout le monde peut créer un compte) ou `invite` ;
-- `OWNER_CODE` : le code propriétaire, utile seulement avec `SIGNUP=invite`.
+- `OWNER_CODE` : le code propriétaire, qui ouvre l'inscription avec `SIGNUP=invite` et fait rejoindre le groupe « NOUS DEUX » (voir « Les comptes »).
 
-L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, « CRÉER MON COMPTE » (Face ID, empreinte ou code du téléphone), et c'est parti sur TIRER : la liste est vide, direction SWIPER.
+L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, « CRÉER MON COMPTE » (Face ID, empreinte ou code du téléphone), puis **CRÉER TON PREMIER GROUPE** : un nom, et c'est parti sur TIRER. La liste est vide, direction SWIPER.
 
 ## Héberger votre propre WeWatch
 
@@ -86,19 +94,20 @@ Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base
 3. **GitHub** (Settings → Secrets and variables → Actions) :
    - secrets : `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET` ;
    - variable : `PROD_URL`, l'adresse de production (par exemple `https://votre-projet.vercel.app`).
-4. **Pousser sur `main`** : la CI crée la table au premier passage, puis chaque push déploie.
+4. **Pousser sur `main`** : la CI crée les tables au premier passage, puis chaque push déploie. Avant chaque migration, elle sauvegarde les listes et les groupes (artefact GitHub gardé 90 jours).
 
 ## Les comptes
 
 Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre avec une passkey, c'est-à-dire Face ID, empreinte ou code du téléphone ; sur un ordinateur sans rien de tout ça, le navigateur propose un QR code à scanner avec son téléphone. Rien à retenir, rien à se faire voler, aucun email envoyé. Sans compte, toutes les pages mènent à **ENTRE DANS WEWATCH**.
 
 - **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis « CRÉER MON COMPTE » et le verrou de l'appareil. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
-- **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est en bas de LISTE.
+- **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est dans le panneau de la pastille du groupe.
 - **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et seul le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) ouvre la création : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée.
+- **Le groupe « NOUS DEUX »** : la liste d'avant les comptes (1.x) y est gardée telle quelle, films, statuts et dates. Un compte créé avec le code propriétaire le rejoint aussitôt. En mode `open`, le lien « J’AI UN CODE PROPRIÉTAIRE » reste proposé, avec un code facultatif. Pour l'instant, c'est la seule façon de rejoindre un groupe existant.
 - Un navigateur trop ancien pour les passkeys affiche « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS… » à la place des boutons.
 - Les passkeys sont liées à l'adresse de l'appli (`BETTER_AUTH_URL`) : changer d'adresse oblige à recréer les comptes.
 
-> À venir : les invitations, la connexion avec Google et une page « mon compte ».
+> À venir : les invitations dans un groupe (et la liste de ses membres, le renommer, le quitter), la connexion avec Google et une page « mon compte ».
 
 ## L'installer comme une appli
 
@@ -121,12 +130,12 @@ C'est une PWA : une fois installée, elle s'ouvre en plein écran depuis son ic�
 
 ```
 src/
-  domain/    règles métier pures : films, tirage, filtres « ce soir », transitions de statut
-  db/        schéma Drizzle et repository
+  domain/    règles métier pures : films, tirage, filtres « ce soir », transitions de statut, groupes, « voulu par »
+  db/        schéma Drizzle et dépôts : groupes, liste d'un groupe, swipes de chacun, données TMDB
   tmdb/      client TMDB, validation, mapping, thèmes de swipe
   auth/      comptes Better Auth : passkeys, sessions
   access/    qui entre : décision du proxy, inscription ouverte ou sur invitation
-  server/    assemblage base + TMDB (un seul endroit)
+  server/    assemblage base + TMDB (un seul endroit), groupe affiché et appartenance
   features/  un dossier par écran : composants, actions serveur, logique testée
   ui/        composants partagés sans logique métier
   app/       routes Next, manifest et icônes générées

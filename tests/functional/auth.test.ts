@@ -1,9 +1,13 @@
 import { testUtils } from "better-auth/plugins";
-import { beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createSignupTicket } from "@/access/signup-ticket";
 import { createAuth, DISABLED_PATHS } from "@/auth/create-auth";
 import { passkey, user } from "@/db/auth-schema";
 import { createDatabase, type Database } from "@/db/create-database";
+import { group, membership } from "@/db/group-schema";
+import { createGroups } from "@/db/groups";
+import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
 import { startServerStack } from "../helpers/functional";
 import { fakeRegistration } from "../helpers/webauthn";
 
@@ -21,8 +25,9 @@ function buildAuth() {
 
 let db: Database;
 let auth: ReturnType<typeof buildAuth>;
+let reset: () => Promise<void>;
 beforeAll(async () => {
-  await startServerStack();
+  ({ reset } = await startServerStack());
   db = createDatabase(process.env.DATABASE_URL as string);
   auth = buildAuth();
 });
@@ -82,7 +87,7 @@ describe("Better Auth (fonctionnel)", () => {
   });
 
   it("un nom invisible est refusé à la création", async () => {
-    await expect(saveUser("​")).rejects.toMatchObject({
+    await expect(saveUser("\u200B")).rejects.toMatchObject({
       statusCode: 400,
     });
   });
@@ -92,7 +97,7 @@ describe("Better Auth (fonctionnel)", () => {
     const user = await saveUser("Léa");
 
     await expect(
-      ctx.internalAdapter.updateUser(user.id, { name: "​" }),
+      ctx.internalAdapter.updateUser(user.id, { name: "\u200B" }),
     ).rejects.toMatchObject({ statusCode: 400 });
     expect((await ctx.internalAdapter.findUserById(user.id))?.name).toBe("Léa");
   });
@@ -243,6 +248,9 @@ describe("Better Auth (fonctionnel)", () => {
       expect(await db.select().from(passkey)).toContainEqual(
         expect.objectContaining({ userId: session?.user.id }),
       );
+      // Ids written through the adapter keep Better Auth's default format.
+      expect(session?.user.id).toMatch(/^[A-Za-z0-9]{32}$/);
+      expect(session?.session.id).toMatch(/^[A-Za-z0-9]{32}$/);
     });
 
     it.each([
@@ -317,6 +325,103 @@ describe("Better Auth (fonctionnel)", () => {
       expect((await names()).filter((name) => name === "Willy")).toHaveLength(
         1,
       );
+    });
+
+    describe("avec le code propriétaire", () => {
+      const ownerTicket = (name: string) =>
+        createSignupTicket({ name, owner: true }, SECRET);
+
+      const legacyMembers = async () =>
+        db
+          .select()
+          .from(membership)
+          .where(eq(membership.groupId, LEGACY_GROUP_ID));
+
+      beforeEach(async () => {
+        await reset();
+        await db
+          .insert(group)
+          .values({ id: LEGACY_GROUP_ID, name: LEGACY_GROUP_NAME });
+      });
+
+      it("le compte rejoint « NOUS DEUX », qui devient son groupe affiché", async () => {
+        const before = Date.now();
+
+        const response = await signUp({
+          name: "Max",
+          credentialId: new Uint8Array([4, 0, 0, 1]),
+          ticket: await ownerTicket("Max"),
+        });
+
+        expect(response.status).toBe(200);
+        const userId = (await sessionOf(response))?.user.id as string;
+        const [joined] = await legacyMembers();
+        expect(joined).toMatchObject({ groupId: LEGACY_GROUP_ID, userId });
+        expect(joined?.joinedAt.getTime()).toBeGreaterThanOrEqual(before);
+        expect(joined?.lastUsedAt).toEqual(joined?.joinedAt);
+        expect(await createGroups(db).groupsOf(userId)).toEqual([
+          { id: LEGACY_GROUP_ID, name: LEGACY_GROUP_NAME, memberCount: 1 },
+        ]);
+      });
+
+      it("sans groupe « NOUS DEUX » (instance neuve), le compte est créé sans appartenance", async () => {
+        await db.delete(group);
+
+        const response = await signUp({
+          name: "Noé",
+          credentialId: new Uint8Array([4, 0, 0, 2]),
+          ticket: await ownerTicket("Noé"),
+        });
+
+        expect(response.status).toBe(200);
+        expect((await sessionOf(response))?.user.name).toBe("Noé");
+        expect(await db.select().from(membership)).toEqual([]);
+        expect(await db.select().from(group)).toEqual([]);
+      });
+
+      it("sans le code, le compte ne rejoint pas « NOUS DEUX »", async () => {
+        const response = await signUp({
+          name: "Olga",
+          credentialId: new Uint8Array([4, 0, 0, 3]),
+        });
+
+        expect(response.status).toBe(200);
+        expect(await legacyMembers()).toEqual([]);
+      });
+
+      it("un ticket propriétaire rejoué est refusé : une seule appartenance", async () => {
+        const ticket = await ownerTicket("Pia");
+
+        const first = await signUp({
+          name: "Pia",
+          credentialId: new Uint8Array([4, 0, 0, 4]),
+          ticket,
+        });
+        const replay = await signUp({
+          name: "Pia",
+          credentialId: new Uint8Array([4, 0, 0, 5]),
+          ticket,
+        });
+
+        expect(first.status).toBe(200);
+        expect(replay.status).toBe(400);
+        expect(await legacyMembers()).toHaveLength(1);
+      });
+
+      it("une inscription qui échoue après l'appartenance l'annule aussi", async () => {
+        const taken = new Uint8Array([4, 0, 0, 6]);
+        await signUp({ name: "Quentin", credentialId: taken });
+
+        const failed = await signUp({
+          name: "Rémi",
+          credentialId: taken,
+          ticket: await ownerTicket("Rémi"),
+        });
+
+        expect(failed.status).not.toBe(200);
+        expect(await names()).not.toContain("Rémi");
+        expect(await legacyMembers()).toEqual([]);
+      });
     });
 
     it("connecté, une inscription est refusée et ne crée aucun compte", async () => {

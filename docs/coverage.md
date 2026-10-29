@@ -1,6 +1,6 @@
 # Couverture et tests
 
-Date : 2026-10-23 · mise à jour : 2026-10-29 (V2.0, comptes et passkeys)
+Date : 2026-10-23 · mise à jour : 2026-10-29 (V2.0, comptes, passkeys et groupes)
 
 ## Les trois niveaux de tests
 
@@ -8,17 +8,17 @@ Date : 2026-10-23 · mise à jour : 2026-10-29 (V2.0, comptes et passkeys)
 | --- | --- | --- | --- | --- |
 | Unitaires | `src/**/*.test.ts(x)` | une fonction, un composant (Testing Library) | ses dépendances | `npm test` |
 | Fonctionnels | `tests/functional/` | actions serveur → container → repository → SQLite, client TMDB → zod → mapping | TMDB (faux catalogue `tests/fake-tmdb/`), la session (`@/server/session`) | `npm test` |
-| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe, les passkeys (authentificateur virtuel, WebAuthn via CDP) | TMDB (même faux catalogue, servi en HTTP) ; la session des parcours hors connexion (écrite en base) | `npm run test:e2e` |
+| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe, les passkeys (authentificateur virtuel, WebAuthn via CDP), plusieurs membres d'un groupe (un contexte de navigateur chacun) | TMDB (même faux catalogue, servi en HTTP) ; la session des parcours hors connexion (écrite en base) | `npm run test:e2e` |
 
 Tout tourne dans `npm run ci` (hook `pre-push`, et GitHub Actions en filet).
 
 ## Porte de couverture
 
-`npm run test:coverage` : 715 tests, 62 fichiers, **100 %** partout.
+`npm run test:coverage` : 920 tests, 83 fichiers, **100 %** partout.
 
 Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`, la route `/api/auth/*` et le client navigateur de Better Auth `features/signin/authClient.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
 
-Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys).
+Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys) ; 920 (+ 96 e2e, dont 44 captures visuelles) après la V2.0 (groupes).
 
 ## Seuils
 
@@ -43,14 +43,24 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/access/token.ts | 100% | 100% | 100% | 100% |
 | src/app/api/cron/refresh-movies/route.ts | 100% | 100% | 100% | 100% |
 | src/auth/create-auth.ts | 100% | 100% | 100% | 100% |
+| src/auth/ids.ts | 100% | 100% | 100% | 100% |
+| src/auth/legacy-group-join.ts | 100% | 100% | 100% | 100% |
 | src/auth/passkey-signup.ts | 100% | 100% | 100% | 100% |
 | src/db/auth-schema.ts | 100% | 100% | 100% | 100% |
 | src/db/create-database.ts | 100% | 100% | 100% | 100% |
-| src/db/movies-repository.ts | 100% | 100% | 100% | 100% |
+| src/db/decisions.ts | 100% | 100% | 100% | 100% |
+| src/db/group-list.ts | 100% | 100% | 100% | 100% |
+| src/db/group-schema.ts | 100% | 100% | 100% | 100% |
+| src/db/groups.ts | 100% | 100% | 100% | 100% |
+| src/db/list-queries.ts | 100% | 100% | 100% | 100% |
 | src/db/schema.ts | 100% | 100% | 100% | 100% |
+| src/db/snapshots.ts | 100% | 100% | 100% | 100% |
+| src/domain/attribution.ts | 100% | 100% | 100% | 100% |
 | src/domain/display-name.ts | 100% | 100% | 100% | 100% |
 | src/domain/draw-session.ts | 100% | 100% | 100% | 100% |
 | src/domain/genres.ts | 100% | 100% | 100% | 100% |
+| src/domain/group.ts | 100% | 100% | 100% | 100% |
+| src/domain/label.ts | 100% | 100% | 100% | 100% |
 | src/domain/movie.ts | 100% | 100% | 100% | 100% |
 | src/domain/time.ts | 100% | 100% | 100% | 100% |
 | src/domain/tonight.ts | 100% | 100% | 100% | 100% |
@@ -61,6 +71,9 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/features/draw/tear.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/tonightStorage.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/tonightSummary.ts | 100% | 100% | 100% | 100% |
+| src/features/groups/actions.ts | 100% | 100% | 100% | 100% |
+| src/features/groups/messages.ts | 100% | 100% | 100% | 100% |
+| src/features/groups/pillFocus.ts | 100% | 100% | 100% | 100% |
 | src/features/list/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/list/searchAnswer.ts | 100% | 100% | 100% | 100% |
 | src/features/list/tabs.ts | 100% | 100% | 100% | 100% |
@@ -69,9 +82,11 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/features/refresh/refresh-movies.ts | 100% | 100% | 100% | 100% |
 | src/features/signin/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/signin/messages.ts | 100% | 100% | 100% | 100% |
+| src/features/signin/passkeys.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/deck.ts | 100% | 100% | 100% | 100% |
 | src/features/swipe/deckState.ts | 100% | 100% | 100% | 100% |
+| src/server/groups.ts | 100% | 100% | 100% | 100% |
 | src/server/revalidate.ts | 100% | 100% | 100% | 100% |
 | src/server/session.ts | 100% | 100% | 100% | 100% |
 | src/server/validate.ts | 100% | 100% | 100% | 100% |

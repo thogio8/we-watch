@@ -36,6 +36,27 @@
       "when": 1793277684972,
       "tag": "0004_signup_ticket_use",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793280976673,
+      "tag": "0005_group_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793280977090,
+      "tag": "0006_copy_list_to_legacy_group",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793288876594,
+      "tag": "0007_watched_legacy",
+      "breakpoints": true
     }
   ]
 }

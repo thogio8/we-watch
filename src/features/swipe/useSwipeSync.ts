@@ -1,7 +1,7 @@
 import { type Dispatch, useRef } from "react";
 import type { ApplyResult } from "@/domain/transitions";
 import type { MovieSnapshot } from "@/domain/movie";
-import type { decideSwipe, SwipeDecision, undoSwipe } from "./actions";
+import type { SendSwipe, SwipeDecision } from "./actions";
 import type { DeckAction, DeckState } from "./deckState";
 
 /**
@@ -13,8 +13,8 @@ import type { DeckAction, DeckState } from "./deckState";
 export function useSwipeSync(
   undoable: DeckState["undoable"],
   dispatch: Dispatch<DeckAction>,
-  decide: typeof decideSwipe,
-  undo: typeof undoSwipe,
+  decide: SendSwipe,
+  undo: SendSwipe,
 ) {
   const ops = useRef(new Map<number, Promise<ApplyResult>>());
   const chain = (

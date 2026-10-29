@@ -81,6 +81,23 @@ beforeEach(() => {
 });
 
 describe("SwipeDeck", () => {
+  it("place la pastille du groupe dans le landmark main, avant le thème", () => {
+    render(
+      <SwipeDeck
+        deck="top"
+        initial={ok([WHIPLASH], null)}
+        decide={vi.fn<Decide>()}
+        undo={vi.fn<Decide>()}
+        loadMore={vi.fn<LoadMore>()}
+        pill={<button type="button">PASTILLE</button>}
+      />,
+    );
+
+    const main = within(screen.getByRole("main"));
+    expect(main.getByRole("button", { name: "PASTILLE" })).toBeVisible();
+    expect(main.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
   it("affiche le ticket de la première carte comme la maquette", () => {
     renderDeck(ok([WHIPLASH, CHIHIRO, PARASITE], 2));
 

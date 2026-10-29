@@ -8,6 +8,7 @@ afterEach(() => {
   if (typeof document !== "undefined") {
     cleanup();
     localStorage.clear();
+    sessionStorage.clear();
   }
   vi.useRealTimers();
   vi.restoreAllMocks();

@@ -1,12 +1,12 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { getMoviesRepository } from "@/server/container";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getGroupList } from "@/server/container";
 import {
   decideSwipe,
   loadMoreCards,
   undoSwipe,
 } from "@/features/swipe/actions";
 import { setTmdbDown } from "../fake-tmdb/handler";
-import { startServerStack } from "../helpers/functional";
+import { withLeasGroup } from "../helpers/functional";
 
 vi.mock("@/server/session");
 vi.mock("next/cache");
@@ -14,22 +14,20 @@ vi.mock("next/cache");
 const WHIPLASH = 244786;
 const CHIHIRO = 129;
 
-let reset: () => Promise<void>;
-beforeAll(async () => ({ reset } = await startServerStack()));
-beforeEach(async () => {
-  await reset();
-  setTmdbDown(false);
-});
+const mine = withLeasGroup();
+beforeEach(() => setTmdbDown(false));
+
+const counts = () => getGroupList().counts(mine.id);
 
 async function deckIds() {
-  const result = await loadMoreCards("top", 1);
+  const result = await loadMoreCards(mine.id, "top", 1);
   if (!result.ok) throw new Error("TMDB down");
   return result.batch.cards.map((card) => card.tmdbId);
 }
 
 describe("swiper (fonctionnel)", () => {
   it("le deck propose le catalogue TMDB, fiches complètes", async () => {
-    const result = await loadMoreCards("top", 1);
+    const result = await loadMoreCards(mine.id, "top", 1);
 
     expect(result).toMatchObject({ ok: true, batch: { nextPage: null } });
     if (!result.ok) return;
@@ -44,41 +42,74 @@ describe("swiper (fonctionnel)", () => {
   });
 
   it("♥ range le film dans « à voir » et le retire du deck", async () => {
-    await expect(decideSwipe(WHIPLASH, "keep")).resolves.toBe("applied");
+    await expect(decideSwipe(mine.id, WHIPLASH, "keep")).resolves.toBe(
+      "applied",
+    );
 
-    const toWatch = await getMoviesRepository().listByStatus("to_watch");
+    const toWatch = await getGroupList().listByStatus(mine.id, "to_watch");
     expect(toWatch.map((m) => m.title)).toEqual(["Whiplash"]);
     expect(await deckIds()).not.toContain(WHIPLASH);
   });
 
-  it("✕ refuse le film : ni dans la liste, ni dans le deck", async () => {
-    await decideSwipe(CHIHIRO, "reject");
+  it("✕ BOF : ni dans la liste, ni dans mon deck", async () => {
+    await decideSwipe(mine.id, CHIHIRO, "reject");
 
-    expect(await getMoviesRepository().counts()).toEqual({
+    expect(await counts()).toEqual({
       toWatch: 0,
       watched: 0,
     });
     expect(await deckIds()).not.toContain(CHIHIRO);
   });
 
-  it("la première décision gagne (l'autre téléphone ne l'écrase pas)", async () => {
-    await decideSwipe(WHIPLASH, "keep");
+  it("✕ après ♥ (autre téléphone) : le film reste dans la liste du groupe", async () => {
+    await decideSwipe(mine.id, WHIPLASH, "keep");
 
-    await expect(decideSwipe(WHIPLASH, "reject")).resolves.toBe("noop");
-    expect(await getMoviesRepository().counts()).toMatchObject({ toWatch: 1 });
+    await expect(decideSwipe(mine.id, WHIPLASH, "reject")).resolves.toBe(
+      "applied",
+    );
+    expect(await counts()).toMatchObject({ toWatch: 1 });
+    expect(await deckIds()).not.toContain(WHIPLASH);
+  });
+
+  it("♥ deux fois : une seule ligne, rien de plus à annuler", async () => {
+    await decideSwipe(mine.id, WHIPLASH, "keep");
+
+    await expect(decideSwipe(mine.id, WHIPLASH, "keep")).resolves.toBe("noop");
+    expect(await counts()).toMatchObject({ toWatch: 1 });
   });
 
   it("↺ ANNULER efface la décision : la carte revient dans le deck", async () => {
-    await decideSwipe(WHIPLASH, "keep");
+    await decideSwipe(mine.id, WHIPLASH, "keep");
 
-    await expect(undoSwipe(WHIPLASH, "keep")).resolves.toBe("applied");
+    await expect(undoSwipe(mine.id, WHIPLASH, "keep")).resolves.toBe("applied");
     expect(await deckIds()).toContain(WHIPLASH);
-    expect(await getMoviesRepository().counts()).toMatchObject({ toWatch: 0 });
+    expect(await counts()).toMatchObject({ toWatch: 0 });
+  });
+
+  it("↺ ANNULER un BOF : la carte revient dans le deck", async () => {
+    await decideSwipe(mine.id, CHIHIRO, "reject");
+
+    await expect(undoSwipe(mine.id, CHIHIRO, "reject")).resolves.toBe(
+      "applied",
+    );
+    expect(await deckIds()).toContain(CHIHIRO);
+  });
+
+  it("✕ BOF avec TMDB en panne : enregistré quand même (pas besoin de la fiche)", async () => {
+    setTmdbDown(true);
+
+    await expect(decideSwipe(mine.id, CHIHIRO, "reject")).resolves.toBe(
+      "applied",
+    );
+    setTmdbDown(false);
+    expect(await deckIds()).not.toContain(CHIHIRO);
   });
 
   it("TMDB en panne : le deck répond { ok: false } sans planter", async () => {
     setTmdbDown(true);
 
-    await expect(loadMoreCards("top", 1)).resolves.toEqual({ ok: false });
+    await expect(loadMoreCards(mine.id, "top", 1)).resolves.toEqual({
+      ok: false,
+    });
   });
 });

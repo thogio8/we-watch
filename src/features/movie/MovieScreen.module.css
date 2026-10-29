@@ -42,6 +42,15 @@
   line-height: 1.4;
 }
 
+/* « ajouté par Léa… » reads as a sentence on its own line. */
+.line {
+  display: block;
+}
+
+.line::first-letter {
+  text-transform: uppercase;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

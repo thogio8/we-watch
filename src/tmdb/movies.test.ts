@@ -79,8 +79,8 @@ describe("toSnapshot", () => {
     const snap = toSnapshot(
       tmdbMovieDetailsSchema.parse({
         id: 1,
-        title: "‎Avatar Aang‏ ",
-        overview: "‪Résumé‬",
+        title: "\u200EAvatar Aang\u200F ",
+        overview: "\u202ARésumé\u202C",
         vote_average: 5,
       }),
     );

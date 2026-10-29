@@ -9,9 +9,12 @@ export type PrepareSignup = (
   formData: FormData,
 ) => Promise<PrepareSignupResult>;
 
-/** The home (`returning`: back from the form, focus goes back to it) or the form. */
+/**
+ * The home (`returning`: back from the form, focus goes back to it) or the
+ * form (`withCode`: with the owner code field).
+ */
 export type SigninView =
-  { name: "home"; returning: boolean } | { name: "form" };
+  { name: "home"; returning: boolean } | { name: "form"; withCode: boolean };
 
 /** A ceremony resolves to the error to show, or null once signed in. */
 type Ceremony = () => Promise<string | null>;
@@ -77,7 +80,7 @@ export function useSignin(prepareSignup: PrepareSignup) {
     signIn: () => run(signInWithPasskey),
     signUp: (formData: FormData) =>
       run(() => signUpWithPasskey(prepareSignup, formData)),
-    openForm: () => show({ name: "form" }),
+    openForm: (withCode: boolean) => show({ name: "form", withCode }),
     back: () => show({ name: "home", returning: true }),
   };
 }

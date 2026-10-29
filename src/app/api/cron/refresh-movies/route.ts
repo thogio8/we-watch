@@ -4,7 +4,8 @@ import { refreshMovies } from "@/features/refresh/refresh-movies";
 import { getRefreshDeps } from "@/server/container";
 
 /**
- * Daily refresh of every « à voir » and « vu » movie (spec §11.2), triggered
+ * Daily refresh of every « à voir » and « vu » movie of every group, once per
+ * movie however many groups list it (shared snapshot, spec §11.2), triggered
  * by Vercel Cron (vercel.json). The proxy already checks the secret; checked
  * again here in case the route is ever reached another way.
  *
