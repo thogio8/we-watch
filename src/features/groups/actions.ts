@@ -5,6 +5,7 @@ import { getGroups } from "@/server/container";
 import { assertMember, rememberGroup } from "@/server/groups";
 import { revalidateGroupPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
+import { GROUP_NAME_ERROR } from "./messages";
 
 export type CreateGroupResult =
   { ok: true; groupId: string } | { ok: false; error: string };
@@ -18,7 +19,7 @@ export async function createGroup(
   const name =
     formData instanceof FormData ? parseGroupName(formData.get("name")) : null;
   if (name === null) {
-    return { ok: false, error: "UN NOM DE 1 À 30 CARACTÈRES" };
+    return { ok: false, error: GROUP_NAME_ERROR };
   }
   const { id } = await getGroups().create({ name, userId });
   await rememberGroup(id);

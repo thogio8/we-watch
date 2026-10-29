@@ -1,0 +1,97 @@
+/* Option A: a round white pill above the screen title, pink dot, offset shadow. */
+.group {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-height: var(--touch-min);
+  margin-bottom: 14px;
+}
+
+/*
+ * Open: above the screen (and its animations), the scrim above the nav too.
+ * Closed, it stays in the flow, under the swipe's « ↺ ANNULER » slip.
+ */
+.open {
+  z-index: 30;
+}
+
+.pill {
+  /* Above the scrim: it stays the way to fold the panel. */
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: var(--touch-min);
+  padding: 6px 16px;
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  box-shadow: var(--shadow-offset-sm);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 80ms ease-out,
+    box-shadow 80ms ease-out;
+}
+
+/* Pressed or open: the pill sinks into its shadow, like the buttons. */
+.pill:active,
+.pill[aria-expanded="true"] {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-offset-xs);
+}
+
+.pill:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: var(--border-thin);
+  border-radius: var(--radius-round);
+  background: var(--pink);
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Read by screen readers only. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+}
+
+/* Phone held sideways: every pixel of height counts. */
+@media (max-height: 520px) {
+  .group {
+    margin-bottom: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+}

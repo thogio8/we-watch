@@ -1,7 +1,8 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { markWatched } from "@/features/draw/actions";
-import { FirstGroup } from "@/features/groups/FirstGroup";
+import { createGroup } from "@/features/groups/actions";
+import { FirstGroupScreen } from "@/features/groups/FirstGroupScreen";
 import { removeFromList, unwatch } from "@/features/list/actions";
 import { loadMoviePage } from "@/features/movie/load";
 import {
@@ -16,7 +17,7 @@ async function MovieData({
 }: Pick<PageProps<"/list/[tmdbId]">, "params">) {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroup />;
+  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
   const groupId = active.group.id;
   // Only a movie of the displayed group: another group's id is not found.
   const page = await loadMoviePage(groupId, (await params).tmdbId);

@@ -2,7 +2,9 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { DrawScreen, DrawScreenFallback } from "@/features/draw/DrawScreen";
 import { markWatched } from "@/features/draw/actions";
-import { FirstGroup } from "@/features/groups/FirstGroup";
+import { chooseGroup, createGroup } from "@/features/groups/actions";
+import { FirstGroupScreen } from "@/features/groups/FirstGroupScreen";
+import { GroupPill, GroupPillFallback } from "@/features/groups/GroupPill";
 import { getGroupList } from "@/server/container";
 import { getActiveGroup } from "@/server/groups";
 
@@ -10,7 +12,7 @@ import { getActiveGroup } from "@/server/groups";
 async function DrawData() {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroup />;
+  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
   const groupId = active.group.id;
   const list = getGroupList();
   const [toWatch, counts] = await Promise.all([
@@ -18,17 +20,33 @@ async function DrawData() {
     list.counts(groupId),
   ]);
   return (
-    <DrawScreen
-      toWatch={toWatch}
-      counts={counts}
-      onWatched={markWatched.bind(null, groupId)}
-    />
+    // The pill stays outside the draw's animated screens.
+    <>
+      <GroupPill
+        active={active.group}
+        groups={active.groups}
+        choose={chooseGroup}
+        create={createGroup}
+      />
+      <DrawScreen
+        toWatch={toWatch}
+        counts={counts}
+        onWatched={markWatched.bind(null, groupId)}
+      />
+    </>
   );
 }
 
 export default function DrawPage() {
   return (
-    <Suspense fallback={<DrawScreenFallback />}>
+    <Suspense
+      fallback={
+        <>
+          <GroupPillFallback />
+          <DrawScreenFallback />
+        </>
+      }
+    >
       <DrawData />
     </Suspense>
   );

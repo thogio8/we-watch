@@ -1,13 +1,10 @@
 import Image from "next/image";
-import { SignOutButton } from "@/features/signin/SignOutButton";
 import styles from "./ListScreen.module.css";
 
 /** TMDB and JustWatch attributions. */
 export function ListFooter() {
   return (
     <footer className={styles.footer}>
-      {/* Provisional spot: piece 2 moves it into the group pill panel. */}
-      <SignOutButton />
       <a
         className={styles.tmdb}
         href="https://www.themoviedb.org/"

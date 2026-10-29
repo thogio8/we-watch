@@ -1,6 +1,8 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { FirstGroup } from "@/features/groups/FirstGroup";
+import { chooseGroup, createGroup } from "@/features/groups/actions";
+import { FirstGroupScreen } from "@/features/groups/FirstGroupScreen";
+import { GroupPill, GroupPillFallback } from "@/features/groups/GroupPill";
 import { SwipeDeck, SwipeDeckFallback } from "@/features/swipe/SwipeDeck";
 import {
   decideSwipe,
@@ -14,18 +16,26 @@ import { DEFAULT_DECK, type DeckId, isDeckId } from "@/tmdb/decks";
 async function SwipeData({ deck }: { deck: DeckId }) {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroup />;
+  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
   const groupId = active.group.id;
   // Same path as the client's later loads: a TMDB error gives { ok: false }.
   const initial = await loadMoreCards(groupId, deck, 1);
   return (
-    <SwipeDeck
-      deck={deck}
-      initial={initial}
-      decide={decideSwipe.bind(null, groupId)}
-      undo={undoSwipe.bind(null, groupId)}
-      loadMore={loadMoreCards.bind(null, groupId)}
-    />
+    <>
+      <GroupPill
+        active={active.group}
+        groups={active.groups}
+        choose={chooseGroup}
+        create={createGroup}
+      />
+      <SwipeDeck
+        deck={deck}
+        initial={initial}
+        decide={decideSwipe.bind(null, groupId)}
+        undo={undoSwipe.bind(null, groupId)}
+        loadMore={loadMoreCards.bind(null, groupId)}
+      />
+    </>
   );
 }
 
@@ -40,7 +50,15 @@ async function SwipeTheme({
   const deck = isDeckId(param) ? param : DEFAULT_DECK;
   return (
     // Keyed by deck: switching theme starts a fresh deck and fallback.
-    <Suspense key={deck} fallback={<SwipeDeckFallback deck={deck} />}>
+    <Suspense
+      key={deck}
+      fallback={
+        <>
+          <GroupPillFallback />
+          <SwipeDeckFallback deck={deck} />
+        </>
+      }
+    >
       <SwipeData deck={deck} />
     </Suspense>
   );
@@ -48,7 +66,14 @@ async function SwipeTheme({
 
 export default function SwipePage({ searchParams }: PageProps<"/swipe">) {
   return (
-    <Suspense fallback={<SwipeDeckFallback deck={null} />}>
+    <Suspense
+      fallback={
+        <>
+          <GroupPillFallback />
+          <SwipeDeckFallback deck={null} />
+        </>
+      }
+    >
       <SwipeTheme searchParams={searchParams} />
     </Suspense>
   );
