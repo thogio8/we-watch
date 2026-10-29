@@ -9,8 +9,6 @@ import { takePillFocus } from "./pillFocus";
 
 const NOUS_DEUX = { id: "g-1", name: "NOUS DEUX", memberCount: 1 };
 
-const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 vi.mock("@/features/signin/authClient", () => ({ authClient: {} }));
 
 describe("FirstGroupScreen", () => {
@@ -31,7 +29,7 @@ describe("FirstGroupScreen", () => {
     ).toBeVisible();
   });
 
-  it("une fois le groupe créé, rafraîchit la page pour l’afficher", async () => {
+  it("envoie le nom du groupe à créer", async () => {
     const create = vi.fn<(f: FormData) => Promise<CreateGroupResult>>(() =>
       Promise.resolve({ ok: true, groupId: "g-1" }),
     );
@@ -42,7 +40,7 @@ describe("FirstGroupScreen", () => {
     await user.click(screen.getByRole("button", { name: "CRÉER LE GROUPE" }));
 
     expect(create).toHaveBeenCalledOnce();
-    expect(refresh).toHaveBeenCalledOnce();
+    expect(create.mock.calls[0]?.[0].get("name")).toBe("NOUS DEUX");
   });
 
   it("le groupe créé, la pastille qui remplace l’écran prend le focus", async () => {
@@ -54,7 +52,7 @@ describe("FirstGroupScreen", () => {
     await user.type(screen.getByRole("textbox"), "NOUS DEUX");
     await user.click(screen.getByRole("button", { name: "CRÉER LE GROUPE" }));
 
-    // The refreshed page: the pill above the screen, in place of this one.
+    // The re-rendered page: the pill above the screen, in place of this one.
     unmount();
     render(
       <GroupPill

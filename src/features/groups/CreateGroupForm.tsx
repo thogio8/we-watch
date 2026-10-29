@@ -10,7 +10,7 @@ import { CREATE_FAILED, GROUP_NAME_ERROR } from "./messages";
 interface CreateGroupFormProps {
   create: (formData: FormData) => Promise<CreateGroupResult>;
   /** The group exists and is now the displayed one. */
-  onCreated: (groupId: string) => void;
+  onCreated?: (groupId: string) => void;
 }
 
 /**
@@ -43,7 +43,7 @@ export function CreateGroupForm({ create, onCreated }: CreateGroupFormProps) {
     sending.current = false;
     setPending(false);
     if (result?.ok) {
-      onCreated(result.groupId);
+      onCreated?.(result.groupId);
       return;
     }
     fail(result?.error ?? CREATE_FAILED);

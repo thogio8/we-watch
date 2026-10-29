@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { SignOutButton } from "@/features/signin/SignOutButton";
 import { Headline } from "@/ui/Headline";
 import type { CreateGroupResult } from "./actions";
@@ -17,16 +16,13 @@ interface FirstGroupScreenProps {
  * as the pill's panel (its usual place) needs a group to show.
  */
 export function FirstGroupScreen({ create }: FirstGroupScreenProps) {
-  const router = useRouter();
   return (
     <main className={styles.screen}>
       <Headline lines={["CRÉER TON", "PREMIER GROUPE"]} size="medium" />
       <section className={styles.sheet} aria-label="Nouveau groupe">
-        {/* The actions revalidate the pages; refresh shows the new group now. */}
-        <CreateGroupForm
-          create={withPillFocus(create)}
-          onCreated={() => router.refresh()}
-        />
+        {/* The action sets the cookie and revalidates: its response brings
+            the page of the new group, pill included, in place of this one. */}
+        <CreateGroupForm create={withPillFocus(create)} />
       </section>
       <div className={styles.signOut}>
         <SignOutButton />

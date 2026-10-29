@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   type FocusEvent,
   type RefObject,
@@ -61,7 +60,6 @@ function useEscape(
  * away), focus handling, and the group switch guarded against double taps.
  */
 export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [pending, setPending] = useState(false);
@@ -98,9 +96,10 @@ export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
     setPending(true);
     setError(null);
     try {
+      // The action sets the cookie and revalidates: its response already
+      // carries the page re-rendered for the chosen group.
       await choose(groupId);
       close(true);
-      router.refresh();
     } catch {
       setError(CHOOSE_FAILED);
     } finally {
@@ -119,10 +118,8 @@ export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
     pending,
     error,
     pick,
-    created: () => {
-      close(true);
-      router.refresh();
-    },
+    /** The page re-rendered with the new group came with the response. */
+    created: () => close(true),
     onBlur,
     refs,
     panelId,

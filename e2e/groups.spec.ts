@@ -105,6 +105,27 @@ test.describe("groupes", () => {
     }
   });
 
+  test("le premier groupe créé s’affiche aussitôt, pastille comprise", async ({
+    newcomer,
+  }) => {
+    await newcomer.goto("/swipe");
+    await newcomer.getByLabel("NOM DU GROUPE").fill("Ciné club");
+    await newcomer.getByRole("button", { name: "CRÉER LE GROUPE" }).click();
+
+    await expect(pill(newcomer, "Ciné club")).toBeVisible();
+    await expect(topCard(newcomer)).toHaveText("Whiplash");
+  });
+
+  for (const path of ["/", "/swipe"]) {
+    test(`sur ${path}, la pastille suit le groupe créé puis choisi`, async ({
+      app,
+    }) => {
+      await app.goto(path);
+      await createGroup(app, "Ciné club");
+      await chooseGroup(app, "NOUS DEUX");
+    });
+  }
+
   test("le groupe affiché est retenu sur l’appareil", async ({ app }) => {
     await app.goto("/list");
     await createGroup(app, "Ciné club");

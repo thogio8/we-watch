@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { GroupSummary } from "@/domain/group";
 import type { CreateGroupResult } from "./actions";
 import { GroupPill } from "./GroupPill";
 
-const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 vi.mock("@/features/signin/authClient", () => ({ authClient: {} }));
 
 type Choose = (groupId: string) => Promise<void>;
@@ -23,8 +21,6 @@ const JEUDI: GroupSummary = {
   name: "LES POTES DU JEUDI",
   memberCount: 1,
 };
-
-beforeEach(() => refresh.mockReset());
 
 function renderPill({
   choose = vi.fn<Choose>(() => Promise.resolve()),
@@ -76,14 +72,13 @@ describe("GroupPill", () => {
     expect(active).toHaveFocus();
   });
 
-  it("choisir un autre groupe appelle choose une seule fois, ferme et rafraîchit", async () => {
+  it("choisir un autre groupe appelle choose une seule fois et ferme", async () => {
     const { user, choose } = renderPill();
 
     await user.click(pill());
     await user.dblClick(within(panel()).getByRole("button", { name: /JEUDI/ }));
 
     expect(choose).toHaveBeenCalledExactlyOnceWith("g-2");
-    expect(refresh).toHaveBeenCalledOnce();
     expect(queryPanel()).not.toBeInTheDocument();
   });
 
@@ -110,7 +105,6 @@ describe("GroupPill", () => {
     expect(await within(panel()).findByRole("alert")).toHaveTextContent(
       "PAS RÉUSSI À CHANGER DE GROUPE, RÉESSAIE",
     );
-    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("« + CRÉER UN GROUPE » déplie le formulaire ; un nom invalide n’appelle rien", async () => {
@@ -130,7 +124,7 @@ describe("GroupPill", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it("créer un groupe appelle create une fois, ferme le panneau et rafraîchit", async () => {
+  it("créer un groupe appelle create une fois et ferme le panneau", async () => {
     const { user, create } = renderPill();
 
     await user.click(pill());
@@ -144,7 +138,6 @@ describe("GroupPill", () => {
     );
 
     expect(create).toHaveBeenCalledOnce();
-    expect(refresh).toHaveBeenCalledOnce();
     expect(queryPanel()).not.toBeInTheDocument();
   });
 
