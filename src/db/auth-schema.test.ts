@@ -8,6 +8,15 @@ import { account, passkey, session, user } from "./auth-schema";
 let db: Database;
 
 const aUser = { id: "u1", name: "Lou", email: "u1@passkey.invalid" };
+const aPasskey = {
+  id: "p1",
+  userId: "u1",
+  publicKey: "k",
+  credentialID: "c",
+  counter: 0,
+  deviceType: "singleDevice",
+  backedUp: false,
+};
 
 beforeEach(async () => {
   db = createDatabase("file::memory:");
@@ -38,6 +47,15 @@ describe("tables des comptes", () => {
     ).rejects.toThrow();
   });
 
+  it("refuse d'enregistrer deux fois le même identifiant de passkey", async () => {
+    await db.insert(user).values({ ...aUser, id: "u2", email: "u2@x.invalid" });
+    await db.insert(passkey).values(aPasskey);
+
+    await expect(
+      db.insert(passkey).values({ ...aPasskey, id: "p2", userId: "u2" }),
+    ).rejects.toThrow();
+  });
+
   it("supprime sessions, comptes et passkeys avec l'utilisateur", async () => {
     await db.insert(session).values({
       id: "s1",
@@ -48,15 +66,7 @@ describe("tables des comptes", () => {
     await db
       .insert(account)
       .values({ id: "a1", userId: "u1", accountId: "u1", providerId: "x" });
-    await db.insert(passkey).values({
-      id: "p1",
-      userId: "u1",
-      publicKey: "k",
-      credentialID: "c",
-      counter: 0,
-      deviceType: "singleDevice",
-      backedUp: false,
-    });
+    await db.insert(passkey).values(aPasskey);
     await db.update(session).set({ ipAddress: "::1" });
     await db.update(account).set({ scope: "s" });
 

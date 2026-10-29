@@ -1,6 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import type * as betterAuthApi from "better-auth/api";
+import { getSessionFromCtx } from "better-auth/api";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSignupTicket } from "@/access/signup-ticket";
 import { passkeySignup } from "./passkey-signup";
+
+vi.mock("better-auth/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof betterAuthApi>()),
+  getSessionFromCtx: vi.fn(),
+}));
+
+beforeEach(() => {
+  vi.mocked(getSessionFromCtx).mockResolvedValue(null);
+});
 
 const SECRET = "a-long-enough-better-auth-secret";
 const ELEVEN_MINUTES = 11 * 60 * 1000;
@@ -112,6 +123,26 @@ describe("passkeySignup", () => {
         afterVerificationArgs(ctx, ticket),
       ),
     ).rejects.toMatchObject({ statusCode: 400 });
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
+  it("afterVerification : connecté, on ne crée pas de second compte", async () => {
+    const ticket = await createSignupTicket(
+      { name: "Léa", owner: false },
+      SECRET,
+    );
+    vi.mocked(getSessionFromCtx).mockResolvedValue({
+      session: {},
+      user: { id: "already-here" },
+    } as never);
+    const { createUser, ctx } = fakeCtx();
+
+    await expect(
+      passkeySignup(SECRET).afterVerification(
+        afterVerificationArgs(ctx, ticket),
+      ),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(getSessionFromCtx).toHaveBeenCalledWith(ctx);
     expect(createUser).not.toHaveBeenCalled();
   });
 

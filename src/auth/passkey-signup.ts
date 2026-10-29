@@ -1,5 +1,5 @@
 import type { PasskeyOptions } from "@better-auth/passkey";
-import { APIError } from "better-auth/api";
+import { APIError, getSessionFromCtx } from "better-auth/api";
 import { readSignupTicket, type SignupTicket } from "@/access/signup-ticket";
 
 type Registration = NonNullable<PasskeyOptions["registration"]>;
@@ -38,6 +38,11 @@ export function passkeySignup(secret: string): {
       return { id: crypto.randomUUID(), name, displayName: name };
     },
     afterVerification: async ({ ctx, context }) => {
+      // Signed in, the plugin would attach the passkey to the current user
+      // and refuse the new one: never create an account that cannot be used.
+      if (await getSessionFromCtx(ctx)) {
+        throw new APIError("BAD_REQUEST", { message: "Already signed in" });
+      }
       const { name } = await requireTicket(context, secret);
       // Better Auth requires a unique email; `.invalid` is a reserved TLD.
       const user = await ctx.context.internalAdapter.createUser(

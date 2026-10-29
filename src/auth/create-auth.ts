@@ -20,7 +20,7 @@ const DAY_SECONDS = 24 * 60 * 60;
 // Sign-in is passkey only: these core endpoints (email/password, email
 // change and verification, social accounts, profile and session edits, user
 // deletion, passkey management) are unused, so they answer 404.
-const DISABLED_PATHS = [
+export const DISABLED_PATHS = [
   "/sign-up/email",
   "/sign-in/email",
   "/sign-in/social",
@@ -66,7 +66,13 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     appName: "WeWatch",
     secret,
     baseURL,
-    database: drizzleAdapter(db, { provider: "sqlite", schema: authSchema }),
+    // A real transaction: a passkey signup creates the user, its passkey and
+    // its session together, or nothing at all.
+    database: drizzleAdapter(db, {
+      provider: "sqlite",
+      schema: authSchema,
+      transaction: true,
+    }),
     session: {
       expiresIn: 60 * DAY_SECONDS,
       updateAge: DAY_SECONDS,
@@ -81,7 +87,9 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
         },
         update: {
           before: async (user) =>
-            "name" in user ? { data: normalisedName(user.name) } : undefined,
+            user.name !== undefined
+              ? { data: normalisedName(user.name) }
+              : undefined,
         },
       },
     },

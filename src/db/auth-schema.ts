@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 // Better Auth tables (core + passkey plugin), declared by hand from the
 // field lists of better-auth and @better-auth/passkey 1.7. The property keys
@@ -107,6 +113,7 @@ export const passkey = sqliteTable(
   },
   (table) => [
     index("passkey_user_id_idx").on(table.userId),
-    index("passkey_credential_id_idx").on(table.credentialID),
+    // WebAuthn: a credential id is registered once, for one user.
+    uniqueIndex("passkey_credential_id_unique").on(table.credentialID),
   ],
 );
