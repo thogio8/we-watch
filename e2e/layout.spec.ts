@@ -127,6 +127,18 @@ test.describe("mise en page et accessibilité, sans groupe", () => {
     test.skip(test.info().project.name !== "desktop");
   });
 
+  test("le premier groupe créé, la pastille a le focus", async ({
+    newcomer,
+  }) => {
+    await newcomer.goto("/");
+    await newcomer.getByLabel("NOM DU GROUPE").fill("Nous trois");
+    await newcomer.getByRole("button", { name: "CRÉER LE GROUPE" }).click();
+
+    await expect(
+      newcomer.getByRole("button", { name: "Groupe affiché : Nous trois" }),
+    ).toBeFocused();
+  });
+
   for (const viewport of VIEWPORTS) {
     test(`premier groupe : ${viewport.name}`, async ({ newcomer }) => {
       await newcomer.setViewportSize(viewport);

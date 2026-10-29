@@ -69,6 +69,31 @@ describe("FirstGroupScreen", () => {
     ).toHaveFocus();
   });
 
+  it.each([
+    [
+      "refusée",
+      () =>
+        Promise.resolve({
+          ok: false as const,
+          error: "UN NOM DE 1 À 30 CARACTÈRES",
+        }),
+    ],
+    ["en panne", () => Promise.reject(new Error("raw text"))],
+  ])(
+    "une création %s ne laisse aucune demande de focus",
+    async (_case, failure) => {
+      const create =
+        vi.fn<(f: FormData) => Promise<CreateGroupResult>>(failure);
+      const user = userEvent.setup();
+      render(<FirstGroupScreen create={create} />);
+      await user.type(screen.getByRole("textbox"), "NOUS DEUX");
+      await user.click(screen.getByRole("button", { name: "CRÉER LE GROUPE" }));
+
+      await screen.findByRole("alert");
+      expect(window.location.hash).toBe("");
+    },
+  );
+
   it("une pastille affichée sans création préalable ne vole pas le focus", () => {
     render(
       <GroupPill
