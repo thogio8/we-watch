@@ -85,6 +85,15 @@ const eslintConfig = defineConfig([
     [only(["domain", "env", "access"], "Access is low-level.")],
   ),
   layer(
+    ["src/auth/**"],
+    [
+      only(
+        ["domain", "db", "access", "auth"],
+        "Auth wires Better Auth on the database.",
+      ),
+    ],
+  ),
+  layer(
     ["src/ui/**"],
     [
       {
