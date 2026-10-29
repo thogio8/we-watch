@@ -69,6 +69,21 @@ describe("createGroup", () => {
     expect(revalidateGroupPages).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["rien", undefined],
+    ["une chaîne", "La coloc"],
+    ["un objet", { name: "La coloc" }],
+  ])(
+    "refuse un formulaire qui n’en est pas un (%s) sans lever d’exception",
+    async (_, formData) => {
+      await expect(
+        createGroup(formData as unknown as FormData),
+      ).resolves.toEqual({ ok: false, error: "UN NOM DE 1 À 30 CARACTÈRES" });
+      expect(create).not.toHaveBeenCalled();
+      expect(rememberGroup).not.toHaveBeenCalled();
+    },
+  );
+
   it("sans session : refuse sans rien créer", async () => {
     vi.mocked(assertSignedIn).mockRejectedValue(new Error("not signed in"));
 

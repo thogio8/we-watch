@@ -14,7 +14,9 @@ export async function createGroup(
   formData: FormData,
 ): Promise<CreateGroupResult> {
   const { userId } = await assertSignedIn();
-  const name = parseGroupName(formData.get("name"));
+  // A public endpoint: anything may come in place of the form.
+  const name =
+    formData instanceof FormData ? parseGroupName(formData.get("name")) : null;
   if (name === null) {
     return { ok: false, error: "UN NOM DE 1 À 30 CARACTÈRES" };
   }

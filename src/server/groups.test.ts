@@ -127,6 +127,8 @@ describe("assertMember", () => {
     ["un nombre", 42],
     ["65 caractères", "g".repeat(65)],
     ["undefined", undefined],
+    ["un objet", {}],
+    ["un tableau", ["g-1"]],
   ])("refuse %s sans interroger la base", async (_, groupId) => {
     await expect(assertMember(groupId)).rejects.toThrow(
       "Server Action refused: not a member",
