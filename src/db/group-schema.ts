@@ -75,6 +75,10 @@ export const groupMovie = sqliteTable(
     }).notNull(),
     /** Copied from the pre-accounts list: authors were never recorded. */
     legacy: integer("legacy", { mode: "boolean" }).default(false).notNull(),
+    /** Watched before the accounts: who marked it was never recorded. */
+    watchedLegacy: integer("watched_legacy", { mode: "boolean" })
+      .default(false)
+      .notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.groupId, table.tmdbId] }),

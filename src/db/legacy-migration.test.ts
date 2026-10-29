@@ -25,8 +25,9 @@ const journal = JSON.parse(
 ) as Journal;
 const tags = journal.entries.map((entry) => entry.tag);
 const BEFORE_GROUPS = tags.slice(0, 5);
-const GROUPS = tags.slice(5, 7);
+const GROUPS = tags.slice(5, 8);
 const COPY = "0006_copy_list_to_legacy_group";
+const WATCHED_LEGACY = "0007_watched_legacy";
 
 const sqlOf = (tag: string) => readFileSync(`drizzle/${tag}.sql`, "utf8");
 
@@ -135,10 +136,12 @@ beforeEach(async () => {
 });
 
 describe("migration de la liste vers « NOUS DEUX »", () => {
-  it("applique exactement 0005 et 0006 après les migrations de la 2.1", () => {
+  it("applique exactement 0005 à 0007 après les migrations de la 2.1", () => {
     expect(BEFORE_GROUPS.at(-1)).toBe("0004_signup_ticket_use");
     expect(GROUPS[0]).toMatch(/^0005_/);
     expect(GROUPS[1]).toBe(COPY);
+    expect(GROUPS[2]).toBe(WATCHED_LEGACY);
+    expect(tags).toHaveLength(8);
   });
 
   it("écrit dans le SQL l'id et le nom du groupe hérité du domaine", () => {
@@ -183,8 +186,36 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
           watched_by: "NULL",
         },
       ]);
+      expect(
+        await rows(
+          "SELECT tmdb_id, watched_legacy FROM group_movie ORDER BY tmdb_id",
+        ),
+      ).toEqual([
+        { tmdb_id: 129, watched_legacy: 1 },
+        { tmdb_id: 194, watched_legacy: 0 },
+        { tmdb_id: 244786, watched_legacy: 0 },
+        { tmdb_id: 496243, watched_legacy: 0 },
+      ]);
       expect(await rows("SELECT * FROM movie_want")).toEqual([]);
       expect(await rows("SELECT * FROM movie_rejection")).toEqual([]);
+    });
+
+    it("0007 laisse son marqueur à un film copié puis marqué vu par un membre", async () => {
+      await apply(client, GROUPS.slice(0, 2));
+      await client.batch(
+        [
+          "INSERT INTO user (id, name, email) VALUES ('hugo', 'Hugo', 'h@x')",
+          "UPDATE group_movie SET watched_by = 'hugo' WHERE tmdb_id = 129",
+        ],
+        "write",
+      );
+      await apply(client, [WATCHED_LEGACY]);
+
+      expect(
+        await rows(
+          "SELECT watched_legacy FROM group_movie WHERE tmdb_id = 129",
+        ),
+      ).toEqual([{ watched_legacy: 0 }]);
     });
 
     it("garde des écartés pour le groupe les films BOF comme les retirés", async () => {

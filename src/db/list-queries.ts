@@ -80,6 +80,7 @@ export async function selectMovies(
       decidedAt: groupMovie.decidedAt,
       watchedAt: groupMovie.watchedAt,
       legacy: groupMovie.legacy,
+      watchedLegacy: groupMovie.watchedLegacy,
       addedBy: adder.name,
       watchedBy: watcher.name,
     })

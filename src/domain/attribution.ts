@@ -25,11 +25,11 @@ export function wantedLine(names: readonly string[]): string | null {
 
 /** « vu le 18/10 · marqué par Hugo »; null when not watched. */
 export function watchedLine(
-  m: Pick<Movie, "watchedAt" | "watchedBy" | "legacy">,
+  m: Pick<Movie, "watchedAt" | "watchedBy" | "watchedLegacy">,
   format: (d: Date) => string,
 ): string | null {
   if (m.watchedAt === null) return null;
   const seen = `vu le ${format(m.watchedAt)}`;
   if (m.watchedBy !== null) return `${seen} · marqué par ${m.watchedBy}`;
-  return m.legacy ? seen : `${seen} · marqué par ${FORMER_MEMBER}`;
+  return m.watchedLegacy ? seen : `${seen} · marqué par ${FORMER_MEMBER}`;
 }

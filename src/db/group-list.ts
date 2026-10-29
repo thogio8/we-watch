@@ -56,8 +56,12 @@ const CHANGES: Record<
     legacy: false,
   }),
   remove: ({ now }) => ({ decidedAt: now }),
-  mark_watched: ({ userId, now }) => ({ watchedAt: now, watchedBy: userId }),
-  unwatch: () => ({ watchedAt: null, watchedBy: null }),
+  mark_watched: ({ userId, now }) => ({
+    watchedAt: now,
+    watchedBy: userId,
+    watchedLegacy: false,
+  }),
+  unwatch: () => ({ watchedAt: null, watchedBy: null, watchedLegacy: false }),
 };
 
 export function createGroupList(db: Database): GroupList {

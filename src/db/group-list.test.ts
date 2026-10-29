@@ -2,6 +2,9 @@ import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
 import { aSnapshot, NETFLIX } from "@tests/helpers/movies";
+import { FORMER_MEMBER, watchedLine } from "@/domain/attribution";
+import type { Movie } from "@/domain/movie";
+import { formatShortDate } from "@/domain/time";
 import { user } from "./auth-schema";
 import type { Database } from "./create-database";
 import { createDecisions, type Decisions } from "./decisions";
@@ -288,6 +291,52 @@ describe("liste du groupe", () => {
     expect(await list.findInList(groupA, 1)).toMatchObject({
       addedBy: null,
       legacy: true,
+    });
+  });
+
+  describe("film copié de l’ancienne liste", () => {
+    // What migrations 0006 and 0007 leave: no author, and a movie already
+    // watched before the accounts has nobody to name.
+    const copied = (watchedAt: Date | null) =>
+      db.update(groupMovie).set({
+        status: watchedAt === null ? "to_watch" : "watched",
+        watchedAt,
+        addedBy: null,
+        addedVia: "legacy",
+        legacy: true,
+        watchedLegacy: watchedAt !== null,
+      });
+    const line = async (tmdbId: number) =>
+      watchedLine(
+        (await list.findInList(groupA, tmdbId)) as Movie,
+        formatShortDate,
+      );
+
+    it("vu avant les comptes : « vu le … », sans marqueur", async () => {
+      await keep(1);
+      await copied(T1);
+
+      expect(await line(1)).toBe("vu le 02/10");
+    });
+
+    it("marqué ensuite par Hugo, dont le compte est supprimé : « un ancien membre »", async () => {
+      await keep(1);
+      await copied(null);
+      await act("mark_watched", 1, hugo, T2);
+
+      await db.delete(user).where(eq(user.id, hugo));
+
+      expect(await line(1)).toBe(`vu le 03/10 · marqué par ${FORMER_MEMBER}`);
+      expect(await list.findInList(groupA, 1)).toMatchObject({ legacy: true });
+    });
+
+    it("revu après « pas vu » : le marqueur compte de nouveau", async () => {
+      await keep(1);
+      await copied(T1);
+      await act("unwatch", 1, lea, T2);
+      await act("mark_watched", 1, hugo, T2);
+
+      expect(await line(1)).toBe("vu le 03/10 · marqué par Hugo");
     });
   });
 });

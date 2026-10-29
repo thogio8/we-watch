@@ -46,7 +46,7 @@ describe("wantedLine", () => {
 });
 
 describe("watchedLine", () => {
-  const seen = { watchedAt: OCT_18, watchedBy: null, legacy: false };
+  const seen = { watchedAt: OCT_18, watchedBy: null, watchedLegacy: false };
 
   it("ne dit rien tant que le film n'est pas vu", () => {
     expect(
@@ -60,8 +60,8 @@ describe("watchedLine", () => {
     );
   });
 
-  it("omet le marqueur d'une ligne copiée", () => {
-    expect(watchedLine({ ...seen, legacy: true }, formatShortDate)).toBe(
+  it("omet le marqueur d'un film vu avant les comptes", () => {
+    expect(watchedLine({ ...seen, watchedLegacy: true }, formatShortDate)).toBe(
       "vu le 18/10",
     );
   });
@@ -73,7 +73,7 @@ describe("watchedLine", () => {
   });
 
   it("accepte le format long de la fiche", () => {
-    expect(watchedLine({ ...seen, legacy: true }, formatLongDate)).toBe(
+    expect(watchedLine({ ...seen, watchedLegacy: true }, formatLongDate)).toBe(
       "vu le 18 octobre 2026",
     );
   });

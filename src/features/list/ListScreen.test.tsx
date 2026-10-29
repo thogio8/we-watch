@@ -34,6 +34,7 @@ const LALALAND = movie(313369, "LA LA LAND", {
   status: "watched",
   watchedAt: new Date(2026, 9, 11, 21, 5),
   legacy: true,
+  watchedLegacy: true,
 });
 
 type Act = (tmdbId: number) => Promise<void>;
