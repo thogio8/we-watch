@@ -132,6 +132,17 @@ export async function signUpAs(page: Page, name: string) {
   await page.getByRole("button", { name: "CRÉER MON COMPTE" }).click();
 }
 
+/** What /connexion shows in a browser that cannot do passkeys. */
+export const UNSUPPORTED_MESSAGE =
+  "CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL.";
+
+/** From the next navigation on, the page is a browser without WebAuthn. */
+export async function withoutPasskeys(page: Page) {
+  await page.addInitScript(() => {
+    delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential;
+  });
+}
+
 /** Submits the form with an empty name and waits for the refusal. */
 export async function emptyNameRefused(page: Page) {
   await signUpAs(page, "");

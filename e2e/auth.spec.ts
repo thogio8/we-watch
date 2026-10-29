@@ -1,6 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
-import { accountNames, expect, signUpAs, test } from "./fixtures";
+import {
+  accountNames,
+  expect,
+  signUpAs,
+  test,
+  UNSUPPORTED_MESSAGE,
+  withoutPasskeys,
+} from "./fixtures";
 
 /** The app is open: on TIRER, with its navigation (absent from /connexion). */
 async function expectInApp(page: Page) {
@@ -47,21 +54,22 @@ test.describe("comptes et passkeys", () => {
     expect(await accountNames()).toEqual([]);
   });
 
-  test("un navigateur sans clés d’accès l’explique, sans bouton", async ({
+  test("un navigateur sans clés d’accès l’explique, sans bouton ni erreur d’hydratation", async ({
     page,
   }) => {
-    await page.addInitScript(() => {
-      delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential;
+    const errors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
     });
+    page.on("pageerror", (error) => errors.push(error.message));
+    await withoutPasskeys(page);
 
     await page.goto("/connexion");
 
-    await expect(
-      page.getByText(
-        "CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL.",
-      ),
-    ).toBeVisible();
+    await expect(page.getByText(UNSUPPORTED_MESSAGE)).toBeVisible();
     await expect(page.getByRole("button")).toHaveCount(0);
+    // A hydration mismatch is logged as an error (React #418 in production).
+    expect(errors).toEqual([]);
     const { violations } = await new AxeBuilder({ page }).analyze();
     expect(
       violations.filter(

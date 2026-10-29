@@ -8,6 +8,8 @@ import {
   swipe,
   test,
   topCard,
+  UNSUPPORTED_MESSAGE,
+  withoutPasskeys,
 } from "./fixtures";
 
 /**
@@ -88,6 +90,12 @@ test.describe("rendu visuel", () => {
       await shoot(app, `${format.name}-6-connexion`);
       await emptyNameRefused(app);
       await shoot(app, `${format.name}-6b-connexion-erreur`);
+
+      // A browser without passkeys: the explanation instead of the buttons.
+      await withoutPasskeys(app);
+      await app.goto("/connexion");
+      await expect(app.getByText(UNSUPPORTED_MESSAGE)).toBeVisible();
+      await shoot(app, `${format.name}-6c-connexion-sans-cle`);
     });
   }
 });
