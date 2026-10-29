@@ -30,6 +30,8 @@ export default defineConfig({
         "src/**/use*.ts",
         "src/server/container.ts",
         "src/proxy.ts",
+        // Pure wiring: Better Auth's handler, tested through createAuth.
+        "src/app/api/auth/**/route.ts",
         "src/app/manifest.ts",
         "src/features/pwa/brand.ts",
       ],

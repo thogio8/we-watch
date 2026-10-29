@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assertUnlocked } from "@/access/assert-unlocked";
+import { assertSignedIn } from "@/server/session";
 import { revalidateListPages } from "@/server/revalidate";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
@@ -19,7 +19,7 @@ const loadDeckBatch = vi.fn();
 const client = { get: vi.fn() };
 const deckDeps = { discover: vi.fn(), snapshot: vi.fn(), decidedIds: vi.fn() };
 
-vi.mock("@/access/assert-unlocked");
+vi.mock("@/server/session");
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply, undoSwipe: undo }),
   getTmdbClient: () => client,
@@ -47,7 +47,9 @@ const WHIPLASH: MovieSnapshot = {
 };
 
 beforeEach(() => {
-  vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
+  vi.mocked(assertSignedIn)
+    .mockReset()
+    .mockResolvedValue({ userId: "user-1", name: "Léa" });
   apply.mockReset().mockResolvedValue("applied");
   undo.mockReset().mockResolvedValue("applied");
   getDeckDeps.mockReset().mockReturnValue(deckDeps);
@@ -159,15 +161,15 @@ describe("loadMoreCards", () => {
   );
 });
 
-describe("appareil verrouillé", () => {
+describe("sans session", () => {
   it.each([
     ["decideSwipe", () => decideSwipe(244786, "keep")],
     ["loadMoreCards", () => loadMoreCards("top", 1)],
     ["undoSwipe", () => undoSwipe(244786, "keep")],
   ] as const)("%s refuse sans rien appliquer", async (_name, call) => {
-    vi.mocked(assertUnlocked).mockRejectedValue(new Error("device is locked"));
+    vi.mocked(assertSignedIn).mockRejectedValue(new Error("not signed in"));
 
-    await expect(call()).rejects.toThrow("device is locked");
+    await expect(call()).rejects.toThrow("not signed in");
     expect(getMovieSnapshot).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
     expect(undo).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assertUnlocked } from "@/access/assert-unlocked";
+import { assertSignedIn } from "@/server/session";
 import { revalidateListPages } from "@/server/revalidate";
 import { aSnapshot } from "@tests/helpers/movies";
 import type { MovieSnapshot } from "@/domain/movie";
@@ -17,7 +17,7 @@ const searchMovies = vi.fn();
 const getMovieSnapshot = vi.fn();
 const client = { get: vi.fn() };
 
-vi.mock("@/access/assert-unlocked");
+vi.mock("@/server/session");
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply, statusesOf }),
   getTmdbClient: () => client,
@@ -36,7 +36,9 @@ const DUNE_2 = snapshot(693134, "Dune : Deuxième partie");
 const DUNE_1984 = snapshot(841, "Dune");
 
 beforeEach(() => {
-  vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
+  vi.mocked(assertSignedIn)
+    .mockReset()
+    .mockResolvedValue({ userId: "user-1", name: "Léa" });
   apply.mockReset().mockResolvedValue("applied");
   statusesOf.mockReset().mockResolvedValue(new Map());
   vi.mocked(revalidateListPages).mockReset();
@@ -143,16 +145,16 @@ describe("addFromSearch", () => {
   );
 });
 
-describe("appareil verrouillé", () => {
+describe("sans session", () => {
   it.each([
     ["removeFromList", () => removeFromList(841)],
     ["unwatch", () => unwatch(841)],
     ["searchCatalog", () => searchCatalog("dune")],
     ["addFromSearch", () => addFromSearch(841)],
   ] as const)("%s refuse sans rien appliquer", async (_name, call) => {
-    vi.mocked(assertUnlocked).mockRejectedValue(new Error("device is locked"));
+    vi.mocked(assertSignedIn).mockRejectedValue(new Error("not signed in"));
 
-    await expect(call()).rejects.toThrow("device is locked");
+    await expect(call()).rejects.toThrow("not signed in");
     expect(apply).not.toHaveBeenCalled();
     expect(searchMovies).not.toHaveBeenCalled();
     expect(getMovieSnapshot).not.toHaveBeenCalled();

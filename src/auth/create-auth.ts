@@ -1,7 +1,7 @@
 import { passkey } from "@better-auth/passkey";
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
 import { parseDisplayName } from "@/domain/display-name";
@@ -55,6 +55,18 @@ function normalisedName(name: unknown): { name: string } {
   return { name: parsed };
 }
 
+/**
+ * A passkey signup always opens its session: the plugin only wraps the user,
+ * passkey and session writes in one transaction when `createSession` is set,
+ * so the server forces it rather than trusting the client.
+ */
+const alwaysCreateSession = createAuthMiddleware(async (ctx) => {
+  if (ctx.path !== "/passkey/verify-registration") {
+    return;
+  }
+  return { context: { body: { ...ctx.body, createSession: true } } };
+});
+
 export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
   db,
   secret,
@@ -80,6 +92,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     },
     emailAndPassword: { enabled: false },
     disabledPaths: DISABLED_PATHS,
+    hooks: { before: alwaysCreateSession },
     databaseHooks: {
       user: {
         create: {

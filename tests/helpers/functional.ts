@@ -22,7 +22,6 @@ export async function startServerStack(): Promise<{
   vi.stubEnv("DATABASE_AUTH_TOKEN", "");
   vi.stubEnv("TMDB_ACCESS_TOKEN", "fake-token");
   vi.stubEnv("TMDB_API_URL", "https://tmdb.test/3");
-  vi.stubEnv("ACCESS_CODE", "pop corn ce soir");
   vi.stubEnv("CRON_SECRET", CRON_SECRET);
   vi.stubEnv("BETTER_AUTH_SECRET", "functional-auth-secret-0123456789abcdef");
   vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");

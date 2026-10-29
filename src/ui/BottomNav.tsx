@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UNLOCK_PATH } from "@/access/paths";
+import { SIGNIN_PATH } from "@/access/paths";
 import styles from "./BottomNav.module.css";
 import { cx } from "./cx";
 
@@ -41,8 +41,8 @@ function NavTabs({ pathname }: { pathname: string | null }) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  // The app stays hidden until the device is unlocked.
-  if (pathname === UNLOCK_PATH) {
+  // The app stays hidden until someone signs in.
+  if (pathname === SIGNIN_PATH) {
     return null;
   }
   return <NavTabs pathname={pathname} />;

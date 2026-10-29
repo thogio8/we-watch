@@ -11,9 +11,6 @@ const serverEnvSchema = z.object({
     .string()
     .optional()
     .transform((value) => (value === "" ? undefined : value)),
-  // Shared code that unlocks a device (see src/access). The 500 ms delay on
-  // a wrong code does not stop parallel guesses: length is the real defence.
-  ACCESS_CODE: z.string().min(8, "ACCESS_CODE must be at least 8 characters"),
   // Signs Better Auth sessions and cookies (openssl rand -hex 32).
   BETTER_AUTH_SECRET: z
     .string()

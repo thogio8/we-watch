@@ -1,25 +1,23 @@
 import { CRON_PATH, isCronAuthorized } from "./cron";
-import { UNLOCK_PATH } from "./paths";
-import { isValidAccessToken } from "./token";
+import { AUTH_API_PREFIX, SIGNIN_PATH } from "./paths";
 
 export type AccessDecision = "allow" | "redirect" | "unauthorized";
 
 interface AccessRequest {
   pathname: string;
   method: string;
-  /** Value of the access cookie, if the browser sent one. */
-  cookie: string | undefined;
-  code: string;
+  /** A valid Better Auth session came with the request. */
+  signedIn: boolean;
   /** Authorization header and secret of the cron route. */
   authorization?: string | null;
   cronSecret?: string;
 }
 
 /**
- * Paths readable without the cookie: framework assets, files from public/,
+ * Paths readable without a session: framework assets, files from public/,
  * and the PWA manifest and icons (iOS fetches them without cookies).
  * The root static-extension rule assumes no root dynamic segment (`/[slug]`):
- * if one is added, `/anything.png` would reach it unlocked, so revisit this.
+ * if one is added, `/anything.png` would reach it signed out, so revisit this.
  */
 const PUBLIC_ASSET =
   /^(?:\/_next\/.*|\/manifest\.webmanifest|\/(?:apple-|maskable-)?icon(?:\/[^/]*)?|\/[^/]+\.(?:svg|png|jpe?g|webp|gif|ico|woff2?))$/;
@@ -28,29 +26,28 @@ function isReadOnly(method: string): boolean {
   return method === "GET" || method === "HEAD";
 }
 
-/** What the proxy does with a request, given the shared access code. */
-export async function accessDecision({
+/** What the proxy does with a request, given whether it carries a session. */
+export function accessDecision({
   pathname,
   method,
-  cookie,
-  code,
+  signedIn,
   authorization,
   cronSecret,
-}: AccessRequest): Promise<AccessDecision> {
-  // The cron route answers its secret only, never the cookie.
+}: AccessRequest): AccessDecision {
+  // The cron route answers its secret only, never a session.
   if (pathname === CRON_PATH) {
     return isReadOnly(method) && isCronAuthorized(authorization, cronSecret)
       ? "allow"
       : "unauthorized";
   }
-  // /unlock serves the form and receives its Server Action POST.
-  if (pathname === UNLOCK_PATH) {
+  // Signing in happens there: the page, its Server Actions, Better Auth.
+  if (pathname === SIGNIN_PATH || pathname.startsWith(AUTH_API_PREFIX)) {
     return "allow";
   }
   if (isReadOnly(method) && PUBLIC_ASSET.test(pathname)) {
     return "allow";
   }
-  if (await isValidAccessToken(cookie, code)) {
+  if (signedIn) {
     return "allow";
   }
   // Pages go to the form; Server Action POSTs cannot follow a redirect.

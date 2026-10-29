@@ -1,8 +1,11 @@
 import { expect, type Page, test as base } from "@playwright/test";
+import { testUtils } from "better-auth/plugins";
 import { sql } from "drizzle-orm";
+import { createAuth } from "../src/auth/create-auth";
+import { passkey, session, user } from "../src/db/auth-schema";
 import { createDatabase } from "../src/db/create-database";
 import { movies } from "../src/db/schema";
-import { ACCESS_CODE, appPort, databaseOf } from "./env";
+import { appUrl, databaseOf, E2E_AUTH_SECRET } from "./env";
 
 const databases = new Map<number, ReturnType<typeof createDatabase>>();
 
@@ -15,31 +18,48 @@ function db() {
   return databases.get(worker)!;
 }
 
-/** Every test starts unlocked, on an empty list, on its worker's server. */
+/** Empties the worker's database, children before the users they point to. */
+async function wipe() {
+  await db().delete(movies);
+  await db().delete(passkey);
+  await db().delete(session);
+  await db().delete(user);
+}
+
+/**
+ * Signs Léa in without a passkey ceremony: a user and a session written
+ * straight to the worker's database, their cookies given to the browser.
+ */
+async function signIn(page: Page) {
+  const worker = base.info().parallelIndex;
+  const auth = createAuth({
+    db: db(),
+    secret: E2E_AUTH_SECRET,
+    baseURL: appUrl(worker),
+    plugins: [testUtils()],
+  });
+  const { test: helpers } = await auth.$context;
+  const lea = await helpers.saveUser(helpers.createUser({ name: "Léa" }));
+  await page
+    .context()
+    .addCookies(
+      await helpers.getCookies({ userId: lea.id, domain: "localhost" }),
+    );
+}
+
+/** Every test starts signed in, on an empty list, on its worker's server. */
 export const test = base.extend<{ app: Page }>({
   baseURL: async ({}, use, testInfo) => {
-    await use(`http://localhost:${appPort(testInfo.parallelIndex)}`);
+    await use(appUrl(testInfo.parallelIndex));
   },
   app: async ({ page }, use) => {
-    await db().delete(movies);
-    await unlock(page);
+    await wipe();
+    await signIn(page);
     await use(page);
   },
 });
 
 export { expect };
-
-export async function enterCode(page: Page, code: string) {
-  await page.goto("/unlock");
-  await page.getByLabel("Code d'accès").fill(code);
-  await page.getByRole("button", { name: "ENTRER" }).click();
-}
-
-/** Enters the right code and waits for the cookie (the redirect home). */
-export async function unlock(page: Page) {
-  await enterCode(page, ACCESS_CODE);
-  await page.waitForURL("/");
-}
 
 /** The card on top of the swipe deck. */
 export const topCard = (page: Page) =>

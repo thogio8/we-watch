@@ -1,26 +1,44 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ACCESS_COOKIE } from "@/access/cookie";
-import { accessDecision } from "@/access/decision";
-import { UNLOCK_PATH } from "@/access/paths";
+import { accessDecision, type AccessDecision } from "@/access/decision";
+import { SIGNIN_PATH } from "@/access/paths";
+import { readSignedIn } from "@/access/signed-in";
 import { getServerEnv } from "@/env";
+import { getAuth } from "@/server/container";
 
-/** Shared access code: every request needs the unlock cookie (see src/access). */
-export async function proxy(request: NextRequest) {
-  const env = getServerEnv();
-  const decision = await accessDecision({
-    pathname: request.nextUrl.pathname,
-    method: request.method,
-    cookie: request.cookies.get(ACCESS_COOKIE)?.value,
-    code: env.ACCESS_CODE,
-    authorization: request.headers.get("authorization"),
-    cronSecret: env.CRON_SECRET,
-  });
+function respond(decision: AccessDecision, request: NextRequest) {
   switch (decision) {
     case "allow":
       return NextResponse.next();
     case "redirect":
-      return NextResponse.redirect(new URL(UNLOCK_PATH, request.url));
+      return NextResponse.redirect(new URL(SIGNIN_PATH, request.url));
     case "unauthorized":
       return new NextResponse(null, { status: 401 });
   }
+}
+
+/** Every request needs a Better Auth session (see src/access). */
+export async function proxy(request: NextRequest) {
+  const env = getServerEnv();
+  const { signedIn, setCookies } = await readSignedIn(() =>
+    getAuth().api.getSession({
+      headers: request.headers,
+      returnHeaders: true,
+    }),
+  );
+  const response = respond(
+    accessDecision({
+      pathname: request.nextUrl.pathname,
+      method: request.method,
+      signedIn,
+      authorization: request.headers.get("authorization"),
+      cronSecret: env.CRON_SECRET,
+    }),
+    request,
+  );
+  // A refreshed session cache or expiry must reach the browser, or every
+  // request after five minutes would read the database again.
+  for (const cookie of setCookies) {
+    response.headers.append("set-cookie", cookie);
+  }
+  return response;
 }

@@ -9,7 +9,6 @@ const AUTH = {
 const BASE = {
   TMDB_ACCESS_TOKEN: "t",
   DATABASE_URL: "file:local.db",
-  ACCESS_CODE: "pop corn ce soir",
   ...AUTH,
 };
 
@@ -19,14 +18,12 @@ describe("parseServerEnv", () => {
       parseServerEnv({
         TMDB_ACCESS_TOKEN: "tok",
         DATABASE_URL: "file:local.db",
-        ACCESS_CODE: "pop corn ce soir",
         ...AUTH,
       }),
     ).toEqual({
       TMDB_ACCESS_TOKEN: "tok",
       TMDB_API_URL: "https://api.themoviedb.org/3",
       DATABASE_URL: "file:local.db",
-      ACCESS_CODE: "pop corn ce soir",
       ...AUTH,
       SIGNUP: "open",
     });
@@ -37,7 +34,6 @@ describe("parseServerEnv", () => {
         TMDB_ACCESS_TOKEN: "tok",
         TMDB_API_URL: "http://127.0.0.1:3101/3",
         DATABASE_URL: "file:e2e.db",
-        ACCESS_CODE: "pop corn ce soir",
         ...AUTH,
       }).TMDB_API_URL,
     ).toBe("http://127.0.0.1:3101/3");
@@ -47,7 +43,6 @@ describe("parseServerEnv", () => {
       parseServerEnv({
         TMDB_ACCESS_TOKEN: "",
         DATABASE_URL: "file:local.db",
-        ACCESS_CODE: "pop corn ce soir",
         ...AUTH,
       }),
     ).toThrow(/TMDB_ACCESS_TOKEN/);
@@ -58,35 +53,20 @@ describe("parseServerEnv", () => {
         TMDB_ACCESS_TOKEN: "t",
         DATABASE_URL: "libsql://x.turso.io",
         DATABASE_AUTH_TOKEN: "",
-        ACCESS_CODE: "pop corn ce soir",
         ...AUTH,
       }).DATABASE_AUTH_TOKEN,
     ).toBeUndefined();
   });
-  it("refuse un code d'accès manquant", () => {
-    expect(() =>
-      parseServerEnv({
-        TMDB_ACCESS_TOKEN: "t",
-        DATABASE_URL: "file:local.db",
-        ...AUTH,
-      }),
-    ).toThrow(/ACCESS_CODE/);
-  });
-  it("refuse un code d'accès de moins de 8 caractères", () => {
-    expect(() =>
-      parseServerEnv({
-        TMDB_ACCESS_TOKEN: "t",
-        DATABASE_URL: "file:local.db",
-        ACCESS_CODE: "popcorn",
-        ...AUTH,
-      }),
-    ).toThrow(/ACCESS_CODE: ACCESS_CODE must be at least 8 characters/);
+  it("ACCESS_CODE n'est plus exigé, et une ancienne valeur est ignorée", () => {
+    expect(parseServerEnv(BASE)).not.toHaveProperty("ACCESS_CODE");
+    expect(
+      parseServerEnv({ ...BASE, ACCESS_CODE: "court" }),
+    ).not.toHaveProperty("ACCESS_CODE");
   });
   it("CRON_SECRET est facultatif, vide = absent", () => {
     const base = {
       TMDB_ACCESS_TOKEN: "t",
       DATABASE_URL: "file:local.db",
-      ACCESS_CODE: "pop corn ce soir",
       ...AUTH,
     };
     expect(parseServerEnv({ ...base, CRON_SECRET: "" })).not.toHaveProperty(
@@ -101,7 +81,6 @@ describe("parseServerEnv", () => {
       parseServerEnv({
         TMDB_ACCESS_TOKEN: "t",
         DATABASE_URL: "file:local.db",
-        ACCESS_CODE: "pop corn ce soir",
         ...AUTH,
         CRON_SECRET: "court",
       }),
@@ -150,7 +129,6 @@ describe("getServerEnv", () => {
   it("lit process.env une seule fois", () => {
     vi.stubEnv("TMDB_ACCESS_TOKEN", "tok");
     vi.stubEnv("DATABASE_URL", "file:local.db");
-    vi.stubEnv("ACCESS_CODE", "pop corn ce soir");
     vi.stubEnv("BETTER_AUTH_SECRET", AUTH.BETTER_AUTH_SECRET);
     vi.stubEnv("BETTER_AUTH_URL", AUTH.BETTER_AUTH_URL);
     const first = getServerEnv();

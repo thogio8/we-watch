@@ -1,6 +1,6 @@
 "use server";
 
-import { assertUnlocked } from "@/access/assert-unlocked";
+import { assertSignedIn } from "@/server/session";
 import {
   getDeckDeps,
   getMoviesRepository,
@@ -35,7 +35,7 @@ export async function decideSwipe(
   tmdbId: number,
   decision: SwipeDecision,
 ): Promise<ApplyResult> {
-  await assertUnlocked();
+  await assertSignedIn();
   assertTmdbId("decideSwipe", tmdbId);
   assertSwipeDecision("decideSwipe", decision);
   const snapshot = await getMovieSnapshot(getTmdbClient(), tmdbId);
@@ -55,7 +55,7 @@ export async function undoSwipe(
   tmdbId: number,
   decision: SwipeDecision,
 ): Promise<ApplyResult> {
-  await assertUnlocked();
+  await assertSignedIn();
   assertTmdbId("undoSwipe", tmdbId);
   assertSwipeDecision("undoSwipe", decision);
   const result = await getMoviesRepository().undoSwipe(tmdbId, decision);
@@ -68,7 +68,7 @@ export async function loadMoreCards(
   deck: DeckId,
   page: number,
 ): Promise<LoadMoreResult> {
-  await assertUnlocked();
+  await assertSignedIn();
   if (!isDeckId(deck)) {
     throw new Error(`loadMoreCards: invalid deck ${String(deck)}`);
   }

@@ -159,6 +159,8 @@ describe("Better Auth (fonctionnel)", () => {
       name: string;
       credentialId: Uint8Array;
       cookies?: string[];
+      /** What the client asks for; the server opens a session regardless. */
+      createSession?: boolean;
     }) {
       const ticket = await createSignupTicket(
         { name: options.name, owner: false },
@@ -188,10 +190,19 @@ describe("Better Auth (fonctionnel)", () => {
             origin: BASE_URL,
             cookie: [...cookies, ...cookiesOf(challenge)].join("; "),
           },
-          body: JSON.stringify({ response, createSession: true }),
+          body: JSON.stringify({
+            response,
+            createSession: options.createSession,
+          }),
         }),
       );
     }
+
+    /** The session the response's cookies open, if any. */
+    const sessionOf = (response: Response) =>
+      auth.api.getSession({
+        headers: new Headers({ cookie: cookiesOf(response).join("; ") }),
+      });
 
     const names = async () =>
       (await db.select({ name: user.name }).from(user)).map((row) => row.name);
@@ -200,18 +211,36 @@ describe("Better Auth (fonctionnel)", () => {
       const response = await signUp({
         name: "Nina",
         credentialId: new Uint8Array([1, 2, 3, 4]),
+        createSession: true,
       });
 
       expect(response.status).toBe(200);
-      const session = await auth.api.getSession({
-        headers: new Headers({ cookie: cookiesOf(response).join("; ") }),
-      });
+      const session = await sessionOf(response);
       expect(session?.user).toMatchObject({ name: "Nina" });
       expect(session?.user.email).toMatch(/@passkey\.invalid$/);
       expect(await db.select().from(passkey)).toContainEqual(
         expect.objectContaining({ userId: session?.user.id }),
       );
     });
+
+    it.each([
+      ["omis", undefined],
+      ["à false", false],
+    ])(
+      "createSession %s par le client : le compte a quand même sa session",
+      async (_label, createSession) => {
+        const response = await signUp({
+          name: "Tom",
+          credentialId: new Uint8Array([7, 7, createSession === false ? 1 : 0]),
+          createSession,
+        });
+
+        expect(response.status).toBe(200);
+        expect((await sessionOf(response))?.user).toMatchObject({
+          name: "Tom",
+        });
+      },
+    );
 
     it("si la passkey ne peut pas être enregistrée, aucun compte orphelin ne reste", async () => {
       const credentialId = new Uint8Array([9, 9, 9, 9]);

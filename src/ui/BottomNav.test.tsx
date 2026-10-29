@@ -41,8 +41,8 @@ describe("BottomNav", () => {
     );
   });
 
-  it("BottomNav disparaît sur l'écran du code d'accès", () => {
-    pathname.current = "/unlock";
+  it("BottomNav disparaît sur l'écran de connexion", () => {
+    pathname.current = "/connexion";
     render(<BottomNav />);
 
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
