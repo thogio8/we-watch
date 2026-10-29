@@ -11,21 +11,23 @@ const MEMBERSHIPS = "membership";
 /**
  * Declares the group and membership tables (src/db/group-schema.ts) to
  * Better Auth, so its adapter, and the transaction it runs the signup in, can
- * read and write them. No endpoint: groups are managed by the app.
+ * read and write them. No endpoint: groups are managed by the app, and so are
+ * these tables: the Better Auth CLI must never migrate them.
  */
 export const groupModels = {
   id: "group-models",
   schema: {
     [GROUPS]: {
+      disableMigration: true,
       fields: {
         name: { type: "string", required: true },
         createdAt: { type: "date", required: true },
       },
     },
     [MEMBERSHIPS]: {
-      // Owned by the app's migrations. Also spares it Better Auth's schema
-      // check, which expects an `id` column on every table it writes (the
-      // insert leaves the id out: see ids.ts).
+      // Also spares it Better Auth's schema check, which expects an `id`
+      // column on every table it writes (the insert leaves the id out: see
+      // ids.ts).
       disableMigration: true,
       fields: {
         groupId: { type: "string", required: true },
