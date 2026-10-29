@@ -20,6 +20,8 @@ import { viewKey } from "./drawView";
 import { useDraw } from "./useDraw";
 
 interface DrawScreenProps {
+  /** The displayed group: each group keeps its own evening. */
+  groupId: string;
   toWatch: Movie[];
   counts: { toWatch: number; watched: number };
   onWatched: (tmdbId: number) => Promise<void>;
@@ -54,13 +56,14 @@ function Screen({
 }
 
 export function DrawScreen({
+  groupId,
   toWatch,
   counts,
   onWatched,
   pill,
 }: DrawScreenProps) {
   const reduce = useReducedMotion() ?? false;
-  const draw = useDraw(toWatch, onWatched);
+  const draw = useDraw(groupId, toWatch, onWatched);
   const { view } = draw;
   // Once left, Next keeps this page in memory, asleep: an exit animation
   // started there never ends and would freeze the old screen. Off screen,

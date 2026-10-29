@@ -21,14 +21,20 @@ export type DrawAction = "draw" | "reject" | "reset_pile";
 const throwDice = () => Math.random();
 
 /**
- * The draw session as the screen sees it: tonight's filters applied to the
+ * The displayed group's draw session as the screen sees it: tonight's filters applied to the
  * list, the view to show, how it leaves, and the user's moves.
  */
 export function useDraw(
+  groupId: string,
   toWatch: Movie[],
   onWatched: (tmdbId: number) => Promise<void>,
 ) {
-  const { state, dispatch, filters: chosen, setFilters } = useDrawSession();
+  const {
+    state,
+    dispatch,
+    filters: chosen,
+    setFilters,
+  } = useDrawSession(groupId);
   const ticketRef = useRef<HTMLDivElement>(null);
   const now = useMinuteClock();
   const [exit, setExit] = useState<Exit>(FADE);

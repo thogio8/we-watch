@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { LEGACY_GROUP_ID } from "@/domain/group";
 import { NO_FILTERS } from "@/domain/tonight";
-import { parseStoredTonight, serializeTonight } from "./tonightStorage";
+import {
+  parseStoredTonight,
+  readStoredTonight,
+  serializeTonight,
+  tonightStorageKey,
+} from "./tonightStorage";
+
+const V1 = JSON.stringify({ bedtime: 1380, platforms: ["netflix"] });
+const V2 = JSON.stringify({ bedtime: 1410, platforms: [] });
+
+/** A device storage holding these keys. */
+const storageWith = (entries: Record<string, string>) => ({
+  getItem: (key: string) => entries[key] ?? null,
+});
 
 describe("tonightStorage", () => {
   it("aller-retour sans l'humeur", () => {
@@ -38,5 +52,37 @@ describe("tonightStorage", () => {
     expect(
       parseStoredTonight(JSON.stringify({ bedtime: "1410", platforms: "x" })),
     ).toEqual({ bedtime: null, platforms: [] });
+  });
+
+  it("une clé par groupe", () => {
+    expect(tonightStorageKey("groupe-a")).toBe("ww-tonight-v2:groupe-a");
+  });
+
+  it("lit la soirée du groupe demandé, pas celle d'un autre", () => {
+    const storage = storageWith({ "ww-tonight-v2:groupe-a": V2 });
+
+    expect(readStoredTonight(storage, "groupe-a")).toBe(V2);
+    expect(readStoredTonight(storage, "groupe-b")).toBeNull();
+  });
+
+  it("le groupe hérité relit l'ancienne clé tant qu'il n'a pas la sienne", () => {
+    expect(
+      readStoredTonight(storageWith({ "ww-tonight-v1": V1 }), LEGACY_GROUP_ID),
+    ).toBe(V1);
+    expect(
+      readStoredTonight(
+        storageWith({
+          "ww-tonight-v1": V1,
+          [`ww-tonight-v2:${LEGACY_GROUP_ID}`]: V2,
+        }),
+        LEGACY_GROUP_ID,
+      ),
+    ).toBe(V2);
+  });
+
+  it("un autre groupe n'hérite pas de l'ancienne clé", () => {
+    expect(
+      readStoredTonight(storageWith({ "ww-tonight-v1": V1 }), "groupe-a"),
+    ).toBeNull();
   });
 });

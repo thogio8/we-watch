@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { aMovie, NETFLIX } from "@tests/helpers/movies";
 import { stubMatchMedia } from "@tests/helpers/dom";
+import { LEGACY_GROUP_ID } from "@/domain/group";
 import type { Movie } from "@/domain/movie";
 import { DrawScreen } from "./DrawScreen";
 import { DrawSessionProvider } from "./DrawSessionProvider";
@@ -26,6 +27,8 @@ const CHIHIRO = movie(129, "LE VOYAGE DE CHIHIRO");
 const WHIPLASH = movie(244786, "WHIPLASH", { runtimeMinutes: 107 });
 
 interface Props {
+  /** The displayed group: « groupe-a » unless a test switches. */
+  groupId?: string;
   toWatch: Movie[];
   watched?: number;
   onWatched?: (tmdbId: number) => Promise<void>;
@@ -33,6 +36,7 @@ interface Props {
 }
 
 function screenFor({
+  groupId = "groupe-a",
   toWatch,
   watched = 0,
   onWatched,
@@ -40,6 +44,7 @@ function screenFor({
 }: Props): ReactNode {
   return (
     <DrawScreen
+      groupId={groupId}
       toWatch={toWatch}
       counts={{ toWatch: toWatch.length, watched }}
       onWatched={onWatched ?? (() => Promise.resolve())}
@@ -337,6 +342,31 @@ describe("DrawScreen : revenir en arrière", () => {
   });
 });
 
+describe("DrawScreen : une soirée par groupe", () => {
+  it("chaque groupe a sa pile « pas ce soir », retrouvée au retour", async () => {
+    const toWatch = [CHIHIRO, WHIPLASH];
+    const { user, rerender } = renderDraw({ groupId: "groupe-a", toWatch });
+    await user.click(drawButton());
+    await user.click(await screen.findByRole("button", { name: "RETIRER" }));
+    expect(await screen.findByText(/^PAS CE SOIR\s: 1$/)).toBeVisible();
+
+    rerender({ groupId: "groupe-b", toWatch });
+    await user.click(
+      await screen.findByRole("button", { name: "TIRER UN FILM" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "LE VOYAGE DE CHIHIRO" }),
+    ).toBeVisible();
+    expect(screen.queryByText(/PAS CE SOIR/)).not.toBeInTheDocument();
+
+    rerender({ groupId: "groupe-a", toWatch });
+    expect(
+      await screen.findByRole("heading", { name: "WHIPLASH" }),
+    ).toBeVisible();
+    expect(screen.getByText(/^PAS CE SOIR\s: 1$/)).toBeVisible();
+  });
+});
+
 describe("DrawScreen : filtres « ce soir »", () => {
   const PRIME = { id: 119, name: "Amazon Prime Video", logoPath: null };
   // 21:07 + 125 min = 23:12; 21:07 + 107 min = 22:54; 21:07 + 95 = 22:42.
@@ -518,7 +548,9 @@ describe("DrawScreen : filtres « ce soir »", () => {
     await user.click(chip("DISPO CHEZ NOUS", "Netflix"));
     await user.click(chip("ON A ENVIE DE…", "RIRE"));
 
-    expect(JSON.parse(localStorage.getItem("ww-tonight-v1") ?? "")).toEqual({
+    expect(
+      JSON.parse(localStorage.getItem("ww-tonight-v2:groupe-a") ?? ""),
+    ).toEqual({
       bedtime: 23 * 60 + 30,
       platforms: ["netflix"],
     });
@@ -526,7 +558,7 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
   it("relit les filtres mémorisés sur l'appareil", async () => {
     localStorage.setItem(
-      "ww-tonight-v1",
+      "ww-tonight-v2:groupe-a",
       JSON.stringify({
         bedtime: 23 * 60,
         platforms: ["amazon prime video", "inconnue"],
@@ -556,6 +588,40 @@ describe("DrawScreen : filtres « ce soir »", () => {
     await user.click(chip("FINI AVANT", "23H"));
 
     expect(drawAmong(2)).toBeVisible();
+  });
+
+  it("chaque groupe a ses filtres, retrouvés au retour", async () => {
+    const summary = () => screen.getByRole("button", { name: /^LA SOIRÉE/ });
+    const { user, rerender } = renderDraw({
+      groupId: "groupe-a",
+      toWatch: list,
+    });
+    await openPanel(user);
+    await user.click(chip("FINI AVANT", "23H30"));
+    await user.click(chip("ON A ENVIE DE…", "RIRE"));
+
+    rerender({ groupId: "groupe-b", toWatch: list });
+    expect(summary()).toHaveTextContent("AUCUN FILTRE");
+    expect(localStorage.getItem("ww-tonight-v2:groupe-b")).toBeNull();
+
+    rerender({ groupId: "groupe-a", toWatch: list });
+    expect(summary()).toHaveTextContent("AVANT 23H30 · RIRE");
+  });
+
+  it("le groupe hérité relit les filtres d'avant les groupes, pas les autres", () => {
+    localStorage.setItem(
+      "ww-tonight-v1",
+      JSON.stringify({ bedtime: 23 * 60, platforms: [] }),
+    );
+    const summary = () => screen.getByRole("button", { name: /^LA SOIRÉE/ });
+    const { rerender } = renderDraw({
+      groupId: LEGACY_GROUP_ID,
+      toWatch: list,
+    });
+    expect(summary()).toHaveTextContent("AVANT 23H");
+
+    rerender({ groupId: "groupe-a", toWatch: list });
+    expect(summary()).toHaveTextContent("AUCUN FILTRE");
   });
 
   it("pas de panneau quand la liste est vide", () => {

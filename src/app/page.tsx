@@ -21,6 +21,7 @@ async function DrawData() {
   ]);
   return (
     <DrawScreen
+      groupId={groupId}
       toWatch={toWatch}
       counts={counts}
       onWatched={markWatched.bind(null, groupId)}
