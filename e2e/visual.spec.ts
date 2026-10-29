@@ -81,6 +81,13 @@ test.describe("rendu visuel", () => {
       await expect(app.getByText("Bong Joon-ho")).toBeVisible();
       await shoot(app, `${format.name}-5b-fiche`);
 
+      await app.goto("/");
+      await app.getByRole("button", { name: /^Groupe affiché/ }).click();
+      await expect(
+        app.getByRole("dialog", { name: "TES GROUPES" }),
+      ).toBeVisible();
+      await shoot(app, `${format.name}-7-groupes-panneau`);
+
       // Signed out: the sign-in page, as a newcomer sees it.
       await app.context().clearCookies();
       await app.goto("/connexion");
@@ -96,6 +103,25 @@ test.describe("rendu visuel", () => {
       await app.goto("/connexion");
       await expect(app.getByText(UNSUPPORTED_MESSAGE)).toBeVisible();
       await shoot(app, `${format.name}-6c-connexion-sans-cle`);
+    });
+  }
+});
+
+test.describe("rendu visuel, sans groupe", () => {
+  test.beforeEach(async ({ newcomer }) => {
+    test.skip(test.info().project.name !== "desktop");
+    await freeze(newcomer);
+  });
+
+  for (const format of FORMATS) {
+    test(`premier groupe : ${format.name}`, async ({ newcomer }) => {
+      await newcomer.setViewportSize(format);
+
+      await newcomer.goto("/");
+      await expect(
+        newcomer.getByRole("heading", { name: "CRÉER TON PREMIER GROUPE" }),
+      ).toBeVisible();
+      await shoot(newcomer, `${format.name}-7b-premier-groupe`);
     });
   }
 });

@@ -1,0 +1,138 @@
+import { type Page } from "@playwright/test";
+import {
+  decide,
+  expect,
+  listTitles,
+  settled,
+  swipe,
+  test,
+  topCard,
+} from "./fixtures";
+
+/** The pill naming the group on screen. */
+const pill = (page: Page, name: string | RegExp = /.*/) =>
+  page.getByRole("button", {
+    name: typeof name === "string" ? `Groupe affiché : ${name}` : name,
+  });
+
+const panel = (page: Page) => page.getByRole("dialog", { name: "TES GROUPES" });
+
+async function openPanel(page: Page) {
+  await pill(page, /^Groupe affiché/).click();
+  await expect(panel(page)).toBeVisible();
+}
+
+/** « + CRÉER UN GROUPE » in the pill's panel: the new group is displayed. */
+async function createGroup(page: Page, name: string) {
+  await openPanel(page);
+  await page.getByRole("button", { name: "+ CRÉER UN GROUPE" }).click();
+  await page.getByLabel("NOM DU GROUPE").fill(name);
+  await page.getByRole("button", { name: "CRÉER LE GROUPE" }).click();
+  await expect(pill(page, name)).toBeVisible();
+}
+
+/** Picks another group in the pill's panel. */
+async function chooseGroup(page: Page, name: string) {
+  await openPanel(page);
+  await panel(page)
+    .getByRole("button", { name: new RegExp(`^${name}`) })
+    .click();
+  await expect(pill(page, name)).toBeVisible();
+}
+
+test.describe("groupes", () => {
+  test("deux membres veulent le même film : il est voulu par Léa et Hugo", async ({
+    app,
+    member,
+  }) => {
+    const hugo = await member("Hugo");
+    // Both decks are on screen before either decides.
+    await hugo.goto("/swipe");
+    await expect(topCard(hugo)).toHaveText("Whiplash");
+
+    await swipe(app, ["keep"]);
+    await decide(hugo, "keep");
+    await settled(hugo);
+
+    for (const page of [app, hugo]) {
+      await page.goto("/list");
+      await expect(listTitles(page)).toHaveText(["Whiplash"]);
+      await expect(page.getByText("voulu par Léa et Hugo")).toBeVisible();
+    }
+  });
+
+  test("un BOF ne cache le film qu’à celui qui l’a mis", async ({
+    app,
+    member,
+  }) => {
+    const hugo = await member("Hugo");
+    await swipe(hugo, ["reject"]);
+
+    await app.goto("/swipe");
+    await expect(topCard(app)).toHaveText("Whiplash");
+    await app.goto("/list");
+    await expect(app.getByRole("tab", { name: /À VOIR · 0/ })).toBeVisible();
+
+    await hugo.goto("/swipe");
+    await expect(topCard(hugo)).toHaveText("Le Voyage de Chihiro");
+    // His BOF follows him into his other groups.
+    await createGroup(hugo, "Hugo seul");
+    await hugo.goto("/swipe");
+    await expect(topCard(hugo)).toHaveText("Le Voyage de Chihiro");
+  });
+
+  test("créer un groupe depuis la pastille, y basculer : sa liste est vide, celle de NOUS DEUX est intacte", async ({
+    app,
+  }) => {
+    await swipe(app, ["keep"]);
+    await app.goto("/list");
+
+    await createGroup(app, "Ciné club");
+    await expect(app.getByText("RIEN À VOIR POUR L’INSTANT")).toBeVisible();
+
+    await chooseGroup(app, "NOUS DEUX");
+    await expect(listTitles(app)).toHaveText(["Whiplash"]);
+  });
+
+  test("sans groupe, on arrive sur CRÉER TON PREMIER GROUPE", async ({
+    newcomer,
+  }) => {
+    for (const path of ["/", "/swipe", "/list", "/list/244786"]) {
+      await newcomer.goto(path);
+      await expect(
+        newcomer.getByRole("heading", { name: "CRÉER TON PREMIER GROUPE" }),
+      ).toBeVisible();
+    }
+  });
+
+  test("le groupe affiché est retenu sur l’appareil", async ({ app }) => {
+    await app.goto("/list");
+    await createGroup(app, "Ciné club");
+    await chooseGroup(app, "NOUS DEUX");
+
+    await app.reload();
+    await expect(pill(app, "NOUS DEUX")).toBeVisible();
+    await app.goto("/swipe");
+    await expect(pill(app, "NOUS DEUX")).toBeVisible();
+    const cookies = await app.context().cookies();
+    expect(cookies.find(({ name }) => name === "ww_group")?.value).toBe(
+      "groupe-e2e",
+    );
+  });
+
+  test("une fiche d’un autre groupe répond FILM INTROUVABLE", async ({
+    app,
+  }) => {
+    await swipe(app, ["keep"]);
+    await app.goto("/list/244786");
+    await expect(app.getByRole("heading", { name: "Whiplash" })).toBeVisible();
+
+    await app.goto("/list");
+    await createGroup(app, "Ciné club");
+    await app.goto("/list/244786");
+
+    await expect(
+      app.getByRole("heading", { name: "FILM INTROUVABLE" }),
+    ).toBeVisible();
+  });
+});

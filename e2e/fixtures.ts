@@ -1,4 +1,9 @@
-import { expect, type Page, test as base } from "@playwright/test";
+import {
+  type BrowserContext,
+  expect,
+  type Page,
+  test as base,
+} from "@playwright/test";
 import { testUtils } from "better-auth/plugins";
 import { sql } from "drizzle-orm";
 import { createAuth } from "../src/auth/create-auth";
@@ -58,7 +63,7 @@ async function wipe() {
   }
 }
 
-/** Léa's group in every `app` test (Task 9 adds other members). */
+/** Léa's group in every `app` test, joined by each `member`. */
 const LEAS_GROUP = { id: "groupe-e2e", name: "NOUS DEUX" };
 
 /** Deletes every session of the worker's database, as a sign-out elsewhere would. */
@@ -67,12 +72,18 @@ export async function deleteSessions() {
 }
 
 /**
- * Signs Léa in without a passkey ceremony: a user and a session written
+ * Signs `name` in without a passkey ceremony: a user and a session written
  * straight to the worker's database, their cookies given to the browser.
- * She is the only member of « NOUS DEUX », displayed through its cookie;
- * `withGroup: false` leaves her a newcomer without any group.
+ * They join `group` (created by its first member), displayed through its
+ * cookie; `group: null` leaves them a newcomer without any group.
  */
-async function signIn(page: Page, { withGroup = true } = {}) {
+async function signIn(
+  page: Page,
+  {
+    name = "Léa",
+    group: joined = LEAS_GROUP,
+  }: { name?: string; group?: typeof LEAS_GROUP | null } = {},
+) {
   const worker = base.info().parallelIndex;
   const auth = createAuth({
     db: db(),
@@ -81,25 +92,25 @@ async function signIn(page: Page, { withGroup = true } = {}) {
     plugins: [testUtils()],
   });
   const { test: helpers } = await auth.$context;
-  const lea = await helpers.saveUser(helpers.createUser({ name: "Léa" }));
+  const account = await helpers.saveUser(helpers.createUser({ name }));
   const cookies = await helpers.getCookies({
-    userId: lea.id,
+    userId: account.id,
     domain: "localhost",
   });
-  if (!withGroup) {
+  if (joined === null) {
     await page.context().addCookies(cookies);
     return;
   }
-  await db().insert(group).values(LEAS_GROUP);
+  await db().insert(group).values(joined).onConflictDoNothing();
   await db()
     .insert(membership)
-    .values({ groupId: LEAS_GROUP.id, userId: lea.id });
+    .values({ groupId: joined.id, userId: account.id });
   await page.context().addCookies([
     ...cookies,
     // The e2e server runs in production mode over http: not `secure`.
     {
       name: GROUP_COOKIE,
-      value: LEAS_GROUP.id,
+      value: joined.id,
       domain: "localhost",
       path: "/",
       httpOnly: true,
@@ -145,12 +156,15 @@ async function virtualAuthenticator(page: Page) {
 }
 
 /**
- * `app`: every test starts signed in, on an empty list, on its worker's
- * server. `newcomer`: signed in, but in no group yet. `visitor`: an empty
- * database, no session, a device that unlocks passkeys.
+ * `app`: every test starts signed in as Léa, on the empty list of « NOUS
+ * DEUX », on its worker's server. `member(name)`: another member of that
+ * group, signed in on a second device (its own browser context).
+ * `newcomer`: signed in, but in no group yet. `visitor`: an empty database,
+ * no session, a device that unlocks passkeys.
  */
 export const test = base.extend<{
   app: Page;
+  member: (name: string) => Promise<Page>;
   newcomer: Page;
   visitor: Page;
 }>({
@@ -162,9 +176,23 @@ export const test = base.extend<{
     await signIn(page);
     await use(page);
   },
+  // Needs `app`: Léa's group exists, and the wipe never runs after a member.
+  member: async ({ app, baseURL }, use) => {
+    const devices: BrowserContext[] = [];
+    await use(async (name) => {
+      const device = await app.context().browser()!.newContext({ baseURL });
+      devices.push(device);
+      const page = await device.newPage();
+      await signIn(page, { name });
+      return page;
+    });
+    for (const device of devices) {
+      await device.close();
+    }
+  },
   newcomer: async ({ page }, use) => {
     await wipe();
-    await signIn(page, { withGroup: false });
+    await signIn(page, { group: null });
     await use(page);
   },
   visitor: async ({ page }, use) => {
@@ -209,20 +237,26 @@ export const topCard = (page: Page) =>
     .getByRole("heading", { level: 2 });
 
 const BUTTONS = { keep: "ON LE VEUT ♥", reject: "✕ BOF" } as const;
+type Decision = keyof typeof BUTTONS;
 
 /**
  * Decides the cards in deck order (the fake TMDB: Whiplash, Le Voyage de
  * Chihiro, Parasite, Amélie, Inception), waiting for each one to leave.
  */
-export async function swipe(page: Page, decisions: (keyof typeof BUTTONS)[]) {
+export async function swipe(page: Page, decisions: Decision[]) {
   await page.goto("/swipe");
   for (const decision of decisions) {
-    const title = (await topCard(page).textContent()) ?? "";
-    await page.getByRole("button", { name: BUTTONS[decision] }).click();
-    // Gone, whether another card replaced it or the deck ran out.
-    await expect(topCard(page).filter({ hasText: title })).toHaveCount(0);
+    await decide(page, decision);
   }
   await settled(page);
+}
+
+/** Decides the card on top of the deck already on screen. */
+export async function decide(page: Page, decision: Decision) {
+  const title = (await topCard(page).textContent()) ?? "";
+  await page.getByRole("button", { name: BUTTONS[decision] }).click();
+  // Gone, whether another card replaced it or the deck ran out.
+  await expect(topCard(page).filter({ hasText: title })).toHaveCount(0);
 }
 
 /** Waits for the Server Actions in flight (saves run behind the UI). */
