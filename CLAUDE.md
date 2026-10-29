@@ -2,7 +2,7 @@
 
 # WeWatch
 
-Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installable (iPhone, Android, ordinateur). Depuis la 2.0, chacun a son compte (Better Auth), créé et ouvert avec une passkey (Face ID, empreinte, code de l'appareil) : plus de code d'accès partagé, pas de mot de passe, aucun email envoyé. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
+Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installable (iPhone, Android, ordinateur). Depuis la 2.0, chacun a son compte (Better Auth), créé et ouvert avec une passkey (Face ID, empreinte ou code du téléphone) : plus de code d'accès partagé, pas de mot de passe, aucun email envoyé. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
 
 - Prod : Vercel (région des fonctions dans `vercel.json`, au plus près de la base) + base Turso (libSQL). L'adresse de prod est la variable de dépôt GitHub `PROD_URL` (`gh variable list`), jamais écrite en dur.
 - Specs de référence, versions comprises : `docs/superpowers/specs/2026-10-23-we-watch-design.md` (§1-10 V1/V1.1, §11 V1.2, §12 V1.2.1, §13 V1.2.2+), complétée pour la 2.0 (comptes, groupes) par `docs/superpowers/specs/2026-10-28-wewatch-v2-design.md`, qui prime sur ce qu'elle change. **Les lire avant toute fonctionnalité** et ajouter une section pour chaque nouvelle version.

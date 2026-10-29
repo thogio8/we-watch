@@ -63,7 +63,7 @@ Dans `.env.local` (`BETTER_AUTH_URL` et `SIGNUP` sont déjà préremplis par `.e
 - `SIGNUP` : `open` (par défaut, tout le monde peut créer un compte) ou `invite` ;
 - `OWNER_CODE` : le code propriétaire, utile seulement avec `SIGNUP=invite`.
 
-L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, « CRÉER MON COMPTE » (Face ID, empreinte ou code de l'appareil), et c'est parti sur TIRER : la liste est vide, direction SWIPER.
+L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, « CRÉER MON COMPTE » (Face ID, empreinte ou code du téléphone), et c'est parti sur TIRER : la liste est vide, direction SWIPER.
 
 ## Héberger votre propre WeWatch
 
