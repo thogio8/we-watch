@@ -71,12 +71,14 @@ describe("createSignupTicket / readSignupTicket", () => {
     const alphabet =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     const last = token.at(-1) as string;
-    // Same decoded bytes: only the 4 padding bits of the last character differ.
-    const base = alphabet.indexOf(last) & ~0b1111;
-    const variant = alphabet[base | ((alphabet.indexOf(last) + 1) & 0b1111)];
-    const forged = token.slice(0, -1) + variant;
-    expect(forged).not.toBe(token);
-    expect(await readSignupTicket(forged, SECRET, NOW)).toBeNull();
+    // 32 bytes -> 43 characters: the last one carries 2 unused low bits.
+    const variant = token.slice(0, -1) + alphabet[alphabet.indexOf(last) ^ 1];
+    const signatureOf = (value: string) => value.split(".")[1] as string;
+    expect(variant).not.toBe(token);
+    expect(Buffer.from(signatureOf(variant), "base64url")).toEqual(
+      Buffer.from(signatureOf(token), "base64url"),
+    );
+    expect(await readSignupTicket(variant, SECRET, NOW)).toBeNull();
   });
 
   it("refuse tout si l'heure fournie n'est pas un nombre (NaN)", async () => {
@@ -84,8 +86,15 @@ describe("createSignupTicket / readSignupTicket", () => {
     expect(await readSignupTicket(token, SECRET, Number.NaN)).toBeNull();
   });
 
-  it("refuse un jeton démesuré avant tout calcul", async () => {
-    expect(await readSignupTicket("a".repeat(513), SECRET, NOW)).toBeNull();
+  it("refuse un jeton démesuré, même correctement signé", async () => {
+    // Trailing spaces are collapsed by parseDisplayName: valid but oversized.
+    const token = sign({
+      name: `Léa${" ".repeat(600)}`,
+      owner: false,
+      exp: NOW + 1000,
+    });
+    expect(token.length).toBeGreaterThan(512);
+    expect(await readSignupTicket(token, SECRET, NOW)).toBeNull();
   });
 
   it("normalise le nom à la création", async () => {
