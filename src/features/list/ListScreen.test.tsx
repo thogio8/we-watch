@@ -129,13 +129,17 @@ describe("ListScreen", () => {
   });
 
   it.each([
-    ["son auteur", { addedBy: "Léa" }, "ajouté par Léa le 1 octobre 2026"],
+    ["son auteur", { addedBy: "Léa" }, "ajouté par Léa le 1er octobre 2026"],
     [
       "sans auteur (liste d’avant)",
       { legacy: true },
-      "ajouté le 1 octobre 2026",
+      "ajouté le 1er octobre 2026",
     ],
-    ["un compte supprimé", {}, "ajouté par un ancien membre le 1 octobre 2026"],
+    [
+      "un compte supprimé",
+      {},
+      "ajouté par un ancien membre le 1er octobre 2026",
+    ],
   ])(
     "ligne à voir sans « voulu » : %s",
     (_label, overrides: Partial<Movie>, line) => {
