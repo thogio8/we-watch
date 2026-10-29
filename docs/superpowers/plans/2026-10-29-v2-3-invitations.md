@@ -257,3 +257,33 @@ Scénarios :
   - `PRAGMA foreign_keys` sur Turso ;
   - procédure de restauration et rattrapage de la bascule ;
   - test de fumée enrichi ; bascule.
+
+## Corrections de la relecture du plan (obligatoires, prioritaires sur le texte des tâches)
+
+1. **Concurrence rejoindre/partir (tâches 1 et 3).**
+   - `join` insère avec `INSERT … SELECT … WHERE EXISTS (SELECT 1 FROM app_group WHERE id = ?) ON CONFLICT DO NOTHING` et renvoie `"joined" | "already" | "gone"`.
+   - `leave` supprime le groupe avec `DELETE FROM app_group WHERE id = ? AND NOT EXISTS (SELECT 1 FROM membership WHERE group_id = ?)`, jamais en lisant d'abord le nombre de membres.
+   - `joinGroupInSignup` (tâche 3) insère aussi sous condition, jamais en deux temps comme `findOne` puis `create`.
+   - Test : un `join` et le départ du dernier membre, concurrents, donnent soit le groupe avec son membre, soit rien. Jamais une appartenance orpheline.
+2. **Suppression du groupe (tâche 1).** Supprimer explicitement, dans cet ordre : `movie_want`, `movie_rejection` du groupe s'il y en a (vérifier le schéma : les BOF sont par personne et ne sont **pas** liés au groupe, donc on n'y touche pas), `group_movie`, `membership`, puis `app_group`. Ne pas compter sur les cascades. Le test du focus 4 vérifie que les BOF restent.
+3. **Code propriétaire et invitation vers « NOUS DEUX » (tâche 3).**
+   - Si `invite === LEGACY_GROUP_ID` et `owner` : une seule appartenance.
+   - Le groupe de l'invitation reçoit `lastUsedAt = now`. S'il y a aussi le groupe hérité, celui-ci reçoit `lastUsedAt = null` : le groupe affiché est celui de l'invitation (décision 3).
+   - Test : propriétaire + invitation vers nous-deux → une seule appartenance, inscription réussie.
+4. **Table de `signupRight` (tâche 3).**
+   - Invité + mauvais code → `wrong_code`.
+   - Invité sans code → `{ ok: true, owner: false }`, dans les deux modes.
+   - Bon code propriétaire → propriétaire, invité ou non.
+   - Un champ `invite` non vide mais invalide → « CE LIEN N’EST PLUS VALABLE », dans les deux modes. Pas d'inscription silencieuse sans groupe.
+5. **Le jeton et les logs.**
+   - Le jeton n'apparaît que dans le chemin `/invitation/<jeton>`. Il ne va jamais dans le ticket d'inscription (seul l'id du groupe y va), ni dans une query string, ni dans un log de l'appli.
+   - La tâche 4 ajoute `Referrer-Policy: no-referrer` sur `/invitation/:token*` (`headers()` de `next.config.ts`), avec un test.
+   - Que l'hébergeur journalise les chemins est accepté : le remède est de régénérer le lien.
+6. **Taille du ticket (tâche 3).** Mettre à jour le commentaire de `MAX_TICKET_LENGTH`. Ajouter un test : un nom de 30 caractères à 4 octets + un `invite` de 64 caractères + `owner: true` donne un ticket de 512 caractères au plus, relu correctement.
+7. **Mode `invite` (tâche 4).**
+   - Test RTL : `SigninScreen` en mode `invite` avec la prop `invite` affiche « CRÉER UN COMPTE » et envoie le champ `invite`. Sans la prop, il affiche « WEWATCH SE REJOINT SUR INVITATION ».
+   - La tâche 6 indique que l'e2e tourne en mode `open`, et que le mode `invite` est couvert par les tests fonctionnels de la tâche 3.
+8. **Proxy (tâche 3).** Tester qu'un POST déconnecté sur `/invitation/<43>` qui appelle une action non publique (`joinGroup`) est refusé par `assertSignedIn` : le préfixe laisse passer toutes les Server Actions.
+9. **knip et noms.**
+   - N'exporter `INVITE_TOKEN_PATTERN` que s'il est importé hors de `src/domain/group.ts`.
+   - L'action s'appelle `regenerateInviteLink`, pour ne pas la confondre avec la méthode `regenerateInvite` du dépôt.
