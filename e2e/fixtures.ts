@@ -77,7 +77,7 @@ export async function accountNames() {
  * says yes.
  * Returns how to take it away again.
  */
-async function faceId(page: Page) {
+async function virtualAuthenticator(page: Page) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("WebAuthn.enable");
   const { authenticatorId } = await cdp.send(
@@ -116,9 +116,9 @@ export const test = base.extend<{ app: Page; visitor: Page }>({
   },
   visitor: async ({ page }, use) => {
     await wipe();
-    const removeFaceId = await faceId(page);
+    const removeAuthenticator = await virtualAuthenticator(page);
     await use(page);
-    await removeFaceId();
+    await removeAuthenticator();
   },
 });
 
