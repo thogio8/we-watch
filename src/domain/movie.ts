@@ -25,4 +25,11 @@ export interface Movie extends MovieSnapshot {
   status: MovieStatus;
   decidedAt: Date;
   watchedAt: Date | null;
+  /** Names already resolved; null = no author, or a deleted account (see legacy). */
+  addedBy: string | null;
+  /** In the order of the wishes. */
+  wantedBy: readonly string[];
+  watchedBy: string | null;
+  /** Copied from the pre-accounts list: authors were never recorded. */
+  legacy: boolean;
 }

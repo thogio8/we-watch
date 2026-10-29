@@ -35,6 +35,17 @@ export interface MoviesRepository {
   ): Promise<ApplyResult>;
 }
 
+/** Single-list rows carry no attribution (replaced by the group lists). */
+function toMovie(row: typeof movies.$inferSelect): Movie {
+  return {
+    ...row,
+    addedBy: null,
+    wantedBy: [],
+    watchedBy: null,
+    legacy: false,
+  };
+}
+
 export function createMoviesRepository(db: Database): MoviesRepository {
   return {
     async findInList(tmdbId) {
@@ -47,7 +58,7 @@ export function createMoviesRepository(db: Database): MoviesRepository {
             inArray(movies.status, ["to_watch", "watched"]),
           ),
         );
-      return movie ?? null;
+      return movie ? toMovie(movie) : null;
     },
 
     async listByStatus(status) {
@@ -56,7 +67,8 @@ export function createMoviesRepository(db: Database): MoviesRepository {
         .select()
         .from(movies)
         .where(eq(movies.status, status))
-        .orderBy(desc(order));
+        .orderBy(desc(order))
+        .then((rows) => rows.map(toMovie));
     },
 
     async counts() {
