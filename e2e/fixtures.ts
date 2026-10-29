@@ -176,11 +176,14 @@ export const test = base.extend<{
     await signIn(page);
     await use(page);
   },
-  // Needs `app`: Léa's group exists, and the wipe never runs after a member.
-  member: async ({ app, baseURL }, use) => {
+  // Needs `app` (`app: {}`, used for its setup only): Léa's group exists, and
+  // the wipe never runs after a member. The runner gives every context of the
+  // test the project's options (device, locale, time zone, reduced motion,
+  // baseURL), as it does `page`'s.
+  member: async ({ app: {}, browser }, use) => {
     const devices: BrowserContext[] = [];
     await use(async (name) => {
-      const device = await app.context().browser()!.newContext({ baseURL });
+      const device = await browser.newContext();
       devices.push(device);
       const page = await device.newPage();
       await signIn(page, { name });

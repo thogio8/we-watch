@@ -105,6 +105,25 @@ test.describe("groupes", () => {
     }
   });
 
+  test("le second appareil a les réglages du projet, comme celui de Léa", async ({
+    app,
+    member,
+  }) => {
+    const hugo = await member("Hugo");
+    const device = (page: Page) =>
+      page.evaluate(() => ({
+        language: navigator.language,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+        touch: navigator.maxTouchPoints > 0,
+        pixelRatio: devicePixelRatio,
+        userAgent: navigator.userAgent,
+      }));
+
+    expect(hugo.viewportSize()).toEqual(app.viewportSize());
+    expect(await device(hugo)).toEqual(await device(app));
+  });
+
   test("le premier groupe créé s’affiche aussitôt, pastille comprise", async ({
     newcomer,
   }) => {
