@@ -117,3 +117,11 @@ export const passkey = sqliteTable(
     uniqueIndex("passkey_credential_id_unique").on(table.credentialID),
   ],
 );
+
+// Signup tickets already used (src/auth/passkey-signup.ts). Declared to
+// Better Auth as the `signupTicketUse` model so the passkey plugin's
+// transaction writes it: `id` is the ticket's jti.
+export const signupTicketUse = sqliteTable("signup_ticket_use", {
+  id: text("jti").primaryKey(),
+  usedAt: integer("used_at", { mode: "timestamp_ms" }).notNull(),
+});

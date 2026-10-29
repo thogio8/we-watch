@@ -64,6 +64,7 @@ describe("prepareSignup", () => {
     await expect(ticketOf(result)).resolves.toEqual({
       name: "Léa M",
       owner: false,
+      jti: expect.any(String),
     });
   });
 
@@ -128,6 +129,7 @@ describe("prepareSignup", () => {
     await expect(ticketOf(result)).resolves.toEqual({
       name: "Léa",
       owner: true,
+      jti: expect.any(String),
     });
   });
 
@@ -141,6 +143,7 @@ describe("prepareSignup", () => {
     await expect(ticketOf(result)).resolves.toEqual({
       name: "Léa",
       owner: true,
+      jti: expect.any(String),
     });
   });
 

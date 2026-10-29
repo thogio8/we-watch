@@ -10,6 +10,12 @@ const SECRET = "a-long-enough-better-auth-secret";
 const NOW = 1_800_000_000_000;
 const TEN_MINUTES = 10 * 60 * 1000;
 const TICKET: SignupTicket = { name: "Léa", owner: false };
+const JTI = "AAAAAAAAAAAAAAAAAAAAAA";
+/** What reading a ticket issued for `ticket` gives back: a random jti too. */
+const issued = (ticket: SignupTicket) => ({
+  ...ticket,
+  jti: expect.stringMatching(/^[A-Za-z0-9_-]{22}$/),
+});
 
 const b64 = (value: string | Buffer) =>
   Buffer.from(value).toString("base64url");
@@ -30,24 +36,38 @@ function sign(
 describe("createSignupTicket / readSignupTicket", () => {
   it("relit à l'identique un ticket créé", async () => {
     const token = await createSignupTicket(TICKET, SECRET, NOW);
-    expect(await readSignupTicket(token, SECRET, NOW)).toEqual(TICKET);
+    expect(await readSignupTicket(token, SECRET, NOW)).toEqual(issued(TICKET));
   });
 
   it("relit un ticket propriétaire", async () => {
     const owner = { name: "Léa", owner: true };
     const token = await createSignupTicket(owner, SECRET, NOW);
-    expect(await readSignupTicket(token, SECRET, NOW)).toEqual(owner);
+    expect(await readSignupTicket(token, SECRET, NOW)).toEqual(issued(owner));
+  });
+
+  it("donne à chaque ticket un identifiant unique (jti)", async () => {
+    const first = await readSignupTicket(
+      await createSignupTicket(TICKET, SECRET, NOW),
+      SECRET,
+      NOW,
+    );
+    const second = await readSignupTicket(
+      await createSignupTicket(TICKET, SECRET, NOW),
+      SECRET,
+      NOW,
+    );
+    expect(first?.jti).not.toBe(second?.jti);
   });
 
   it("utilise l'heure courante par défaut", async () => {
     const token = await createSignupTicket(TICKET, SECRET);
-    expect(await readSignupTicket(token, SECRET)).toEqual(TICKET);
+    expect(await readSignupTicket(token, SECRET)).toEqual(issued(TICKET));
   });
 
   it("accepte le ticket jusqu'à l'expiration incluse", async () => {
     const token = await createSignupTicket(TICKET, SECRET, NOW);
     expect(await readSignupTicket(token, SECRET, NOW + TEN_MINUTES)).toEqual(
-      TICKET,
+      issued(TICKET),
     );
   });
 
@@ -92,6 +112,7 @@ describe("createSignupTicket / readSignupTicket", () => {
       name: `Léa${" ".repeat(600)}`,
       owner: false,
       exp: NOW + 1000,
+      jti: JTI,
     });
     expect(token.length).toBeGreaterThan(512);
     expect(await readSignupTicket(token, SECRET, NOW)).toBeNull();
@@ -103,10 +124,9 @@ describe("createSignupTicket / readSignupTicket", () => {
       SECRET,
       NOW,
     );
-    expect(await readSignupTicket(token, SECRET, NOW)).toEqual({
-      name: "Léa Dupont",
-      owner: false,
-    });
+    expect(await readSignupTicket(token, SECRET, NOW)).toEqual(
+      issued({ name: "Léa Dupont", owner: false }),
+    );
   });
 
   it("refuse de créer un ticket pour un nom invalide", async () => {
@@ -119,7 +139,12 @@ describe("createSignupTicket / readSignupTicket", () => {
     const token = await createSignupTicket(TICKET, SECRET, NOW);
     const [, signature] = token.split(".");
     const forged = b64(
-      JSON.stringify({ name: "Léa", owner: true, exp: NOW + TEN_MINUTES }),
+      JSON.stringify({
+        name: "Léa",
+        owner: true,
+        exp: NOW + TEN_MINUTES,
+        jti: JTI,
+      }),
     );
     expect(
       await readSignupTicket(`${forged}.${signature}`, SECRET, NOW),
@@ -134,8 +159,10 @@ describe("createSignupTicket / readSignupTicket", () => {
   });
 
   it("refuse une signature faite avec un autre label de domaine", async () => {
-    const payload = { ...TICKET, exp: NOW + 1000 };
-    expect(await readSignupTicket(sign(payload), SECRET, NOW)).toEqual(TICKET);
+    const payload = { ...TICKET, exp: NOW + 1000, jti: JTI };
+    expect(await readSignupTicket(sign(payload), SECRET, NOW)).toEqual(
+      issued(TICKET),
+    );
     expect(
       await readSignupTicket(sign(payload, SECRET, "other"), SECRET, NOW),
     ).toBeNull();
@@ -164,17 +191,27 @@ describe("createSignupTicket / readSignupTicket", () => {
   });
 
   it("refuse un nom invalide pour parseDisplayName", async () => {
-    const token = sign({ name: "   ", owner: false, exp: NOW + 1000 });
+    const token = sign({
+      name: "   ",
+      owner: false,
+      exp: NOW + 1000,
+      jti: JTI,
+    });
     expect(await readSignupTicket(token, SECRET, NOW)).toBeNull();
   });
 
+  const VALID = { name: "Léa", owner: false, exp: NOW + 1000, jti: JTI };
+
   it.each([
-    ["owner non booléen", { name: "Léa", owner: "true", exp: NOW + 1000 }],
-    ["owner absent", { name: "Léa", exp: NOW + 1000 }],
-    ["exp absent", { name: "Léa", owner: false }],
-    ["exp non entier", { name: "Léa", owner: false, exp: NOW + 0.5 }],
-    ["exp chaîne", { name: "Léa", owner: false, exp: `${NOW + 1000}` }],
-    ["champ inconnu", { name: "Léa", owner: false, exp: NOW + 1000, admin: 1 }],
+    ["owner non booléen", { ...VALID, owner: "true" }],
+    ["owner absent", { name: "Léa", exp: NOW + 1000, jti: JTI }],
+    ["exp absent", { name: "Léa", owner: false, jti: JTI }],
+    ["exp non entier", { ...VALID, exp: NOW + 0.5 }],
+    ["exp chaîne", { ...VALID, exp: `${NOW + 1000}` }],
+    ["jti absent", { name: "Léa", owner: false, exp: NOW + 1000 }],
+    ["jti trop court", { ...VALID, jti: "AAAA" }],
+    ["jti hors base64url", { ...VALID, jti: "A".repeat(21) + "=" }],
+    ["champ inconnu", { ...VALID, admin: 1 }],
     ["tableau", [1, 2]],
     ["null", null],
   ])(

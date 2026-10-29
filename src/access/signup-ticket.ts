@@ -3,19 +3,26 @@ import { parseDisplayName } from "../domain/display-name";
 import { constantTimeEqual } from "./token";
 
 /**
- * Short-lived signed signup ticket: `base64url(JSON {name, owner, exp})` + `.`
- * + `base64url(HMAC-SHA256)`. Issued by the signup Server Action, re-read
+ * Short-lived signed signup ticket: `base64url(JSON {name, owner, exp, jti})`
+ * + `.` + `base64url(HMAC-SHA256)`. Issued by the signup Server Action, re-read
  * before Better Auth creates the user. Web Crypto only (also runs in the proxy).
  * The signed message is prefixed with a fixed label so the signature can never
  * be confused with another HMAC made from the same secret.
+ *
+ * `jti` is a random identifier: the account creation consumes it, so a ticket
+ * opens one account at most (src/auth/passkey-signup.ts). The ticket travels
+ * as `?context=` on a GET and may land in request logs: single use plus the
+ * 10-minute expiry keep a logged ticket worthless.
  */
 export type SignupTicket = { name: string; owner: boolean };
+export type IssuedSignupTicket = SignupTicket & { jti: string };
 
 const DOMAIN_LABEL = "wewatch:signup-ticket:v1";
 const LIFETIME_MS = 10 * 60 * 1000;
-// Largest legitimate ticket is about 300 characters (30-character name).
+// Largest legitimate ticket is about 310 characters (30 four-byte characters).
 const MAX_TICKET_LENGTH = 512;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
+const JTI_BYTES = 16;
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -24,6 +31,8 @@ const payloadSchema = z.strictObject({
   name: z.string(),
   owner: z.boolean(),
   exp: z.number().int(),
+  // 16 random bytes in base64url.
+  jti: z.string().regex(/^[A-Za-z0-9_-]{22}$/),
 });
 
 function encode(bytes: Uint8Array): string {
@@ -78,6 +87,7 @@ export async function createSignupTicket(
     name,
     owner: ticket.owner,
     exp: now + LIFETIME_MS,
+    jti: encode(crypto.getRandomValues(new Uint8Array(JTI_BYTES))),
   };
   const encoded = encode(encoder.encode(JSON.stringify(payload)));
   return `${encoded}.${await sign(encoded, secret)}`;
@@ -100,7 +110,7 @@ export async function readSignupTicket(
   token: string | null | undefined,
   secret: string,
   now: number = Date.now(),
-): Promise<SignupTicket | null> {
+): Promise<IssuedSignupTicket | null> {
   if (
     token === null ||
     token === undefined ||
@@ -121,5 +131,7 @@ export async function readSignupTicket(
     return null;
   }
   const name = parseDisplayName(payload.name);
-  return name === null ? null : { name, owner: payload.owner };
+  return name === null
+    ? null
+    : { name, owner: payload.owner, jti: payload.jti };
 }

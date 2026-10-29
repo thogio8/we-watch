@@ -5,7 +5,7 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
 import { parseDisplayName } from "@/domain/display-name";
-import { passkeySignup } from "./passkey-signup";
+import { passkeySignup, signupTicketUses } from "./passkey-signup";
 
 export type AuthConfig<Plugins extends BetterAuthPlugin[] = []> = {
   db: Database;
@@ -113,6 +113,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
         origin: url.origin,
         registration: passkeySignup(secret),
       }),
+      signupTicketUses,
       ...(plugins ?? []),
     ],
   });

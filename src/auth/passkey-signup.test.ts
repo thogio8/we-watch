@@ -1,7 +1,7 @@
 import type * as betterAuthApi from "better-auth/api";
 import { getSessionFromCtx } from "better-auth/api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createSignupTicket } from "@/access/signup-ticket";
+import { createSignupTicket, readSignupTicket } from "@/access/signup-ticket";
 import { passkeySignup } from "./passkey-signup";
 
 vi.mock("better-auth/api", async (importOriginal) => ({
@@ -16,12 +16,25 @@ beforeEach(() => {
 const SECRET = "a-long-enough-better-auth-secret";
 const ELEVEN_MINUTES = 11 * 60 * 1000;
 
-function fakeCtx() {
+/** `used`: the ticket's jti is already in the signup_ticket_use table. */
+function fakeCtx({ used = false } = {}) {
   const createUser = vi.fn(async (data: { name: string }) => ({
     id: "user-1",
     ...data,
   }));
-  return { createUser, ctx: { context: { internalAdapter: { createUser } } } };
+  const findOne = vi.fn(async () => (used ? { id: "jti" } : null));
+  const create = vi.fn(async ({ data }: { data: object }) => data);
+  return {
+    createUser,
+    findOne,
+    create,
+    ctx: {
+      context: {
+        internalAdapter: { createUser },
+        adapter: { findOne, create },
+      },
+    },
+  };
 }
 
 /** The verification arguments the plugin passes, reduced to what we read. */
@@ -92,7 +105,7 @@ describe("passkeySignup", () => {
       { name: "Léa", owner: true },
       SECRET,
     );
-    const { createUser, ctx } = fakeCtx();
+    const { createUser, create, ctx } = fakeCtx();
 
     const result = await passkeySignup(SECRET).afterVerification(
       afterVerificationArgs(ctx, ticket),
@@ -100,6 +113,9 @@ describe("passkeySignup", () => {
 
     expect(result).toEqual({ userId: "user-1" });
     expect(createUser).toHaveBeenCalledTimes(1);
+    expect(create.mock.invocationCallOrder[0]).toBeLessThan(
+      createUser.mock.invocationCallOrder[0] as number,
+    );
     expect(createUser).toHaveBeenCalledWith(
       {
         name: "Léa",
@@ -108,6 +124,48 @@ describe("passkeySignup", () => {
       },
       { method: "passkey" },
     );
+  });
+
+  it("afterVerification : consomme le jti du ticket, dans la base de Better Auth", async () => {
+    const ticket = await createSignupTicket(
+      { name: "Léa", owner: false },
+      SECRET,
+    );
+    const jti = (await readSignupTicket(ticket, SECRET))?.jti;
+    const { findOne, create, ctx } = fakeCtx();
+
+    await passkeySignup(SECRET).afterVerification(
+      afterVerificationArgs(ctx, ticket),
+    );
+
+    expect(findOne).toHaveBeenCalledWith({
+      model: "signupTicketUse",
+      where: [{ field: "id", value: jti }],
+    });
+    expect(create).toHaveBeenCalledWith({
+      model: "signupTicketUse",
+      data: { id: jti, usedAt: expect.any(Date) },
+      forceAllowId: true,
+    });
+  });
+
+  it("afterVerification : un ticket déjà utilisé est rejeté et aucun utilisateur n'est créé", async () => {
+    const ticket = await createSignupTicket(
+      { name: "Léa", owner: false },
+      SECRET,
+    );
+    const { createUser, create, ctx } = fakeCtx({ used: true });
+
+    await expect(
+      passkeySignup(SECRET).afterVerification(
+        afterVerificationArgs(ctx, ticket),
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      body: { message: "Signup ticket already used" },
+    });
+    expect(create).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
   });
 
   it("afterVerification : un ticket expiré est rejeté et aucun utilisateur n'est créé", async () => {

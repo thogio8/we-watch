@@ -29,6 +29,13 @@
       "when": 1793273804313,
       "tag": "0003_passkey_credential_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793277684972,
+      "tag": "0004_signup_ticket_use",
+      "breakpoints": true
     }
   ]
 }

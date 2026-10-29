@@ -3,7 +3,13 @@ import { eq } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createDatabase, type Database } from "./create-database";
-import { account, passkey, session, user } from "./auth-schema";
+import {
+  account,
+  passkey,
+  session,
+  signupTicketUse,
+  user,
+} from "./auth-schema";
 
 let db: Database;
 
@@ -54,6 +60,13 @@ describe("tables des comptes", () => {
     await expect(
       db.insert(passkey).values({ ...aPasskey, id: "p2", userId: "u2" }),
     ).rejects.toThrow();
+  });
+
+  it("refuse de consommer deux fois le même ticket d'inscription", async () => {
+    const use = { id: "jti-1", usedAt: new Date() };
+    await db.insert(signupTicketUse).values(use);
+
+    await expect(db.insert(signupTicketUse).values(use)).rejects.toThrow();
   });
 
   it("supprime sessions, comptes et passkeys avec l'utilisateur", async () => {

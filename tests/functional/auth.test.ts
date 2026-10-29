@@ -175,17 +175,19 @@ describe("Better Auth (fonctionnel)", () => {
     const cookiesOf = (response: Response) =>
       response.headers.getSetCookie().map((line) => line.split(";")[0]);
 
+    const ticketFor = (name: string) =>
+      createSignupTicket({ name, owner: false }, SECRET);
+
     async function signUp(options: {
       name: string;
       credentialId: Uint8Array;
       cookies?: string[];
       /** What the client asks for; the server opens a session regardless. */
       createSession?: boolean;
+      /** Defaults to a fresh ticket for `name`. */
+      ticket?: string;
     }) {
-      const ticket = await createSignupTicket(
-        { name: options.name, owner: false },
-        SECRET,
-      );
+      const ticket = options.ticket ?? (await ticketFor(options.name));
       const cookies = options.cookies ?? [];
       const challenge = await auth.handler(
         new Request(
@@ -270,6 +272,51 @@ describe("Better Auth (fonctionnel)", () => {
 
       expect(again.status).not.toBe(200);
       expect(await names()).not.toContain("Paul");
+    });
+
+    it("un ticket rejoué ne crée qu'un compte : la seconde inscription est refusée", async () => {
+      const ticket = await ticketFor("Ugo");
+
+      const first = await signUp({
+        name: "Ugo",
+        credentialId: new Uint8Array([3, 1, 4, 1]),
+        ticket,
+      });
+      const replay = await signUp({
+        name: "Ugo",
+        credentialId: new Uint8Array([3, 1, 4, 2]),
+        ticket,
+      });
+
+      expect(first.status).toBe(200);
+      expect(replay.status).toBe(400);
+      expect(await replay.json()).toMatchObject({
+        message: "Signup ticket already used",
+      });
+      expect((await names()).filter((name) => name === "Ugo")).toHaveLength(1);
+    });
+
+    it("une inscription annulée par la base ne consomme pas le ticket", async () => {
+      const taken = new Uint8Array([2, 7, 1, 8]);
+      await signUp({ name: "Vera", credentialId: taken });
+      const ticket = await ticketFor("Willy");
+
+      const failed = await signUp({
+        name: "Willy",
+        credentialId: taken,
+        ticket,
+      });
+      const retried = await signUp({
+        name: "Willy",
+        credentialId: new Uint8Array([2, 7, 1, 9]),
+        ticket,
+      });
+
+      expect(failed.status).not.toBe(200);
+      expect(retried.status).toBe(200);
+      expect((await names()).filter((name) => name === "Willy")).toHaveLength(
+        1,
+      );
     });
 
     it("connecté, une inscription est refusée et ne crée aucun compte", async () => {
