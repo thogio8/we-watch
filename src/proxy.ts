@@ -1,25 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ACCESS_COOKIE } from "@/access/cookie";
-import { accessDecision } from "@/access/decision";
-import { UNLOCK_PATH } from "@/access/paths";
+import { decideAccess } from "@/access/decision";
+import { SIGNIN_PATH } from "@/access/paths";
+import { readSignedIn } from "@/access/signed-in";
 import { getServerEnv } from "@/env";
+import { getAuth } from "@/server/container";
 
-/** Shared access code: every request needs the unlock cookie (see src/access). */
+/**
+ * Every request needs a Better Auth session (see src/access). Cookies Better
+ * Auth refreshes while reading it reach the browser through nextCookies():
+ * the proxy runs with a writable cookies() store.
+ */
 export async function proxy(request: NextRequest) {
-  const env = getServerEnv();
-  const decision = await accessDecision({
-    pathname: request.nextUrl.pathname,
-    method: request.method,
-    cookie: request.cookies.get(ACCESS_COOKIE)?.value,
-    code: env.ACCESS_CODE,
-    authorization: request.headers.get("authorization"),
-    cronSecret: env.CRON_SECRET,
-  });
+  const decision = await decideAccess(
+    {
+      pathname: request.nextUrl.pathname,
+      method: request.method,
+      authorization: request.headers.get("authorization"),
+      cronSecret: getServerEnv().CRON_SECRET,
+    },
+    () =>
+      readSignedIn(() =>
+        getAuth().api.getSession({ headers: request.headers }),
+      ),
+  );
   switch (decision) {
     case "allow":
       return NextResponse.next();
     case "redirect":
-      return NextResponse.redirect(new URL(UNLOCK_PATH, request.url));
+      return NextResponse.redirect(new URL(SIGNIN_PATH, request.url));
     case "unauthorized":
       return new NextResponse(null, { status: 401 });
   }

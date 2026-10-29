@@ -1,0 +1,137 @@
+import { z } from "zod";
+import { parseDisplayName } from "@/domain/display-name";
+import { constantTimeEqual } from "./token";
+
+/**
+ * Short-lived signed signup ticket: `base64url(JSON {name, owner, exp, jti})`
+ * + `.` + `base64url(HMAC-SHA256)`. Issued by the signup Server Action, re-read
+ * before Better Auth creates the user. Web Crypto only.
+ * The signed message is prefixed with a fixed label so the signature can never
+ * be confused with another HMAC made from the same secret.
+ *
+ * `jti` is a random identifier: the account creation consumes it, so a ticket
+ * opens one account at most (src/auth/passkey-signup.ts). The ticket travels
+ * as `?context=` on a GET and may land in request logs: single use plus the
+ * 10-minute expiry keep a logged ticket worthless.
+ */
+export type SignupTicket = { name: string; owner: boolean };
+export type IssuedSignupTicket = SignupTicket & { jti: string };
+
+const DOMAIN_LABEL = "wewatch:signup-ticket:v1";
+const LIFETIME_MS = 10 * 60 * 1000;
+// Largest legitimate ticket is about 310 characters (30 four-byte characters).
+const MAX_TICKET_LENGTH = 512;
+const BASE64URL = /^[A-Za-z0-9_-]+$/;
+const JTI_BYTES = 16;
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder("utf-8", { fatal: true });
+
+const payloadSchema = z.strictObject({
+  name: z.string(),
+  owner: z.boolean(),
+  exp: z.number().int(),
+  // 16 random bytes in base64url.
+  jti: z.string().regex(/^[A-Za-z0-9_-]{22}$/),
+});
+
+function encode(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
+}
+
+/**
+ * Returns null (never throws) on anything that is not well-formed base64url.
+ * Canonicality is enforced by the signature string comparison, not here.
+ */
+function decode(text: string): Uint8Array | null {
+  if (!BASE64URL.test(text)) {
+    return null;
+  }
+  try {
+    const binary = atob(text.replaceAll("-", "+").replaceAll("_", "/"));
+    return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+
+async function sign(encodedPayload: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(`${DOMAIN_LABEL}.${encodedPayload}`),
+  );
+  return encode(new Uint8Array(mac));
+}
+
+export async function createSignupTicket(
+  ticket: SignupTicket,
+  secret: string,
+  now: number = Date.now(),
+): Promise<string> {
+  const name = parseDisplayName(ticket.name);
+  if (name === null) {
+    throw new Error("Invalid display name for a signup ticket");
+  }
+  const payload = {
+    name,
+    owner: ticket.owner,
+    exp: now + LIFETIME_MS,
+    jti: encode(crypto.getRandomValues(new Uint8Array(JTI_BYTES))),
+  };
+  const encoded = encode(encoder.encode(JSON.stringify(payload)));
+  return `${encoded}.${await sign(encoded, secret)}`;
+}
+
+function parsePayload(encoded: string): z.infer<typeof payloadSchema> | null {
+  const bytes = decode(encoded);
+  if (bytes === null) {
+    return null;
+  }
+  try {
+    const parsed = payloadSchema.safeParse(JSON.parse(decoder.decode(bytes)));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function readSignupTicket(
+  token: string | null | undefined,
+  secret: string,
+  now: number = Date.now(),
+): Promise<IssuedSignupTicket | null> {
+  if (
+    token === null ||
+    token === undefined ||
+    token.length > MAX_TICKET_LENGTH
+  ) {
+    return null;
+  }
+  const parts = token.split(".");
+  if (parts.length !== 2) {
+    return null;
+  }
+  const [encoded, signature] = parts as [string, string];
+  if (!constantTimeEqual(signature, await sign(encoded, secret))) {
+    return null;
+  }
+  const payload = parsePayload(encoded);
+  if (payload === null || !(payload.exp >= now)) {
+    return null;
+  }
+  const name = parseDisplayName(payload.name);
+  return name === null
+    ? null
+    : { name, owner: payload.owner, jti: payload.jti };
+}

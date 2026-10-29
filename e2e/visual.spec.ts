@@ -1,12 +1,15 @@
 import { type Page } from "@playwright/test";
 import {
   decidedOn,
+  emptyNameRefused,
   expect,
   listTitles,
   settled,
   swipe,
   test,
   topCard,
+  UNSUPPORTED_MESSAGE,
+  withoutPasskeys,
 } from "./fixtures";
 
 /**
@@ -31,7 +34,11 @@ async function freeze(page: Page) {
   });
 }
 
-/** Captures once the screen is final: data loaded, fonts in, no request left. */
+/**
+ * Captures once the screen is final: data loaded, fonts in, no request left.
+ * In a fullPage capture the fixed bottom nav sits where the first viewport
+ * ends, so it may cover content in the image only (the shell pads for it).
+ */
 async function shoot(page: Page, name: string) {
   await settled(page);
   await page.evaluate(() => document.fonts.ready);
@@ -74,9 +81,21 @@ test.describe("rendu visuel", () => {
       await expect(app.getByText("Bong Joon-ho")).toBeVisible();
       await shoot(app, `${format.name}-5b-fiche`);
 
+      // Signed out: the sign-in page, as a newcomer sees it.
       await app.context().clearCookies();
-      await app.goto("/unlock");
-      await shoot(app, `${format.name}-6-code`);
+      await app.goto("/connexion");
+      await expect(
+        app.getByRole("button", { name: "SE CONNECTER" }),
+      ).toBeVisible();
+      await shoot(app, `${format.name}-6-connexion`);
+      await emptyNameRefused(app);
+      await shoot(app, `${format.name}-6b-connexion-erreur`);
+
+      // A browser without passkeys: the explanation instead of the buttons.
+      await withoutPasskeys(app);
+      await app.goto("/connexion");
+      await expect(app.getByText(UNSUPPORTED_MESSAGE)).toBeVisible();
+      await shoot(app, `${format.name}-6c-connexion-sans-cle`);
     });
   }
 });

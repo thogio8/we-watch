@@ -1,18 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assertUnlocked } from "@/access/assert-unlocked";
+import { assertSignedIn } from "@/server/session";
 import { revalidateListPages } from "@/server/revalidate";
 import { markWatched } from "./actions";
 
 const apply = vi.fn();
 
-vi.mock("@/access/assert-unlocked");
+vi.mock("@/server/session");
 vi.mock("@/server/container", () => ({
   getMoviesRepository: () => ({ apply }),
 }));
 vi.mock("@/server/revalidate");
 
 beforeEach(() => {
-  vi.mocked(assertUnlocked).mockReset().mockResolvedValue(undefined);
+  vi.mocked(assertSignedIn)
+    .mockReset()
+    .mockResolvedValue({ userId: "user-1", name: "Léa" });
   apply.mockReset().mockResolvedValue("applied");
   vi.mocked(revalidateListPages).mockReset();
 });
@@ -34,11 +36,11 @@ describe("markWatched", () => {
   );
 });
 
-describe("appareil verrouillé", () => {
+describe("sans session", () => {
   it("markWatched refuse sans rien appliquer", async () => {
-    vi.mocked(assertUnlocked).mockRejectedValue(new Error("device is locked"));
+    vi.mocked(assertSignedIn).mockRejectedValue(new Error("not signed in"));
 
-    await expect(markWatched(129)).rejects.toThrow("device is locked");
+    await expect(markWatched(129)).rejects.toThrow("not signed in");
     expect(apply).not.toHaveBeenCalled();
     expect(revalidateListPages).not.toHaveBeenCalled();
   });

@@ -1,8 +1,18 @@
 import { expect, type Page, test as base } from "@playwright/test";
+import { testUtils } from "better-auth/plugins";
 import { sql } from "drizzle-orm";
+import { createAuth } from "../src/auth/create-auth";
+import {
+  account,
+  passkey,
+  session,
+  signupTicketUse,
+  user,
+  verification,
+} from "../src/db/auth-schema";
 import { createDatabase } from "../src/db/create-database";
 import { movies } from "../src/db/schema";
-import { ACCESS_CODE, appPort, databaseOf } from "./env";
+import { appUrl, databaseOf, E2E_AUTH_SECRET } from "./env";
 
 const databases = new Map<number, ReturnType<typeof createDatabase>>();
 
@@ -15,30 +25,128 @@ function db() {
   return databases.get(worker)!;
 }
 
-/** Every test starts unlocked, on an empty list, on its worker's server. */
-export const test = base.extend<{ app: Page }>({
+/**
+ * Empties the worker's database (movies and every Better Auth table), the
+ * children before the users they point to.
+ */
+async function wipe() {
+  await db().delete(movies);
+  await db().delete(passkey);
+  await db().delete(session);
+  await db().delete(account);
+  await db().delete(verification);
+  await db().delete(signupTicketUse);
+  await db().delete(user);
+}
+
+/** Deletes every session of the worker's database, as a sign-out elsewhere would. */
+export async function deleteSessions() {
+  await db().delete(session);
+}
+
+/**
+ * Signs Léa in without a passkey ceremony: a user and a session written
+ * straight to the worker's database, their cookies given to the browser.
+ */
+async function signIn(page: Page) {
+  const worker = base.info().parallelIndex;
+  const auth = createAuth({
+    db: db(),
+    secret: E2E_AUTH_SECRET,
+    baseURL: appUrl(worker),
+    plugins: [testUtils()],
+  });
+  const { test: helpers } = await auth.$context;
+  const lea = await helpers.saveUser(helpers.createUser({ name: "Léa" }));
+  await page
+    .context()
+    .addCookies(
+      await helpers.getCookies({ userId: lea.id, domain: "localhost" }),
+    );
+}
+
+/** Names of the accounts in the worker's database. */
+export async function accountNames() {
+  const rows = await db().select({ name: user.name }).from(user);
+  return rows.map(({ name }) => name);
+}
+
+/**
+ * Gives the page a device that unlocks passkeys: a virtual platform
+ * authenticator (Chromium, through CDP) that keeps its passkeys and always
+ * says yes.
+ * Returns how to take it away again.
+ */
+async function virtualAuthenticator(page: Page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("WebAuthn.enable");
+  const { authenticatorId } = await cdp.send(
+    "WebAuthn.addVirtualAuthenticator",
+    {
+      options: {
+        protocol: "ctap2",
+        transport: "internal",
+        hasResidentKey: true,
+        hasUserVerification: true,
+        isUserVerified: true,
+        automaticPresenceSimulation: true,
+      },
+    },
+  );
+  return async () => {
+    await cdp.send("WebAuthn.removeVirtualAuthenticator", { authenticatorId });
+    await cdp.send("WebAuthn.disable");
+    await cdp.detach();
+  };
+}
+
+/**
+ * `app`: every test starts signed in, on an empty list, on its worker's
+ * server. `visitor`: an empty database, no session, a device that unlocks
+ * passkeys.
+ */
+export const test = base.extend<{ app: Page; visitor: Page }>({
   baseURL: async ({}, use, testInfo) => {
-    await use(`http://localhost:${appPort(testInfo.parallelIndex)}`);
+    await use(appUrl(testInfo.parallelIndex));
   },
   app: async ({ page }, use) => {
-    await db().delete(movies);
-    await unlock(page);
+    await wipe();
+    await signIn(page);
     await use(page);
+  },
+  visitor: async ({ page }, use) => {
+    await wipe();
+    const removeAuthenticator = await virtualAuthenticator(page);
+    await use(page);
+    await removeAuthenticator();
   },
 });
 
 export { expect };
 
-export async function enterCode(page: Page, code: string) {
-  await page.goto("/unlock");
-  await page.getByLabel("Code d'accès").fill(code);
-  await page.getByRole("button", { name: "ENTRER" }).click();
+/** Fills the « CRÉER UN COMPTE » form of /connexion and submits it. */
+export async function signUpAs(page: Page, name: string) {
+  await page.goto("/connexion");
+  await page.getByRole("button", { name: "CRÉER UN COMPTE" }).click();
+  await page.getByLabel("TON PRÉNOM OU SURNOM").fill(name);
+  await page.getByRole("button", { name: "CRÉER MON COMPTE" }).click();
 }
 
-/** Enters the right code and waits for the cookie (the redirect home). */
-export async function unlock(page: Page) {
-  await enterCode(page, ACCESS_CODE);
-  await page.waitForURL("/");
+/** What /connexion shows in a browser that cannot do passkeys. */
+export const UNSUPPORTED_MESSAGE =
+  "CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL.";
+
+/** From the next navigation on, the page is a browser without WebAuthn. */
+export async function withoutPasskeys(page: Page) {
+  await page.addInitScript(() => {
+    delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential;
+  });
+}
+
+/** Submits the form with an empty name and waits for the refusal. */
+export async function emptyNameRefused(page: Page) {
+  await signUpAs(page, "");
+  await expect(page.getByText("UN PRÉNOM DE 1 À 30 CARACTÈRES")).toBeVisible();
 }
 
 /** The card on top of the swipe deck. */

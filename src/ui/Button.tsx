@@ -1,8 +1,9 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import styles from "./Button.module.css";
 import { cx } from "./cx";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+/** A ref reaches the <button> (React 19: a plain prop), e.g. to move focus. */
+interface ButtonProps extends ComponentPropsWithRef<"button"> {
   variant: "primary" | "love" | "secondary";
   children: ReactNode;
 }

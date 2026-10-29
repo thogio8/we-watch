@@ -10,7 +10,7 @@ import { decideSwipe } from "@/features/swipe/actions";
 import { getMoviesRepository } from "@/server/container";
 import { startServerStack } from "../helpers/functional";
 
-vi.mock("@/access/assert-unlocked");
+vi.mock("@/server/session");
 vi.mock("next/cache");
 
 const AMELIE = 194;

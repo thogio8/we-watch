@@ -1,6 +1,9 @@
 import { createClient } from "@libsql/client";
 import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
-import * as schema from "./schema";
+import * as authSchema from "./auth-schema";
+import * as appSchema from "./schema";
+
+const schema = { ...appSchema, ...authSchema };
 
 export type Database = LibSQLDatabase<typeof schema>;
 

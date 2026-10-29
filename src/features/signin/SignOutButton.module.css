@@ -1,0 +1,8 @@
+.signOut {
+  margin-bottom: 21px;
+}
+
+.failed {
+  composes: alert from "../../ui/Alert.module.css";
+  text-transform: uppercase;
+}

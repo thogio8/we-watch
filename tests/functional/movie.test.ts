@@ -4,7 +4,7 @@ import { loadMoviePage } from "@/features/movie/load";
 import { setTmdbDown } from "../fake-tmdb/handler";
 import { startServerStack } from "../helpers/functional";
 
-vi.mock("@/access/assert-unlocked");
+vi.mock("@/server/session");
 vi.mock("next/cache");
 
 const PARASITE = 496243;

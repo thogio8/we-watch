@@ -23,7 +23,9 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
+    "@better-auth/passkey": "1.7.14",
     "@libsql/client": "^0.18.0",
+    "better-auth": "1.7.14",
     "drizzle-orm": "^0.45.4",
     "motion": "^14.6.0",
     "next": "16.4.3",

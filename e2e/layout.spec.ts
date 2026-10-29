@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, swipe, test } from "./fixtures";
+import { type Page } from "@playwright/test";
+import { emptyNameRefused, expect, swipe, test } from "./fixtures";
 
 /** Formats from spec §12: small and large phones, sideways, tablet, desktop. */
 const VIEWPORTS = [
@@ -12,6 +13,23 @@ const VIEWPORTS = [
 ];
 
 const PAGES = ["/", "/swipe", "/list"];
+const SIGNIN = "/connexion";
+
+/**
+ * Every page, then the sign-in one signed out (cookies cleared): its home,
+ * then its signup form showing an error.
+ */
+async function* visitAll(page: Page) {
+  for (const path of PAGES) {
+    await page.goto(path);
+    yield path;
+  }
+  await page.context().clearCookies();
+  await page.goto(SIGNIN);
+  yield SIGNIN;
+  await emptyNameRefused(page);
+  yield `${SIGNIN} (formulaire refusé)`;
+}
 
 test.describe("mise en page et accessibilité", () => {
   test.beforeEach(async ({ app }) => {
@@ -23,8 +41,7 @@ test.describe("mise en page et accessibilité", () => {
   for (const viewport of VIEWPORTS) {
     test(`rien ne déborde en largeur : ${viewport.name}`, async ({ app }) => {
       await app.setViewportSize(viewport);
-      for (const path of PAGES) {
-        await app.goto(path);
+      for await (const path of visitAll(app)) {
         const overflow = await app.evaluate(
           () => document.documentElement.scrollWidth - window.innerWidth,
         );
@@ -37,8 +54,7 @@ test.describe("mise en page et accessibilité", () => {
   }
 
   test("aucun défaut d'accessibilité grave (axe)", async ({ app }) => {
-    for (const path of PAGES) {
-      await app.goto(path);
+    for await (const path of visitAll(app)) {
       const { violations } = await new AxeBuilder({ page: app }).analyze();
       const serious = violations
         .filter((v) => v.impact === "serious" || v.impact === "critical")

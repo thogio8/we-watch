@@ -2,10 +2,10 @@
 
 # WeWatch
 
-Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installable (iPhone, Android, ordinateur), protégée par un code d'accès partagé, sans comptes. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
+Appli pour un couple : on swipe des films TMDB dans une liste « à voir », puis le soir un tirage au sort choisit le film (avec filtres « ce soir » : heure de coucher, humeur, plateformes). PWA installable (iPhone, Android, ordinateur). Depuis la 2.0, chacun a son compte (Better Auth), créé et ouvert avec une passkey (Face ID, empreinte ou code du téléphone) : plus de code d'accès partagé, pas de mot de passe, aucun email envoyé. Pas un produit commercial (licences TMDB / Vercel Hobby non commerciales).
 
 - Prod : Vercel (région des fonctions dans `vercel.json`, au plus près de la base) + base Turso (libSQL). L'adresse de prod est la variable de dépôt GitHub `PROD_URL` (`gh variable list`), jamais écrite en dur.
-- Spec de référence, versions comprises : `docs/superpowers/specs/2026-10-23-we-watch-design.md` (§1-10 V1/V1.1, §11 V1.2, §12 V1.2.1, §13 V1.2.2+). **La lire avant toute fonctionnalité** et y ajouter une section pour chaque nouvelle version.
+- Specs de référence, versions comprises : `docs/superpowers/specs/2026-10-23-we-watch-design.md` (§1-10 V1/V1.1, §11 V1.2, §12 V1.2.1, §13 V1.2.2+), complétée pour la 2.0 (comptes, groupes) par `docs/superpowers/specs/2026-10-28-wewatch-v2-design.md`, qui prime sur ce qu'elle change. **Les lire avant toute fonctionnalité** et ajouter une section pour chaque nouvelle version.
 
 ## Commandes
 
@@ -27,9 +27,11 @@ Appli pour un couple : on swipe des films TMDB dans une liste « à voir », pui
 - **Push sur `main` = mise en prod, mais seulement via GitHub Actions** (`.github/workflows/ci.yml`) : trois jobs en parallèle (`checks` = `npm run ci:checks`, `e2e` = `npm run test:e2e`, `build` = déploiement Vercel construit et envoyé **sans être mis en ligne**, `--skip-domain`), puis, tous verts, `release` : sauvegarde de la table (artefact 90 jours), migration Turso, mise en ligne du déploiement construit, test de fumée (`scripts/smoke-prod.sh`), et retour arrière automatique si la fumée échoue. L'auto-deploy Git de Vercel est coupé (`vercel.json`). Ne jamais déployer à la main (`vercel --prod`) ni migrer la prod à la main.
 - **Migrations rétrocompatibles** : la migration passe _avant_ le nouveau code, pendant que l'ancien sert encore. Ajouter des colonnes (nullables ou avec défaut), jamais renommer ni supprimer dans la même version ; supprimer dans une version suivante.
 - **Next 16 ≠ ce que tu connais** (voir AGENTS.md) : `src/proxy.ts` remplace `middleware`, `cacheComponents` est actif (tout accès à `searchParams`, `cookies()`, `connection()` doit être sous un `<Suspense>`, sinon le build échoue), `PageProps<"/route">` est global. Sur une route dynamique (`/list/[tmdbId]`), passer la promesse `params` à un composant sous `<Suspense>`, et tout composant client qui lit l'URL (`usePathname`) doit aussi être sous `<Suspense>` : c'est pourquoi `BottomNav` l'est dans le layout.
-- **Le proxy valide l'environnement à chaque requête** : une variable invalide (ex. `CRON_SECRET` < 16 caractères) met **tout** en 500, `/unlock` compris.
-- **Le téléphone garde les pages visitées 5 minutes** (`staleTimes` dans `next.config.ts`) : toute action serveur qui modifie la base doit appeler `revalidateListPages()` (`src/server/revalidate.ts`), sinon TIRER et LISTE affichent une donnée périmée (test e2e « une page déjà visitée… »). Mesurer la navigation : `ACCESS_CODE=… node scripts/measure-nav.mjs <url>`.
-- Ne jamais afficher ni committer `ACCESS_CODE`, `CRON_SECRET`, les jetons TMDB / Turso.
+- **Le proxy valide l'environnement à chaque requête** : une variable invalide (ex. `CRON_SECRET` < 16 caractères) met **tout** en 500, `/connexion` comprise.
+- **Sans session, tout renvoie vers `/connexion`** (pages) ou répond 401 (actions serveur) : le proxy lit la session Better Auth (cache signé de 5 minutes dans un cookie, sinon la base). Seuls `/connexion`, `/api/auth/*`, les fichiers publics et le cron (son `CRON_SECRET`) passent sans. Les passkeys sont liées au nom d'hôte de `BETTER_AUTH_URL` (`rpID`) : changer d'adresse rend les passkeys existantes inutilisables.
+- **Une session supprimée reste acceptée jusqu'à 5 minutes** : tant que le cookie de cache (`better-auth.session_data`, `cookieCache` dans `src/auth/create-auth.ts`) est valide, ni le proxy ni `getSession` ne relisent la base. Déconnexion ailleurs ou session révoquée = retard d'au plus 5 minutes (le test e2e « une session supprimée, sans cache de session… » ne couvre que le cas sans cache). À corriger au morceau 5 (`disableCookieCache` sur les lectures sensibles).
+- **Le téléphone garde les pages visitées 5 minutes** (`staleTimes` dans `next.config.ts`) : toute action serveur qui modifie la base doit appeler `revalidateListPages()` (`src/server/revalidate.ts`), sinon TIRER et LISTE affichent une donnée périmée (test e2e « une page déjà visitée… »). Mesurer la navigation : `SESSION_TOKEN=… node scripts/measure-nav.mjs <url>`, avec la valeur du cookie `better-auth.session_token` (`__Secure-…` en https) copiée depuis son propre navigateur connecté (un navigateur sans écran n'a pas de passkey) ; le script ne l'affiche jamais.
+- Ne jamais afficher ni committer `BETTER_AUTH_SECRET`, `OWNER_CODE`, `CRON_SECRET`, un jeton de session, les jetons TMDB / Turso (ni `ACCESS_CODE`, gardé dans Vercel jusqu'en 2.1 pour un retour arrière vers la 1.3.x).
 
 ## Architecture
 
@@ -38,8 +40,9 @@ src/
   domain/    règles métier PURES (aucun import hors domain) : films, transitions de statut, tirage, filtres « ce soir »
   db/        Drizzle : schéma + repository (dépend de domain)
   tmdb/      client TMDB + schémas zod + mapping + decks thématiques (dépend de domain)
-  access/    code d'accès : jeton HMAC, cookie, décision du proxy, secret du cron
-  server/    container.ts : SEUL endroit qui assemble base, TMDB et repository
+  auth/      Better Auth : configuration (passkeys, session, chemins coupés), création de compte par passkey
+  access/    qui entre : décision du proxy, session lue, droit d'inscription (SIGNUP, OWNER_CODE), ticket d'inscription signé, secret du cron
+  server/    container.ts : SEUL endroit qui assemble base, TMDB, repository et Better Auth ; session.ts : utilisateur courant
   features/  un dossier par écran : composants, actions serveur, logique locale testée
   ui/        composants partagés sans logique métier (Ticket, Button, Chip, Stamp…)
   styles/    tokens.css : SEUL fichier autorisé à contenir couleurs, ombres, rayons
@@ -48,9 +51,9 @@ src/
 
 Règles :
 
-- **Sens des dépendances** : `domain` ← `db`/`tmdb` ← `server` ← `features` ← `app`. Un composant client n'importe jamais un module serveur : la page lui passe les actions serveur en props.
+- **Sens des dépendances** : `domain` ← `db`/`tmdb` ← `server` ← `features` ← `app`. `access` ne dépend que de `domain` (et de l'env) ; `auth` de `domain`, `db` et `access` ; seul `server` assemble Better Auth. Un composant client n'importe jamais un module serveur : la page lui passe les actions serveur en props.
 - Modules serveur marqués `import "server-only"`.
-- **Server Actions** = endpoints publics : chacune commence par `assertUnlocked()` puis valide ses arguments. Convention d'erreur : une **lecture** qui dépend de TMDB renvoie `{ ok: false }` (panne attendue, affichée dans la DA) ; une **écriture** lève une exception (le client la rattrape et affiche un message).
+- **Server Actions** = endpoints publics : chacune commence par `await assertSignedIn()` (`server/session.ts`) puis valide ses arguments. Convention d'erreur : une **lecture** qui dépend de TMDB renvoie `{ ok: false }` (panne attendue, affichée dans la DA) ; une **écriture** lève une exception (le client la rattrape et affiche un message).
 - Logique non triviale = fonction pure dans `domain/` ou `features/x/*.ts`, testée à part ; les composants restent de l'affichage.
 - Ces règles de couches sont **vérifiées par ESLint** (`eslint.config.mjs`, `no-restricted-imports`) : un import interdit casse la CI.
 
@@ -65,7 +68,7 @@ Concrètement, sur ce repo :
 - **DRY** : avant d'écrire, chercher l'existant. Briques partagées :
   - UI : `ui/Headline` (titres riso), `ui/cx` (classes), `ui/Tab.module.css` (onglets, via `composes`), `ui/Ticket`, `ui/TicketDetails`, `ui/Button`, `ui/Chip`, `ui/Stamp`, `ui/Lines`.
   - Serveur : `server/validate.ts` (contrôles d'entrée), `SWIPES` (domain).
-  - Tests : `tests/helpers/movies.ts` (`aSnapshot`, `aMovie`, `NETFLIX`…), `tests/helpers/dom.ts` (`stubMatchMedia`), `tests/setup.ts` (nettoyage commun), mocks `vi.mock("@/access/assert-unlocked")` / `vi.mock("next/cache")` (dossiers `__mocks__`), `tests/helpers/functional.ts`, `tests/fake-tmdb/`, `e2e/fixtures.ts`.
+  - Tests : `tests/helpers/movies.ts` (`aSnapshot`, `aMovie`, `NETFLIX`…), `tests/helpers/dom.ts` (`stubMatchMedia`), `tests/setup.ts` (nettoyage commun), mocks `vi.mock("@/server/session")` / `vi.mock("next/cache")` (dossiers `__mocks__`), `tests/helpers/functional.ts`, `tests/fake-tmdb/`, `e2e/fixtures.ts`.
 - **Garde-fous automatiques** (ESLint, erreur = CI rouge) : 200 lignes max par fichier, 80 par fonction, complexité 10, imbrication 3, 4 paramètres max (sinon un objet), `===`, pas de ternaire imbriqué. **jscpd** refuse tout bloc dupliqué (6 lignes / 60 tokens), **knip** tout export ou dépendance inutilisé. Ne jamais contourner une règle (`eslint-disable`, seuil relevé) sans l'accord du mainteneur : découper plutôt.
 
 ## Définition de « fini »
@@ -89,7 +92,7 @@ Concrètement, sur ce repo :
 - **Couverture** (`vitest.config.ts`, seuils 95/95/95/90, actuellement 100 %) : tous les `.ts` de `src/` sauf hooks et câblage, donc tout nouveau module y entre seul. `docs/coverage.md` est mis à jour à la main.
 - **Tests UI** : Testing Library, requêtes par rôle et texte visible, pas de détails d'implémentation.
 - **Tests fonctionnels** (`tests/functional/`) : `startServerStack()` donne une vraie base SQLite et le faux TMDB ; on appelle les vraies actions serveur.
-- **E2E** (`e2e/`, Playwright) : toujours dans l'image Docker officielle Playwright (`scripts/e2e.sh`, Docker requis), pour que les captures soient identiques ici et sur GitHub ; build de prod et faux TMDB (`e2e/global-setup.ts`, port 3218), profils iPhone et desktop. **Tests en parallèle** : un serveur (port 3220 + n) et une base (`e2e/.data/e2e-n.db`) par worker (`e2e/env.ts` : 4 en local, 2 sur GitHub) ; un test ne doit donc rien partager hors de sa base. Toujours importer `test` depuis `e2e/fixtures.ts` (il fournit l'adresse du serveur du worker). La fixture `app` vide la base du worker et déverrouille ; `swipe()` attend la fin des enregistrements (`settled`). Ne jamais supprimer la base e2e pendant qu'un serveur la tient (`SQLITE_READONLY_DBMOVED`).
+- **E2E** (`e2e/`, Playwright) : toujours dans l'image Docker officielle Playwright (`scripts/e2e.sh`, Docker requis), pour que les captures soient identiques ici et sur GitHub ; build de prod et faux TMDB (`e2e/global-setup.ts`, port 3218), profils iPhone et desktop. **Tests en parallèle** : un serveur (port 3220 + n) et une base (`e2e/.data/e2e-n.db`) par worker (`e2e/env.ts` : 4 en local, 2 sur GitHub) ; un test ne doit donc rien partager hors de sa base. Toujours importer `test` depuis `e2e/fixtures.ts` (il fournit l'adresse du serveur du worker). La fixture `app` vide la base du worker et connecte Léa (utilisateur et session écrits en base, cookies donnés au navigateur) ; la fixture `visitor` vide la base sans session et donne au navigateur un authentificateur de passkeys virtuel (WebAuthn via CDP, Chromium, helper `virtualAuthenticator(page)`) pour les vrais parcours de connexion (`e2e/auth.spec.ts`) ; `swipe()` attend la fin des enregistrements (`settled`). Ne jamais supprimer la base e2e pendant qu'un serveur la tient (`SQLITE_READONLY_DBMOVED`).
 - **Accessibilité** : axe sans aucun défaut grave, contraste compris (WCAG AA). Sur le rose, le texte est en encre (`--on-pink`), jamais en blanc.
 - Le faux TMDB (`tests/fake-tmdb/`) sert aux deux niveaux : un film utile à un test s'ajoute dans `catalog.ts`. L'appli le joint grâce à `TMDB_API_URL` (défaut : le vrai TMDB).
 

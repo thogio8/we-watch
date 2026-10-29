@@ -6,6 +6,8 @@ import { aMovie, NETFLIX } from "@tests/helpers/movies";
 import type { Movie } from "@/domain/movie";
 import { ListScreen } from "./ListScreen";
 
+vi.mock("@/features/signin/authClient", () => ({ authClient: {} }));
+
 const movie = (tmdbId: number, title: string, overrides: Partial<Movie> = {}) =>
   aMovie(tmdbId, {
     title,
@@ -62,6 +64,14 @@ function renderList({
 const panel = () => screen.getByRole("tabpanel");
 
 describe("ListScreen", () => {
+  it("propose de se déconnecter", () => {
+    renderList();
+
+    expect(
+      screen.getByRole("button", { name: "SE DÉCONNECTER" }),
+    ).toBeVisible();
+  });
+
   it("affiche les compteurs des deux onglets", () => {
     renderList();
 

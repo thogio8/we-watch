@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { appPort, E2E_WORKERS, e2eEnv, workerIndexes } from "./e2e/env";
+import { appPort, appUrl, E2E_WORKERS, e2eEnv, workerIndexes } from "./e2e/env";
 
 /**
  * End-to-end tests: the production build, served on throwaway SQLite files
@@ -40,7 +40,8 @@ export default defineConfig({
   ],
   webServer: workerIndexes().map((worker) => ({
     command: `next start --port ${appPort(worker)}`,
-    url: `http://localhost:${appPort(worker)}/unlock`,
+    // A public asset: answers 200 without a session.
+    url: `${appUrl(worker)}/manifest.webmanifest`,
     env: e2eEnv(worker),
     reuseExistingServer: !process.env.CI,
     stdout: "ignore" as const,
