@@ -129,6 +129,16 @@ describe("parseServerEnv", () => {
       parseServerEnv({ ...BASE, OWNER_CODE: "0123456789ab" }).OWNER_CODE,
     ).toBe("0123456789ab");
   });
+  it("OWNER_CODE est rogné", () => {
+    expect(
+      parseServerEnv({ ...BASE, OWNER_CODE: "  0123456789ab \n" }).OWNER_CODE,
+    ).toBe("0123456789ab");
+  });
+  it("OWNER_CODE fait d'espaces équivaut à absent", () => {
+    expect(parseServerEnv({ ...BASE, OWNER_CODE: "   " })).not.toHaveProperty(
+      "OWNER_CODE",
+    );
+  });
   it("refuse un OWNER_CODE de moins de 12 caractères", () => {
     expect(() => parseServerEnv({ ...BASE, OWNER_CODE: "court" })).toThrow(
       /OWNER_CODE must be at least 12 characters/,

@@ -27,6 +27,26 @@ describe("signupRight", () => {
     ).toEqual({ ok: true, owner: true });
   });
 
+  it("ignore les espaces autour du code soumis", () => {
+    expect(
+      signupRight({
+        mode: "invite",
+        ownerCode: OWNER_CODE,
+        submittedCode: `  ${OWNER_CODE} `,
+      }),
+    ).toEqual({ ok: true, owner: true });
+  });
+
+  it("ferme l'inscription en mode invitation avec un code d'espaces", () => {
+    expect(
+      signupRight({
+        mode: "invite",
+        ownerCode: OWNER_CODE,
+        submittedCode: "  ",
+      }),
+    ).toEqual({ ok: false, reason: "closed" });
+  });
+
   it("refuse un mauvais code en mode ouvert", () => {
     expect(
       signupRight({

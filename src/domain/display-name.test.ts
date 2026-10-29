@@ -33,6 +33,31 @@ describe("parseDisplayName", () => {
     );
   });
 
+  it("garde les emoji composés avec un joiner", () => {
+    expect(parseDisplayName("👨‍👩‍👧")).toBe("👨‍👩‍👧");
+  });
+
+  it("refuse un nom sans caractère visible", () => {
+    expect(parseDisplayName("\u200B\u2060")).toBeNull();
+    expect(parseDisplayName("\u0301")).toBeNull();
+  });
+
+  it("refuse les caractères de contrôle", () => {
+    expect(parseDisplayName("Lé\u0000a")).toBeNull();
+    expect(parseDisplayName("Léa\u0007")).toBeNull();
+    expect(parseDisplayName("Léa\u007F")).toBeNull();
+  });
+
+  it("refuse les contrôles de sens d'écriture", () => {
+    expect(parseDisplayName("\u202Eaéл")).toBeNull();
+    expect(parseDisplayName("Léa\u2066")).toBeNull();
+    expect(parseDisplayName("Léa\u200F")).toBeNull();
+  });
+
+  it("normalise en NFC", () => {
+    expect(parseDisplayName("Le\u0301a")).toBe("Léa");
+  });
+
   it("refuse ce qui n'est pas du texte", () => {
     expect(parseDisplayName(42)).toBeNull();
     expect(parseDisplayName(null)).toBeNull();

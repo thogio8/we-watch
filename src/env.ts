@@ -23,11 +23,11 @@ const serverEnvSchema = z.object({
   BETTER_AUTH_URL: z.url(),
   // "invite": signing up requires OWNER_CODE (invitations come later).
   SIGNUP: z.enum(["open", "invite"]).default("open"),
-  // Owner's code to sign up when SIGNUP is "invite". Optional, empty = unset.
+  // Owner's code to sign up when SIGNUP is "invite". Optional, trimmed, blank = unset.
   OWNER_CODE: z
     .string()
     .optional()
-    .transform((value) => (value === "" ? undefined : value))
+    .transform((value) => (value?.trim() === "" ? undefined : value?.trim()))
     .refine(
       (value) => value === undefined || value.length >= 12,
       "OWNER_CODE must be at least 12 characters",
