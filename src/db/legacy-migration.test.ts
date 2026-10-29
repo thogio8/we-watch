@@ -1,8 +1,16 @@
-import { readFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createClient, type Client, type InStatement } from "@libsql/client";
 import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
 import { createDatabase } from "./create-database";
 import { group } from "./group-schema";
@@ -108,6 +116,12 @@ const SNAPSHOT_COLUMNS = `tmdb_id, quote(title), quote(release_year),
   quote(runtime_minutes), quote(overview), quote(poster_path),
   quote(vote_average), quote(providers), quote(genre_ids), quote(trailer_key)`;
 
+// What 0006 must give each movie of the list.
+const MOVIE_DECISIONS = `SELECT '${LEGACY_GROUP_ID}' AS group_id, tmdb_id,
+  status, decided_at, watched_at FROM movies ORDER BY tmdb_id`;
+const GROUP_DECISIONS = `SELECT group_id, tmdb_id, status, decided_at,
+  watched_at FROM group_movie ORDER BY tmdb_id`;
+
 let client: Client;
 
 const rows = async (sql: string) => (await client.execute(sql)).rows;
@@ -152,18 +166,10 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     });
 
     it("copie chaque film avec son statut et ses dates, sans auteur", async () => {
-      const decisions = await rows(
-        `SELECT '${LEGACY_GROUP_ID}' AS group_id, tmdb_id, status, decided_at,
-          watched_at FROM movies ORDER BY tmdb_id`,
-      );
+      const decisions = await rows(MOVIE_DECISIONS);
       await apply(client, GROUPS);
 
-      expect(
-        await rows(
-          `SELECT group_id, tmdb_id, status, decided_at, watched_at
-            FROM group_movie ORDER BY tmdb_id`,
-        ),
-      ).toEqual(decisions);
+      expect(await rows(GROUP_DECISIONS)).toEqual(decisions);
       expect(
         await rows(
           `SELECT DISTINCT legacy, added_via, quote(added_by) AS added_by,
@@ -238,5 +244,63 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     );
     expect(applied.n).toBe(tags.length);
     expect(await db.$count(group)).toBe(0);
+  });
+
+  describe("comme en production : 0000 à 0004 déjà passées, puis le migrateur de Drizzle", () => {
+    let dir: string;
+    afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+    // A copy of drizzle/ whose journal stops at 0004: the state of the
+    // production database under 2.1, as recorded by the migrator.
+    function migrationsUpTo2_1() {
+      const folder = join(dir, "drizzle");
+      cpSync("drizzle", folder, { recursive: true });
+      writeFileSync(
+        join(folder, "meta/_journal.json"),
+        JSON.stringify({ ...journal, entries: journal.entries.slice(0, 5) }),
+      );
+      return folder;
+    }
+
+    it("copie la liste à l’identique, en un lot sans clés étrangères", async () => {
+      dir = mkdtempSync(join(tmpdir(), "ww-migrate-"));
+      const url = `file:${join(dir, "app.db")}`;
+      const db = createDatabase(url);
+      client = createClient({ url });
+      const recorded = async () =>
+        (
+          await db.get<{ n: number }>(
+            sql`SELECT count(*) AS n FROM __drizzle_migrations`,
+          )
+        ).n;
+
+      await migrate(db, { migrationsFolder: migrationsUpTo2_1() });
+      expect(await recorded()).toBe(5);
+      await client.batch(OLD_ROWS, "write");
+      const movies = await allMovies();
+      const decisions = await rows(MOVIE_DECISIONS);
+      const snapshots = await rows(
+        `SELECT ${SNAPSHOT_COLUMNS} FROM movies ORDER BY tmdb_id`,
+      );
+
+      await migrate(db, { migrationsFolder: "drizzle" });
+
+      expect(await recorded()).toBe(tags.length);
+      expect(await rows("SELECT id, name FROM app_group")).toEqual([
+        { id: LEGACY_GROUP_ID, name: LEGACY_GROUP_NAME },
+      ]);
+      expect(await rows(GROUP_DECISIONS)).toEqual(decisions);
+      expect(decisions).toHaveLength(OLD_ROWS.length);
+      expect(
+        await rows(
+          `SELECT ${SNAPSHOT_COLUMNS} FROM movie_snapshot ORDER BY tmdb_id`,
+        ),
+      ).toEqual(snapshots);
+      expect(await allMovies()).toEqual(movies);
+      expect(await db.all(sql`PRAGMA foreign_key_check`)).toEqual([]);
+      expect(
+        await db.get<{ foreign_keys: number }>(sql`PRAGMA foreign_keys`),
+      ).toEqual({ foreign_keys: 1 });
+    });
   });
 });

@@ -152,7 +152,7 @@ describe("tables des groupes", () => {
     await expect(insertAgain()).rejects.toThrow();
   });
 
-  it("déclare les clés étrangères générées dans la migration", () => {
+  it("déclare dans le schéma Drizzle les clés étrangères attendues", () => {
     const keys = [membership, groupMovie, movieWant, movieRejection].flatMap(
       (table) =>
         getTableConfig(table).foreignKeys.map((key) => {
