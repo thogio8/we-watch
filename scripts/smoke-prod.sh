@@ -4,9 +4,9 @@
 # database and TMDB). Needs PROD_URL and CRON_SECRET; prints no secret.
 set -euo pipefail
 
-status="$(curl -s -o /dev/null -w '%{http_code}' "$PROD_URL/unlock")"
-[ "$status" = 200 ] || { echo "✕ /unlock answered $status"; exit 1; }
-echo "✓ /unlock 200"
+status="$(curl -s -o /dev/null -w '%{http_code}' "$PROD_URL/connexion")"
+[ "$status" = 200 ] || { echo "✕ /connexion answered $status"; exit 1; }
+echo "✓ /connexion 200"
 
 body="$(curl -sf -H "Authorization: Bearer $CRON_SECRET" "$PROD_URL/api/cron/refresh-movies")" \
   || { echo "✕ the daily refresh failed"; exit 1; }

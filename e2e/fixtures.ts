@@ -52,14 +52,47 @@ async function signIn(page: Page) {
     );
 }
 
-/** Every test starts signed in, on an empty list, on its worker's server. */
-export const test = base.extend<{ app: Page }>({
+/** Names of the accounts in the worker's database. */
+export async function accountNames() {
+  const rows = await db().select({ name: user.name }).from(user);
+  return rows.map(({ name }) => name);
+}
+
+/**
+ * Gives the page a device with Face ID: a virtual platform authenticator
+ * (Chromium, through CDP) that keeps its passkeys and always says yes.
+ */
+async function faceId(page: Page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("WebAuthn.enable");
+  await cdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: {
+      protocol: "ctap2",
+      transport: "internal",
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
+    },
+  });
+}
+
+/**
+ * `app`: every test starts signed in, on an empty list, on its worker's
+ * server. `visitor`: an empty database, no session, a device with Face ID.
+ */
+export const test = base.extend<{ app: Page; visitor: Page }>({
   baseURL: async ({}, use, testInfo) => {
     await use(appUrl(testInfo.parallelIndex));
   },
   app: async ({ page }, use) => {
     await wipe();
     await signIn(page);
+    await use(page);
+  },
+  visitor: async ({ page }, use) => {
+    await wipe();
+    await faceId(page);
     await use(page);
   },
 });

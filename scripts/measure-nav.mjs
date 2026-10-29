@@ -1,17 +1,37 @@
 // Navigation timings as you feel them on a phone, on any deployment.
 // Read-only: opens pages and comes back, never changes the list.
-// Usage: ACCESS_CODE=… node scripts/measure-nav.mjs https://your-deployment
+// Usage: SESSION_TOKEN=… node scripts/measure-nav.mjs https://your-deployment
+// A headless browser has no Face ID: sign in on that deployment in your own
+// browser, then copy the value of the `better-auth.session_token` cookie
+// (`__Secure-better-auth.session_token` over https) from the developer tools.
+// The value is a secret: it is only handed to the browser, never printed.
 import { chromium } from "@playwright/test";
 
+const USAGE = "Usage: SESSION_TOKEN=… node scripts/measure-nav.mjs <url>";
 const BASE = process.argv[2];
-if (!BASE) {
-  console.error("Usage: ACCESS_CODE=… node scripts/measure-nav.mjs <url>");
+const TOKEN = process.env.SESSION_TOKEN;
+if (!BASE || !TOKEN) {
+  console.error(USAGE);
   process.exit(1);
 }
 const ROUNDS = 3;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+const context = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+});
+const secure = new URL(BASE).protocol === "https:";
+await context.addCookies([
+  {
+    name: `${secure ? "__Secure-" : ""}better-auth.session_token`,
+    value: TOKEN,
+    url: BASE,
+    httpOnly: true,
+    secure,
+    sameSite: "Lax",
+  },
+]);
+const page = await context.newPage();
 let requests = 0;
 page.on("request", (r) => {
   if (r.url().includes("_rsc")) requests += 1;
@@ -50,11 +70,12 @@ async function timed(action, target) {
   return { ms: Math.round(await shown), requests };
 }
 
-await page.goto(`${BASE}/unlock`);
-await page.getByLabel("Code d'accès").fill(process.env.ACCESS_CODE ?? "");
-await page.getByRole("button", { name: "ENTRER" }).click();
-await page.waitForURL(`${BASE}/`);
 await page.goto(`${BASE}/list`);
+if (new URL(page.url()).pathname === "/connexion") {
+  console.error("✕ The session was refused: copy a fresh SESSION_TOKEN.");
+  await browser.close();
+  process.exit(1);
+}
 await page.locator("[role=tabpanel] li").first().waitFor();
 const rows = page.getByRole("tabpanel").getByRole("link");
 const LIST = "[role=tabpanel] li";

@@ -73,6 +73,14 @@ test.describe("rendu visuel", () => {
       await app.goto("/list/496243");
       await expect(app.getByText("Bong Joon-ho")).toBeVisible();
       await shoot(app, `${format.name}-5b-fiche`);
+
+      // Signed out: the sign-in page, as a newcomer sees it.
+      await app.context().clearCookies();
+      await app.goto("/connexion");
+      await expect(
+        app.getByRole("button", { name: "SE CONNECTER AVEC FACE ID" }),
+      ).toBeVisible();
+      await shoot(app, `${format.name}-6-connexion`);
     });
   }
 });
