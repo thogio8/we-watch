@@ -5,22 +5,18 @@ import { isSwipeDecision, type MovieAction, nextStatus } from "./transitions";
 type Current = MovieStatus | null;
 
 const table: [Current, MovieAction, MovieStatus | null][] = [
-  [null, "swipe_keep", "to_watch"],
   [null, "search_add", "to_watch"],
   [null, "remove", null],
   [null, "mark_watched", null],
   [null, "unwatch", null],
-  ["to_watch", "swipe_keep", null],
   ["to_watch", "search_add", null],
   ["to_watch", "remove", "rejected"],
   ["to_watch", "mark_watched", "watched"],
   ["to_watch", "unwatch", null],
-  ["watched", "swipe_keep", null],
   ["watched", "search_add", null],
   ["watched", "remove", null],
   ["watched", "mark_watched", null],
   ["watched", "unwatch", "to_watch"],
-  ["rejected", "swipe_keep", null],
   ["rejected", "search_add", "to_watch"],
   ["rejected", "remove", null],
   ["rejected", "mark_watched", null],
@@ -31,6 +27,15 @@ describe("nextStatus", () => {
   it.each(table)("%s × %s → %s", (current, action, expected) => {
     expect(nextStatus(current, action)).toBe(expected);
   });
+
+  it.each(["swipe_keep", "swipe_reject"])(
+    "un swipe n’est pas une action de liste (%s) → erreur",
+    (action) => {
+      expect(() => nextStatus(null, action as unknown as MovieAction)).toThrow(
+        "Unhandled movie action",
+      );
+    },
+  );
 
   it("action inconnue (hors typage) → erreur", () => {
     expect(() =>

@@ -46,7 +46,12 @@ let mine: string;
 let theirs: string;
 beforeAll(async () => ({ db, reset } = await startServerStack()));
 
-/** Hugo's group B: Parasite to watch (he wants it), Whiplash watched, Chihiro set aside, his BOF on Amélie. */
+/**
+ * Hugo's group B: Parasite to watch (he wants it), Whiplash watched, Chihiro
+ * set aside, his BOF on Amélie. Plus what an unguarded undo by Léa would
+ * delete: her own wish on Parasite in B (written directly, she is not a
+ * member) and her BOF on Amélie.
+ */
 async function hugosGroup(hugo: string): Promise<string> {
   const groupId = await aGroup(db, "CHEZ HUGO", [hugo]);
   const list = getGroupList();
@@ -86,6 +91,13 @@ async function hugosGroup(hugo: string): Promise<string> {
     decision: "reject",
     snapshot: aSnapshot(AMELIE),
   });
+  const now = new Date();
+  await db
+    .insert(movieWant)
+    .values({ groupId, tmdbId: PARASITE, userId: LEA, wantedAt: now });
+  await db
+    .insert(movieRejection)
+    .values({ userId: LEA, tmdbId: AMELIE, rejectedAt: now });
   return groupId;
 }
 
@@ -109,45 +121,43 @@ const everything = async () => ({
     .orderBy(movieSnapshot.tmdbId),
 });
 
+/** Every action on a group, called on `groupId`, each on the movie it would change in B. */
+const ACTIONS = [
+  ["markWatched", (g: string) => markWatched(g, PARASITE)],
+  ["removeFromList", (g: string) => removeFromList(g, PARASITE)],
+  ["unwatch", (g: string) => unwatch(g, WHIPLASH)],
+  ["searchCatalog", (g: string) => searchCatalog(g, "parasite")],
+  ["addFromSearch (nouveau film)", (g: string) => addFromSearch(g, AMELIE)],
+  ["addFromSearch (film écarté)", (g: string) => addFromSearch(g, CHIHIRO)],
+  ["decideSwipe ♥", (g: string) => decideSwipe(g, AMELIE, "keep")],
+  ["decideSwipe ✕", (g: string) => decideSwipe(g, PARASITE, "reject")],
+  ["undoSwipe ♥", (g: string) => undoSwipe(g, PARASITE, "keep")],
+  ["undoSwipe ✕", (g: string) => undoSwipe(g, AMELIE, "reject")],
+  ["loadMoreCards", (g: string) => loadMoreCards(g, "top", 1)],
+] as const;
+
+async function refusedWithoutWriting(call: () => Promise<unknown>) {
+  const before = await everything();
+
+  await expect(call()).rejects.toThrow(REFUSED);
+
+  expect(await everything()).toEqual(before);
+}
+
 describe("isolation des groupes (fonctionnel, sécurité)", () => {
-  it.each([
-    ["markWatched", () => markWatched(theirs, PARASITE)],
-    ["removeFromList", () => removeFromList(theirs, PARASITE)],
-    ["unwatch", () => unwatch(theirs, WHIPLASH)],
-    ["searchCatalog", () => searchCatalog(theirs, "parasite")],
-    ["addFromSearch (nouveau film)", () => addFromSearch(theirs, AMELIE)],
-    ["addFromSearch (film écarté)", () => addFromSearch(theirs, CHIHIRO)],
-    ["decideSwipe ♥", () => decideSwipe(theirs, AMELIE, "keep")],
-    ["decideSwipe ✕", () => decideSwipe(theirs, PARASITE, "reject")],
-    ["undoSwipe ♥", () => undoSwipe(theirs, PARASITE, "keep")],
-    ["undoSwipe ✕", () => undoSwipe(theirs, AMELIE, "reject")],
-    ["loadMoreCards", () => loadMoreCards(theirs, "top", 1)],
-  ] as const)(
+  it.each(ACTIONS)(
     "%s sur le groupe d’un autre : refusé, rien n’est écrit",
-    async (_name, call) => {
-      const before = await everything();
-
-      await expect(call()).rejects.toThrow(REFUSED);
-
-      expect(await everything()).toEqual(before);
-    },
+    (_name, action) => refusedWithoutWriting(() => action(theirs)),
   );
 
-  it.each([
+  describe.each([
     ["un identifiant forgé", "groupe-inexistant"],
     ["un identifiant vide", ""],
     ["autre chose qu’une chaîne", { id: "x" }],
-  ])("%s : refusé, rien n’est écrit", async (_name, forged) => {
-    const before = await everything();
-
-    await expect(
-      decideSwipe(forged as string, PARASITE, "keep"),
-    ).rejects.toThrow(REFUSED);
-    await expect(addFromSearch(forged as string, AMELIE)).rejects.toThrow(
-      REFUSED,
+  ])("%s", (_label, forged) => {
+    it.each(ACTIONS)("%s : refusé, rien n’est écrit", (_name, action) =>
+      refusedWithoutWriting(() => action(forged as string)),
     );
-
-    expect(await everything()).toEqual(before);
   });
 
   it("la fiche d’un film du groupe d’un autre est introuvable", async () => {

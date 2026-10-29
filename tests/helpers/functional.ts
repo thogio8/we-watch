@@ -66,16 +66,24 @@ export async function startServerStack(): Promise<{
 
 /**
  * startServerStack for a file about one group: before each test, the lists
- * are emptied and Léa gets a fresh group « NOUS DEUX ». Read `id` and `db`
- * inside the tests.
+ * are emptied and Léa gets a fresh group « NOUS DEUX ». Read `id` inside
+ * the tests.
  */
-export function withLeasGroup(): { id: string; db: Database } {
-  const mine = { id: "", db: undefined as unknown as Database };
-  let reset: () => Promise<void>;
-  beforeAll(async () => ({ db: mine.db, reset } = await startServerStack()));
-  beforeEach(async () => {
-    await reset();
-    mine.id = await aGroup(mine.db, "NOUS DEUX", [LEA.id]);
+export function withLeasGroup(): { readonly id: string } {
+  let stack: ReturnType<typeof startServerStack>;
+  let id = "";
+  beforeAll(async () => {
+    stack = startServerStack();
+    await stack;
   });
-  return mine;
+  beforeEach(async () => {
+    const { db, reset } = await stack;
+    await reset();
+    id = await aGroup(db, "NOUS DEUX", [LEA.id]);
+  });
+  return {
+    get id() {
+      return id;
+    },
+  };
 }

@@ -16,13 +16,10 @@ import {
 } from "./list-queries";
 import { upsertSnapshot } from "./snapshots";
 
-/** What a member does on the list itself (swipes: see decisions). */
-type ListAction = Exclude<MovieAction, "swipe_keep">;
-
 interface ApplyInput {
   groupId: string;
   userId: string;
-  action: ListAction;
+  action: MovieAction;
   tmdbId: number;
   snapshot?: MovieSnapshot;
   now?: Date;
@@ -49,7 +46,7 @@ type Who = { userId: string; now: Date };
 
 /** The columns each action writes, besides the status (see nextStatus). */
 const CHANGES: Record<
-  ListAction,
+  MovieAction,
   (who: Who) => Partial<typeof groupMovie.$inferInsert>
 > = {
   search_add: ({ userId, now }) => ({
