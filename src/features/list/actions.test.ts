@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { assertSignedIn } from "@/server/session";
-import { revalidateGroupPages } from "@/server/revalidate";
+import { revalidateListPages } from "@/server/revalidate";
 import { aSnapshot } from "@tests/helpers/movies";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
@@ -41,7 +41,7 @@ beforeEach(() => {
     .mockResolvedValue({ userId: "user-1", name: "Léa" });
   apply.mockReset().mockResolvedValue("applied");
   statusesOf.mockReset().mockResolvedValue(new Map());
-  vi.mocked(revalidateGroupPages).mockReset();
+  vi.mocked(revalidateListPages).mockReset();
   searchMovies.mockReset().mockResolvedValue([]);
   getMovieSnapshot.mockReset().mockResolvedValue(DUNE_1984);
 });
@@ -54,7 +54,7 @@ describe.each([
     await action(129);
 
     expect(apply).toHaveBeenCalledExactlyOnceWith(movieAction, 129);
-    expect(revalidateGroupPages).toHaveBeenCalledOnce();
+    expect(revalidateListPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "129" as unknown as number])(
@@ -62,7 +62,7 @@ describe.each([
     async (tmdbId) => {
       await expect(action(tmdbId)).rejects.toThrow("invalid tmdbId");
       expect(apply).not.toHaveBeenCalled();
-      expect(revalidateGroupPages).not.toHaveBeenCalled();
+      expect(revalidateListPages).not.toHaveBeenCalled();
     },
   );
 });
@@ -87,7 +87,7 @@ describe("searchCatalog", () => {
     });
     expect(searchMovies).toHaveBeenCalledWith(client, "dune");
     expect(statusesOf).toHaveBeenCalledWith([438631, 693134, 841]);
-    expect(revalidateGroupPages).not.toHaveBeenCalled();
+    expect(revalidateListPages).not.toHaveBeenCalled();
   });
 
   it("requête vide ou d'espaces → aucun appel TMDB", async () => {
@@ -132,7 +132,7 @@ describe("addFromSearch", () => {
 
     expect(getMovieSnapshot).toHaveBeenCalledWith(client, 841);
     expect(apply).toHaveBeenCalledExactlyOnceWith("search_add", 841, DUNE_1984);
-    expect(revalidateGroupPages).toHaveBeenCalledOnce();
+    expect(revalidateListPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "841" as unknown as number])(
@@ -159,6 +159,6 @@ describe("sans session", () => {
     expect(searchMovies).not.toHaveBeenCalled();
     expect(getMovieSnapshot).not.toHaveBeenCalled();
     expect(statusesOf).not.toHaveBeenCalled();
-    expect(revalidateGroupPages).not.toHaveBeenCalled();
+    expect(revalidateListPages).not.toHaveBeenCalled();
   });
 });

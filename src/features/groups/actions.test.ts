@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { assertMember, rememberGroup } from "@/server/groups";
-import { revalidateGroupPages } from "@/server/revalidate";
+import { revalidateGroupPages, revalidateListPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
 import { chooseGroup, createGroup } from "./actions";
 
@@ -33,6 +33,7 @@ beforeEach(() => {
     }));
   vi.mocked(rememberGroup).mockReset();
   vi.mocked(revalidateGroupPages).mockReset();
+  vi.mocked(revalidateListPages).mockReset();
   create.mockReset().mockImplementation(async ({ name }) => ({
     id: "g-9",
     name,
@@ -51,6 +52,7 @@ describe("createGroup", () => {
     expect(create).toHaveBeenCalledWith({ name: "La coloc", userId: "user-1" });
     expect(rememberGroup).toHaveBeenCalledWith("g-9");
     expect(revalidateGroupPages).toHaveBeenCalledOnce();
+    expect(revalidateListPages).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -85,6 +87,7 @@ describe("chooseGroup", () => {
     expect(rememberGroup).toHaveBeenCalledWith("g-2");
     expect(touch).toHaveBeenCalledWith("g-2", "user-1");
     expect(revalidateGroupPages).toHaveBeenCalledOnce();
+    expect(revalidateListPages).not.toHaveBeenCalled();
   });
 
   it("un groupe dont je ne suis pas membre : refusé, rien n’est écrit", async () => {

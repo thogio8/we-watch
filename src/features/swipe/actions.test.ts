@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { assertSignedIn } from "@/server/session";
-import { revalidateGroupPages } from "@/server/revalidate";
+import { revalidateGroupPages, revalidateListPages } from "@/server/revalidate";
 import type { MovieSnapshot } from "@/domain/movie";
 import { TmdbError } from "@/tmdb/client";
 import type { DeckId } from "@/tmdb/decks";
@@ -53,6 +53,7 @@ beforeEach(() => {
   apply.mockReset().mockResolvedValue("applied");
   undo.mockReset().mockResolvedValue("applied");
   getDeckDeps.mockReset().mockReturnValue(deckDeps);
+  vi.mocked(revalidateListPages).mockReset();
   vi.mocked(revalidateGroupPages).mockReset();
   getMovieSnapshot.mockReset().mockResolvedValue(WHIPLASH);
   loadDeckBatch.mockReset();
@@ -69,7 +70,9 @@ describe("decideSwipe", () => {
 
       expect(getMovieSnapshot).toHaveBeenCalledWith(client, 244786);
       expect(apply).toHaveBeenCalledWith(action, 244786, WHIPLASH);
-      expect(revalidateGroupPages).toHaveBeenCalledOnce();
+      expect(revalidateListPages).toHaveBeenCalledOnce();
+      // The deck on screen is left alone: no SWIPER refresh mid-session.
+      expect(revalidateGroupPages).not.toHaveBeenCalled();
     },
   );
 
@@ -106,7 +109,9 @@ describe("undoSwipe", () => {
     async (decision) => {
       await expect(undoSwipe(244786, decision)).resolves.toBe("applied");
       expect(undo).toHaveBeenCalledWith(244786, decision);
-      expect(revalidateGroupPages).toHaveBeenCalledOnce();
+      expect(revalidateListPages).toHaveBeenCalledOnce();
+      // The deck on screen is left alone: no SWIPER refresh mid-session.
+      expect(revalidateGroupPages).not.toHaveBeenCalled();
     },
   );
 

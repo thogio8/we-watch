@@ -6,7 +6,7 @@ import {
   getMoviesRepository,
   getTmdbClient,
 } from "@/server/container";
-import { revalidateGroupPages } from "@/server/revalidate";
+import { revalidateListPages } from "@/server/revalidate";
 import { TmdbError } from "@/tmdb/client";
 import {
   type ApplyResult,
@@ -46,7 +46,7 @@ export async function decideSwipe(
   );
   // TIRER and LISTE, kept on the phone, must show it; the deck on screen is
   // not re-rendered (R10).
-  revalidateGroupPages();
+  revalidateListPages();
   return result;
 }
 
@@ -59,7 +59,7 @@ export async function undoSwipe(
   assertTmdbId("undoSwipe", tmdbId);
   assertSwipeDecision("undoSwipe", decision);
   const result = await getMoviesRepository().undoSwipe(tmdbId, decision);
-  revalidateGroupPages();
+  revalidateListPages();
   return result;
 }
 
