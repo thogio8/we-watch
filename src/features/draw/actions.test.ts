@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { assertSignedIn } from "@/server/session";
-import { revalidateListPages } from "@/server/revalidate";
+import { revalidateGroupPages } from "@/server/revalidate";
 import { markWatched } from "./actions";
 
 const apply = vi.fn();
@@ -16,7 +16,7 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ userId: "user-1", name: "Léa" });
   apply.mockReset().mockResolvedValue("applied");
-  vi.mocked(revalidateListPages).mockReset();
+  vi.mocked(revalidateGroupPages).mockReset();
 });
 
 describe("markWatched", () => {
@@ -24,7 +24,7 @@ describe("markWatched", () => {
     await markWatched(129);
 
     expect(apply).toHaveBeenCalledWith("mark_watched", 129);
-    expect(revalidateListPages).toHaveBeenCalledOnce();
+    expect(revalidateGroupPages).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "129" as unknown as number])(
@@ -42,6 +42,6 @@ describe("sans session", () => {
 
     await expect(markWatched(129)).rejects.toThrow("not signed in");
     expect(apply).not.toHaveBeenCalled();
-    expect(revalidateListPages).not.toHaveBeenCalled();
+    expect(revalidateGroupPages).not.toHaveBeenCalled();
   });
 });

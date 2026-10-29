@@ -2,10 +2,13 @@ import "server-only";
 import { nextCookies } from "better-auth/next-js";
 import { createAuth } from "@/auth/create-auth";
 import { createDatabase, type Database } from "@/db/create-database";
+import { createGroupList, type GroupList } from "@/db/group-list";
+import { createGroups, type Groups } from "@/db/groups";
 import {
   createMoviesRepository,
   type MoviesRepository,
 } from "@/db/movies-repository";
+import { createSnapshots, type Snapshots } from "@/db/snapshots";
 import { getServerEnv } from "@/env";
 import type { RefreshDeps } from "@/features/refresh/refresh-movies";
 import type { DeckDeps } from "@/features/swipe/deck";
@@ -15,6 +18,9 @@ import { discoverDeck, getMovieSnapshot } from "@/tmdb/movies";
 
 let database: Database | undefined;
 let repository: MoviesRepository | undefined;
+let groupList: GroupList | undefined;
+let groups: Groups | undefined;
+let snapshots: Snapshots | undefined;
 let tmdbClient: TmdbClient | undefined;
 let auth: Auth | undefined;
 
@@ -27,6 +33,21 @@ function getDatabase(): Database {
 export function getMoviesRepository(): MoviesRepository {
   repository ??= createMoviesRepository(getDatabase());
   return repository;
+}
+
+export function getGroupList(): GroupList {
+  groupList ??= createGroupList(getDatabase());
+  return groupList;
+}
+
+export function getGroups(): Groups {
+  groups ??= createGroups(getDatabase());
+  return groups;
+}
+
+function getSnapshots(): Snapshots {
+  snapshots ??= createSnapshots(getDatabase());
+  return snapshots;
 }
 
 function buildAuth() {
@@ -68,10 +89,10 @@ export function getDeckDeps(deck: DeckId): DeckDeps {
 
 export function getRefreshDeps(): RefreshDeps {
   const client = getTmdbClient();
-  const repo = getMoviesRepository();
+  const store = getSnapshots();
   return {
-    ids: () => repo.idsWithStatus(["to_watch", "watched"]),
+    ids: () => store.listedIds(),
     snapshot: (id) => getMovieSnapshot(client, id, { fresh: true }),
-    save: (snapshot) => repo.refreshSnapshot(snapshot),
+    save: (snapshot) => store.refresh(snapshot),
   };
 }

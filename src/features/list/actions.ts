@@ -4,7 +4,7 @@ import { assertSignedIn } from "@/server/session";
 import type { MovieSnapshot, MovieStatus } from "@/domain/movie";
 import type { MovieAction } from "@/domain/transitions";
 import { getMoviesRepository, getTmdbClient } from "@/server/container";
-import { revalidateListPages } from "@/server/revalidate";
+import { revalidateGroupPages } from "@/server/revalidate";
 import { assertTmdbId } from "@/server/validate";
 import { TmdbError } from "@/tmdb/client";
 import { getMovieSnapshot, searchMovies } from "@/tmdb/movies";
@@ -24,7 +24,7 @@ async function applyFromList(
 ): Promise<void> {
   assertTmdbId(action, tmdbId);
   await getMoviesRepository().apply(action, tmdbId);
-  revalidateListPages();
+  revalidateGroupPages();
 }
 
 /** ✕ on « à voir »: the movie becomes « refusé », so it never comes back to the swipe. */
@@ -75,5 +75,5 @@ export async function addFromSearch(tmdbId: number): Promise<void> {
   assertTmdbId("search_add", tmdbId);
   const snapshot = await getMovieSnapshot(getTmdbClient(), tmdbId);
   await getMoviesRepository().apply("search_add", tmdbId, snapshot);
-  revalidateListPages();
+  revalidateGroupPages();
 }

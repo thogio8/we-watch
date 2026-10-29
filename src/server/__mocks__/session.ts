@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import type { CurrentUser } from "../session";
 
-const LEA: CurrentUser = { userId: "user-1", name: "Léa" };
+export const LEA: CurrentUser = { userId: "user-1", name: "Léa" };
 
 // Picked up by `vi.mock("@/server/session")`: signed in as Léa by default.
 export const getCurrentUser = vi.fn(

@@ -3,18 +3,33 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { vi } from "vitest";
+import { user } from "@/db/auth-schema";
 import { createDatabase, type Database } from "@/db/create-database";
+import {
+  group,
+  groupMovie,
+  membership,
+  movieRejection,
+  movieSnapshot,
+  movieWant,
+} from "@/db/group-schema";
 import { movies } from "@/db/schema";
 import { fakeTmdb } from "../fake-tmdb/handler";
 
 export const CRON_SECRET = "functional-cron-secret";
 
+/** The mocked session's user (`vi.mock("@/server/session")`). */
+const LEA = { id: "user-1", name: "Léa", email: "user-1@test.invalid" };
+
 /**
  * The real server stack (Server Actions → container → repository → SQLite,
  * TMDB client → zod → mapping) on a fresh database file, with TMDB answered
  * by the fake catalogue. Call once per test file, before any test runs.
+ * Léa, the mocked session's user, has an account row (foreign keys hold);
+ * `reset` empties the lists and groups, children first.
  */
 export async function startServerStack(): Promise<{
+  db: Database;
   reset: () => Promise<void>;
 }> {
   const url = `file:${join(mkdtempSync(join(tmpdir(), "we-watch-")), "app.db")}`;
@@ -29,9 +44,21 @@ export async function startServerStack(): Promise<{
 
   const db: Database = createDatabase(url);
   await migrate(db, { migrationsFolder: "drizzle" });
+  await db.insert(user).values(LEA);
   return {
+    db,
     reset: async () => {
-      await db.delete(movies);
+      for (const table of [
+        movieWant,
+        movieRejection,
+        groupMovie,
+        membership,
+        group,
+        movieSnapshot,
+        movies,
+      ]) {
+        await db.delete(table);
+      }
     },
   };
 }

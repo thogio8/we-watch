@@ -1,13 +1,16 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/cron/refresh-movies/route";
-import { getMoviesRepository } from "@/server/container";
+import type { Database } from "@/db/create-database";
+import { getGroupList } from "@/server/container";
 import { aSnapshot } from "../helpers/movies";
 import { CRON_SECRET, startServerStack } from "../helpers/functional";
+import { aGroup } from "../helpers/groups";
 
 const PARASITE = 496243;
 
+let db: Database;
 let reset: () => Promise<void>;
-beforeAll(async () => ({ reset } = await startServerStack()));
+beforeAll(async () => ({ db, reset } = await startServerStack()));
 beforeEach(() => reset());
 
 const cron = (authorization?: string) =>
@@ -18,14 +21,17 @@ const cron = (authorization?: string) =>
   );
 
 describe("rafraîchissement quotidien (fonctionnel)", () => {
-  it("remet à jour les fiches de la liste depuis TMDB", async () => {
+  it("remet à jour les fiches des listes de groupe depuis TMDB", async () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
+    const groupId = await aGroup(db, "NOUS DEUX", ["user-1"]);
     // Saved long ago: no genres, no trailer, an old title.
-    await getMoviesRepository().apply(
-      "search_add",
-      PARASITE,
-      aSnapshot(PARASITE, { title: "Gisaengchung" }),
-    );
+    await getGroupList().apply({
+      groupId,
+      userId: "user-1",
+      action: "search_add",
+      tmdbId: PARASITE,
+      snapshot: aSnapshot(PARASITE, { title: "Gisaengchung" }),
+    });
 
     const response = await cron(`Bearer ${CRON_SECRET}`);
 
@@ -35,7 +41,7 @@ describe("rafraîchissement quotidien (fonctionnel)", () => {
       refreshed: 1,
       failed: [],
     });
-    const [movie] = await getMoviesRepository().listByStatus("to_watch");
+    const [movie] = await getGroupList().listByStatus(groupId, "to_watch");
     expect(movie).toMatchObject({
       title: "Parasite",
       genreIds: [35, 53, 18],
