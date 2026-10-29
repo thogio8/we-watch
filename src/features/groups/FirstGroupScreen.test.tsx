@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { CreateGroupResult } from "./actions";
 import { FirstGroupScreen } from "./FirstGroupScreen";
 import { GroupPill } from "./GroupPill";
+import { takePillFocus } from "./pillFocus";
 
 const NOUS_DEUX = { id: "g-1", name: "NOUS DEUX", memberCount: 1 };
 
@@ -90,7 +91,8 @@ describe("FirstGroupScreen", () => {
       await user.click(screen.getByRole("button", { name: "CRÉER LE GROUPE" }));
 
       await screen.findByRole("alert");
-      expect(window.location.hash).toBe("");
+      // The request made before the action was withdrawn with the failure.
+      expect(takePillFocus()).toBe(false);
     },
   );
 

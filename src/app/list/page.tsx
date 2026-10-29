@@ -38,7 +38,6 @@ async function ListData() {
           create={createGroup}
         />
       }
-
       search={{
         search: searchCatalog.bind(null, groupId),
         add: addFromSearch.bind(null, groupId),
