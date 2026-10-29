@@ -1,0 +1,131 @@
+/* Same riso ticket as the draw screen, holding the sign-in (was UnlockScreen). */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Narrow by nature, even in the wide column (spec §12). */
+  max-width: var(--column-max);
+  margin-inline: auto;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 32px;
+}
+
+.ticket {
+  width: 100%;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 0 22px;
+}
+
+.title {
+  color: var(--on-pink);
+  font-size: var(--text-2xl);
+  line-height: 1;
+  text-shadow: var(--shadow-offset-sm-paper);
+}
+
+/* The invitation note on the stub. */
+.note {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.label {
+  display: block;
+  margin-top: 10px;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+}
+
+.label:first-child {
+  margin-top: 0;
+}
+
+.input {
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  padding: 10px 14px;
+  border: var(--border);
+  border-radius: var(--radius-chip);
+  background: var(--paper);
+  box-shadow: var(--shadow-offset-sm);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  text-align: center;
+}
+
+.input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* Always rendered so the ticket keeps its height; empty until an error. */
+.error {
+  min-height: 1.4em;
+  margin: 10px 0 0;
+  color: var(--on-pink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 30px;
+}
+
+.wide {
+  width: 100%;
+}
+
+.textAction {
+  composes: textAction from "../../ui/TextAction.module.css";
+}
+
+/* « FACE ID » never splits across two lines (narrowest phones). */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* Phone held sideways: one-line title, tighter spacing. */
+@media (max-height: 520px) {
+  .brand :global(span) {
+    display: inline;
+  }
+
+  .form {
+    margin-top: 16px;
+  }
+
+  .actions {
+    gap: 8px;
+    margin-top: 16px;
+  }
+}
+
+/* Wide screens: no nav on this page, so no room kept for it at the top. */
+@media (min-width: 760px) {
+  .screen {
+    margin-top: calc(-1 * var(--nav-top-height));
+  }
+}

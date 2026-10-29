@@ -32,6 +32,8 @@ export default defineConfig({
         "src/proxy.ts",
         // Pure wiring: Better Auth's handler, tested through createAuth.
         "src/app/api/auth/**/route.ts",
+        // Pure wiring: Better Auth's browser client, mocked by the screen tests.
+        "src/features/signin/authClient.ts",
         "src/app/manifest.ts",
         "src/features/pwa/brand.ts",
       ],
