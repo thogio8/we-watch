@@ -21,8 +21,9 @@ export type DrawAction = "draw" | "reject" | "reset_pile";
 const throwDice = () => Math.random();
 
 /**
- * The displayed group's draw session as the screen sees it: tonight's filters applied to the
- * list, the view to show, how it leaves, and the user's moves.
+ * The displayed group's draw session as the screen sees it: tonight's
+ * filters applied to the list, the view to show, how it leaves, and the
+ * user's moves.
  */
 export function useDraw(
   groupId: string,

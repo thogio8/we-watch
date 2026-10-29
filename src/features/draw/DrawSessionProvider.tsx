@@ -108,19 +108,20 @@ export function DrawSessionProvider({ children }: { children: ReactNode }) {
 /** The draw session of one group. */
 export function useDrawSession(groupId: string): DrawSession {
   const all = useContext(DrawSessionContext);
+  // A throw ends the render: the hooks below never run in a different order.
+  if (all === null) {
+    throw new Error("useDrawSession must be used inside <DrawSessionProvider>");
+  }
   const stored = useSyncExternalStore(
     subscribeStorage,
     () => readStorage(groupId),
     serverStorage,
   );
-  const groupDispatch = all?.dispatch;
+  const { dispatch: groupDispatch } = all;
   const dispatch = useCallback(
-    (action: DrawSessionAction) => groupDispatch?.({ groupId, action }),
+    (action: DrawSessionAction) => groupDispatch({ groupId, action }),
     [groupDispatch, groupId],
   );
-  if (all === null) {
-    throw new Error("useDrawSession must be used inside <DrawSessionProvider>");
-  }
   // This session's choice wins over the stored one, even if it could not be
   // saved (private browsing). The mood is per evening: never stored.
   const filters = all.chosen[groupId] ?? {
