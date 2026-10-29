@@ -89,7 +89,6 @@ async function hugosGroup(hugo: string): Promise<string> {
     userId: hugo,
     tmdbId: AMELIE,
     decision: "reject",
-    snapshot: aSnapshot(AMELIE),
   });
   const now = new Date();
   await db

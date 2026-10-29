@@ -6,16 +6,19 @@ import { groupMovie, movieRejection, movieWant } from "./group-schema";
 import { changed, listRow, rejectionOf, wishesOf } from "./list-queries";
 import { upsertSnapshot } from "./snapshots";
 
-interface SwipeInput {
+interface SwipeBase {
   groupId: string;
   userId: string;
   tmdbId: number;
-  decision: SwipeDecision;
-  snapshot: MovieSnapshot;
   now?: Date;
 }
 
-type UndoInput = Omit<SwipeInput, "snapshot" | "now">;
+/** « BOF » never touches the list: it needs no snapshot. */
+type KeepInput = SwipeBase & { decision: "keep"; snapshot: MovieSnapshot };
+type RejectInput = SwipeBase & { decision: "reject"; snapshot?: never };
+type SwipeInput = KeepInput | RejectInput;
+
+type UndoInput = Omit<SwipeBase, "now"> & { decision: SwipeDecision };
 
 export interface Decisions {
   /**
@@ -33,7 +36,7 @@ export interface Decisions {
 const myWant = ({ groupId, userId, tmdbId }: UndoInput) =>
   and(wishesOf(groupId, tmdbId), eq(movieWant.userId, userId));
 
-function keep(db: Database, input: SwipeInput): Promise<ApplyResult> {
+function keep(db: Database, input: KeepInput): Promise<ApplyResult> {
   const { groupId, userId, tmdbId, snapshot } = input;
   const now = input.now ?? new Date();
   return db.transaction(async (tx) => {
@@ -59,7 +62,7 @@ function keep(db: Database, input: SwipeInput): Promise<ApplyResult> {
   });
 }
 
-async function reject(db: Database, input: SwipeInput): Promise<ApplyResult> {
+async function reject(db: Database, input: RejectInput): Promise<ApplyResult> {
   const { userId, tmdbId } = input;
   const rejected = await db
     .insert(movieRejection)
@@ -105,12 +108,12 @@ async function undoReject(db: Database, input: UndoInput) {
   return changed(deleted);
 }
 
-const SWIPE = { keep, reject } as const;
 const UNDO = { keep: undoKeep, reject: undoReject } as const;
 
 export function createDecisions(db: Database): Decisions {
   return {
-    swipe: (input) => SWIPE[input.decision](db, input),
+    swipe: (input) =>
+      input.decision === "keep" ? keep(db, input) : reject(db, input),
 
     undoSwipe: (input) => UNDO[input.decision](db, input),
 

@@ -95,6 +95,16 @@ describe("swiper (fonctionnel)", () => {
     expect(await deckIds()).toContain(CHIHIRO);
   });
 
+  it("✕ BOF avec TMDB en panne : enregistré quand même (pas besoin de la fiche)", async () => {
+    setTmdbDown(true);
+
+    await expect(decideSwipe(mine.id, CHIHIRO, "reject")).resolves.toBe(
+      "applied",
+    );
+    setTmdbDown(false);
+    expect(await deckIds()).not.toContain(CHIHIRO);
+  });
+
   it("TMDB en panne : le deck répond { ok: false } sans planter", async () => {
     setTmdbDown(true);
 

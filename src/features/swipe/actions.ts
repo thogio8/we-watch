@@ -28,9 +28,10 @@ export type SendSwipe = (
 export type LoadCards = (deck: DeckId, page: number) => Promise<LoadMoreResult>;
 
 /**
- * « ON LE VEUT » / « BOF », by me in the group. The snapshot is fetched
- * again here (24 h cache) rather than trusted from the client. "noop" means
- * this swipe created nothing (another device was first): nothing to undo.
+ * « ON LE VEUT » / « BOF », by me in the group. « ON LE VEUT » fetches the
+ * snapshot again here (24 h cache) rather than trusting the client; « BOF »
+ * needs none, so it works with TMDB down. "noop" means this swipe created
+ * nothing (another device was first): nothing to undo.
  */
 export async function decideSwipe(
   groupId: string,
@@ -40,14 +41,16 @@ export async function decideSwipe(
   const { user } = await assertMember(groupId);
   assertTmdbId("decideSwipe", tmdbId);
   assertSwipeDecision("decideSwipe", decision);
-  const snapshot = await getMovieSnapshot(getTmdbClient(), tmdbId);
-  const result = await getDecisions().swipe({
-    groupId,
-    userId: user.userId,
-    tmdbId,
-    decision,
-    snapshot,
-  });
+  const who = { groupId, userId: user.userId, tmdbId };
+  const result = await getDecisions().swipe(
+    decision === "keep"
+      ? {
+          ...who,
+          decision,
+          snapshot: await getMovieSnapshot(getTmdbClient(), tmdbId),
+        }
+      : { ...who, decision },
+  );
   // TIRER and LISTE, kept on the phone, must show it; the deck on screen is
   // not re-rendered (R10).
   revalidateListPages();

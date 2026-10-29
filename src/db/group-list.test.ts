@@ -131,7 +131,6 @@ describe("liste du groupe", () => {
       userId: hugo,
       tmdbId: 1,
       decision: "reject",
-      snapshot: aSnapshot(1),
     });
 
     expect(await list.findInList(groupA, 1)).toBeNull();
@@ -168,7 +167,6 @@ describe("liste du groupe", () => {
       userId: hugo,
       tmdbId: 1,
       decision: "reject",
-      snapshot: aSnapshot(1),
     });
 
     expect(await search(1, hugo, T2)).toBe("applied");
@@ -189,7 +187,6 @@ describe("liste du groupe", () => {
       userId: hugo,
       tmdbId: 1,
       decision: "reject",
-      snapshot: aSnapshot(1),
     });
     await keep(1);
 

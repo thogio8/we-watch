@@ -37,15 +37,20 @@ interface Swipe {
   now?: Date;
 }
 
-const swipe = ({ userId, decision = "keep", tmdbId = 1, ...rest }: Swipe) =>
-  decisions.swipe({
+const swipe = ({ userId, decision = "keep", tmdbId = 1, ...rest }: Swipe) => {
+  const who = {
     groupId: rest.groupId ?? groupe,
     userId,
     tmdbId,
-    decision,
-    snapshot: aSnapshot(tmdbId, { title: rest.title ?? `Film ${tmdbId}` }),
     now: rest.now ?? T0,
-  });
+  };
+  const title = rest.title ?? `Film ${tmdbId}`;
+  return decisions.swipe(
+    decision === "keep"
+      ? { ...who, decision, snapshot: aSnapshot(tmdbId, { title }) }
+      : { ...who, decision },
+  );
+};
 
 const undo = (userId: string, decision: SwipeDecision = "keep", tmdbId = 1) =>
   decisions.undoSwipe({ groupId: groupe, userId, tmdbId, decision });

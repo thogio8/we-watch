@@ -61,27 +61,41 @@ beforeEach(() => {
 });
 
 describe("decideSwipe", () => {
-  it.each(["keep", "reject"] as const)(
+  it.each([
+    ["keep", { snapshot: WHIPLASH }],
+    ["reject", {}],
+  ] as const)(
     "%s enregistre la décision de Léa dans le groupe et périme TIRER et LISTE",
-    async (decision) => {
+    async (decision, extra) => {
       await expect(decideSwipe(GROUP, 244786, decision)).resolves.toBe(
         "applied",
       );
 
       expect(assertMember).toHaveBeenCalledWith(GROUP);
-      expect(getMovieSnapshot).toHaveBeenCalledWith(client, 244786);
       expect(swipe).toHaveBeenCalledWith({
         groupId: GROUP,
         userId: "user-1",
         tmdbId: 244786,
         decision,
-        snapshot: WHIPLASH,
+        ...extra,
       });
       expect(revalidateListPages).toHaveBeenCalledOnce();
       // The deck on screen is left alone: no SWIPER refresh mid-session.
       expect(revalidateGroupPages).not.toHaveBeenCalled();
     },
   );
+
+  it("♥ relit la fiche chez TMDB plutôt que de croire le client", async () => {
+    await decideSwipe(GROUP, 244786, "keep");
+
+    expect(getMovieSnapshot).toHaveBeenCalledExactlyOnceWith(client, 244786);
+  });
+
+  it("✕ BOF ne demande rien à TMDB : la fiche ne sert pas", async () => {
+    await decideSwipe(GROUP, 244786, "reject");
+
+    expect(getMovieSnapshot).not.toHaveBeenCalled();
+  });
 
   it("signale une décision qui n’a rien créé (rien à annuler)", async () => {
     swipe.mockResolvedValue("noop");

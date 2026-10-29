@@ -70,7 +70,6 @@ describe("instantanés", () => {
       userId: lea,
       tmdbId: 5,
       decision: "reject",
-      snapshot: aSnapshot(5),
     });
 
     expect((await snapshots.listedIds()).toSorted()).toEqual([1, 2]);
