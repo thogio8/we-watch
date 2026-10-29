@@ -19,7 +19,8 @@ const DAY_SECONDS = 24 * 60 * 60;
 
 // Sign-in is passkey only: these core endpoints (email/password, email
 // change and verification, social accounts, profile and session edits, user
-// deletion, passkey management) are unused, so they answer 404.
+// deletion, passkey management) are unused, so those exact paths answer 404 (/reset-password/:token,
+// /callback/:id, /ok and /error still answer; harmless, see piece 6).
 export const DISABLED_PATHS = [
   "/sign-up/email",
   "/sign-in/email",

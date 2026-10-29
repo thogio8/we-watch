@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { parseDisplayName } from "../domain/display-name";
+import { parseDisplayName } from "@/domain/display-name";
 import { constantTimeEqual } from "./token";
 
 /**
  * Short-lived signed signup ticket: `base64url(JSON {name, owner, exp, jti})`
  * + `.` + `base64url(HMAC-SHA256)`. Issued by the signup Server Action, re-read
- * before Better Auth creates the user. Web Crypto only (also runs in the proxy).
+ * before Better Auth creates the user. Web Crypto only.
  * The signed message is prefixed with a fixed label so the signature can never
  * be confused with another HMAC made from the same secret.
  *
