@@ -8,6 +8,10 @@ import type { Database } from "@/db/create-database";
 import { createGroups } from "@/db/groups";
 import { GROUP_COOKIE } from "@/domain/group";
 import { startServerStack } from "../helpers/functional";
+import {
+  hasMisplacedDirective,
+  isServerModule,
+} from "../helpers/server-directive";
 
 // No session mock: the real session read, from a request without cookies.
 vi.mock("next/headers");
@@ -17,18 +21,16 @@ const SRC = join(process.cwd(), "src");
 /** Public by design: it prepares a signup, so there is no session yet. */
 const PUBLIC_ACTIONS = new Set(["features/signin/actions.ts#prepareSignup"]);
 
-const DIRECTIVE = /^\s*["']use server["'];?\s*$/m;
-
 /** Every source file of src (tests aside), with its text. */
 const sources = readdirSync(SRC, { recursive: true })
   .map(String)
-  .filter((path) => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path))
+  .filter((path) => /\.(?:tsx?|m?js)$/.test(path) && !/\.test\./.test(path))
   .sort()
   .map((path) => ({ path, text: readFileSync(join(SRC, path), "utf8") }));
 
 /** Every "use server" module of src, found on disk: a new one is checked too. */
 const serverActionModules = sources
-  .filter(({ text }) => /^["']use server["']/.test(text))
+  .filter(({ text }) => isServerModule(text))
   .map(({ path }) => path);
 
 let db: Database;
@@ -113,7 +115,7 @@ describe("Server Actions sans session (fonctionnel, méta-test)", () => {
 
   it("aucune directive « use server » ailleurs qu’en tête de fichier", () => {
     const misplaced = sources
-      .filter(({ text }) => DIRECTIVE.test(text.slice(text.indexOf("\n"))))
+      .filter(({ text }) => hasMisplacedDirective(text))
       .map(({ path }) => path);
 
     expect(misplaced).toEqual([]);
