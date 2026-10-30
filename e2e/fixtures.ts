@@ -1,11 +1,12 @@
 import {
+  type Browser,
   type BrowserContext,
   expect,
   type Page,
   test as base,
 } from "@playwright/test";
 import { testUtils } from "better-auth/plugins";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createAuth } from "../src/auth/create-auth";
 import {
   account,
@@ -156,15 +157,43 @@ async function virtualAuthenticator(page: Page) {
 }
 
 /**
+ * Lends the test second devices, each its own browser context set up by
+ * `setUp`, closed at its end. The runner gives every context of the test the
+ * project's options (device, locale, time zone, reduced motion, baseURL), as
+ * it does `page`'s.
+ */
+async function secondDevices(
+  browser: Browser,
+  use: (
+    open: (setUp: (page: Page) => Promise<unknown>) => Promise<Page>,
+  ) => Promise<void>,
+) {
+  const devices: BrowserContext[] = [];
+  await use(async (setUp) => {
+    const device = await browser.newContext();
+    devices.push(device);
+    const page = await device.newPage();
+    await setUp(page);
+    return page;
+  });
+  for (const device of devices) {
+    await device.close();
+  }
+}
+
+/**
  * `app`: every test starts signed in as Léa, on the empty list of « NOUS
- * DEUX », on its worker's server. `member(name)`: another member of that
- * group, signed in on a second device (its own browser context).
- * `newcomer`: signed in, but in no group yet. `visitor`: an empty database,
- * no session, a device that unlocks passkeys.
+ * DEUX », on its worker's server. On second devices, besides Léa's:
+ * `member(name)`, another member of that group; `outsider(name)`, signed in
+ * but in no group; `guest()`, signed out, with a device that unlocks
+ * passkeys. `newcomer`: signed in, but in no group yet. `visitor`: an empty
+ * database, no session, a device that unlocks passkeys.
  */
 export const test = base.extend<{
   app: Page;
   member: (name: string) => Promise<Page>;
+  outsider: (name: string) => Promise<Page>;
+  guest: () => Promise<Page>;
   newcomer: Page;
   visitor: Page;
 }>({
@@ -177,21 +206,22 @@ export const test = base.extend<{
     await use(page);
   },
   // Needs `app` (`app: {}`, used for its setup only): Léa's group exists, and
-  // the wipe never runs after a member. The runner gives every context of the
-  // test the project's options (device, locale, time zone, reduced motion,
-  // baseURL), as it does `page`'s.
+  // the wipe never runs after a second device.
   member: async ({ app: {}, browser }, use) => {
-    const devices: BrowserContext[] = [];
-    await use(async (name) => {
-      const device = await browser.newContext();
-      devices.push(device);
-      const page = await device.newPage();
-      await signIn(page, { name });
-      return page;
-    });
-    for (const device of devices) {
-      await device.close();
-    }
+    await secondDevices(browser, (open) =>
+      use((name) => open((page) => signIn(page, { name }))),
+    );
+  },
+  outsider: async ({ app: {}, browser }, use) => {
+    await secondDevices(browser, (open) =>
+      use((name) => open((page) => signIn(page, { name, group: null }))),
+    );
+  },
+  // The authenticator goes with its context.
+  guest: async ({ app: {}, browser }, use) => {
+    await secondDevices(browser, (open) =>
+      use(() => open(virtualAuthenticator)),
+    );
   },
   newcomer: async ({ page }, use) => {
     await wipe();
@@ -281,4 +311,31 @@ export async function decidedOn(date: Date) {
     .set({
       decidedAt: sql`${groupMovie.decidedAt} - (select max(${groupMovie.decidedAt}) from ${groupMovie}) + ${date.getTime()}`,
     });
+}
+
+/**
+ * Moves the members' arrivals to `date` (the latest one lands on it), keeping
+ * their order: the members screen shows « depuis le … », oldest first.
+ */
+export async function joinedOn(date: Date) {
+  await db()
+    .update(membership)
+    .set({
+      joinedAt: sql`${membership.joinedAt} - (select max(${membership.joinedAt}) from ${membership}) + ${date.getTime()}`,
+    });
+}
+
+/** A fixed, well-formed token (43 base64url characters) for captures. */
+const LEAS_INVITE = "invitation-e2e_".padEnd(43, "0");
+
+/**
+ * The path of an invite link to Léa's group, its token written in the
+ * database (the screens never show it): for the screens that only need one.
+ */
+export async function leasInvitation() {
+  await db()
+    .update(group)
+    .set({ inviteToken: LEAS_INVITE })
+    .where(eq(group.id, LEAS_GROUP.id));
+  return `/invitation/${LEAS_INVITE}`;
 }

@@ -8,37 +8,7 @@ import {
   test,
   topCard,
 } from "./fixtures";
-
-/** The pill naming the group on screen. */
-const pill = (page: Page, name: string | RegExp = /.*/) =>
-  page.getByRole("button", {
-    name: typeof name === "string" ? `Groupe affiché : ${name}` : name,
-  });
-
-const panel = (page: Page) => page.getByRole("dialog", { name: "TES GROUPES" });
-
-async function openPanel(page: Page) {
-  await pill(page, /^Groupe affiché/).click();
-  await expect(panel(page)).toBeVisible();
-}
-
-/** « + CRÉER UN GROUPE » in the pill's panel: the new group is displayed. */
-async function createGroup(page: Page, name: string) {
-  await openPanel(page);
-  await page.getByRole("button", { name: "+ CRÉER UN GROUPE" }).click();
-  await page.getByLabel("NOM DU GROUPE").fill(name);
-  await page.getByRole("button", { name: "CRÉER LE GROUPE" }).click();
-  await expect(pill(page, name)).toBeVisible();
-}
-
-/** Picks another group in the pill's panel. */
-async function chooseGroup(page: Page, name: string) {
-  await openPanel(page);
-  await panel(page)
-    .getByRole("button", { name: new RegExp(`^${name}`) })
-    .click();
-  await expect(pill(page, name)).toBeVisible();
-}
+import { chooseGroup, createGroup, pill } from "./groups";
 
 test.describe("groupes", () => {
   test("deux membres veulent le même film : il est voulu par Léa et Hugo", async ({

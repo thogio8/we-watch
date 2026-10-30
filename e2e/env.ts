@@ -20,6 +20,7 @@ export const e2eEnv = (worker: number) => ({
   CRON_SECRET: "e2e-cron-secret-0123456789",
   BETTER_AUTH_SECRET: E2E_AUTH_SECRET,
   BETTER_AUTH_URL: appUrl(worker),
-  // Invite mode has no e2e scenario: SigninScreen and actions tests cover it.
+  // The e2e runs in open mode. Invite mode is covered by the functional tests
+  // (tests/functional/invite-signup.test.ts) and SigninScreen's tests.
   SIGNUP: "open",
 });
