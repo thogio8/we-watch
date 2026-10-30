@@ -52,6 +52,7 @@ let db: Database;
 let reset: () => Promise<void>;
 let mine: string;
 let theirs: string;
+let hugo: string;
 beforeAll(async () => ({ db, reset } = await startServerStack()));
 
 /**
@@ -111,7 +112,7 @@ async function hugosGroup(hugo: string): Promise<string> {
 beforeEach(async () => {
   await reset();
   (await cookies()).delete(GROUP_COOKIE);
-  const hugo = await aUser(db, "Hugo");
+  hugo = await aUser(db, "Hugo");
   mine = await aGroup(db, "NOUS DEUX", [LEA]);
   theirs = await hugosGroup(hugo);
 });
@@ -151,7 +152,8 @@ const ACTIONS = [
   ["renameGroup", (g: string) => renameGroup(g, renamed("PIRATÉ"))],
   ["inviteLink", (g: string) => inviteLink(g)],
   ["regenerateInviteLink", (g: string) => regenerateInviteLink(g)],
-  ["removeMember", (g: string) => removeMember(g, LEA)],
+  // Hugo, a member of B: someone I could really remove, were I a member.
+  ["removeMember", (g: string) => removeMember(g, hugo)],
   ["leaveGroup", (g: string) => leaveGroup(g)],
 ] as const;
 
