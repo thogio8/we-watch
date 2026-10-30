@@ -1,9 +1,10 @@
 "use server";
 
 import { getServerEnv } from "@/env";
-import { isInviteToken, parseGroupName } from "@/domain/group";
+import { parseGroupName } from "@/domain/group";
 import { getGroups } from "@/server/container";
 import { assertMember, forgetGroup, rememberGroup } from "@/server/groups";
+import { findInvitedGroup } from "@/server/invitations";
 import { revalidatePath } from "next/cache";
 import { revalidateGroupPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
@@ -107,9 +108,7 @@ export type JoinGroupResult =
 /** Opening an invite link: I join the group, which is displayed. */
 export async function joinGroup(token: string): Promise<JoinGroupResult> {
   const { userId } = await assertSignedIn();
-  const found = isInviteToken(token)
-    ? await getGroups().findByInvite(token)
-    : null;
+  const found = await findInvitedGroup(token);
   if (found === null) {
     return { ok: false, error: INVITE_INVALID };
   }

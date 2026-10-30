@@ -3,10 +3,9 @@
 import { signupRight } from "@/access/signup";
 import { createSignupTicket } from "@/access/signup-ticket";
 import { parseDisplayName } from "@/domain/display-name";
-import { isInviteToken } from "@/domain/group";
 import { getServerEnv } from "@/env";
 import { INVITE_INVALID } from "@/features/groups/messages";
-import { getGroups } from "@/server/container";
+import { findInvitedGroup } from "@/server/invitations";
 import { NAME_ERROR, refusalMessage, WRONG_CODE_ERROR } from "./messages";
 
 export type PrepareSignupResult =
@@ -31,9 +30,7 @@ async function invitedGroup(
   if (value === null || value === "") {
     return { ok: true, invite: null };
   }
-  const found = isInviteToken(value)
-    ? await getGroups().findByInvite(value)
-    : null;
+  const found = await findInvitedGroup(value);
   return found === null ? { ok: false } : { ok: true, invite: found.id };
 }
 
