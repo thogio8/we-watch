@@ -2,6 +2,7 @@ import {
   type Browser,
   type BrowserContext,
   expect,
+  type Locator,
   type Page,
   test as base,
 } from "@playwright/test";
@@ -338,4 +339,11 @@ export async function leasInvitation() {
     .set({ inviteToken: LEAS_INVITE })
     .where(eq(group.id, LEAS_GROUP.id));
   return `/invitation/${LEAS_INVITE}`;
+}
+
+/** Where the element is on screen; it must be there. */
+export async function box(locator: Locator) {
+  const found = await locator.boundingBox();
+  expect(found).not.toBeNull();
+  return found!;
 }

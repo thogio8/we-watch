@@ -29,6 +29,20 @@
   box-shadow: var(--shadow-ticket);
   color: var(--on-pink);
   text-align: center;
+  /* Brought into view when it opens: clear of the bottom nav on phones. */
+  scroll-margin-bottom: calc(
+    var(--nav-height) + 12px + env(safe-area-inset-bottom)
+  );
+}
+
+/* Wide screens: the nav is at the top. */
+@media (min-width: 760px) {
+  .ticket {
+    scroll-margin-top: calc(
+      var(--nav-top-height) + 12px + env(safe-area-inset-top)
+    );
+    scroll-margin-bottom: 12px;
+  }
 }
 
 .question {

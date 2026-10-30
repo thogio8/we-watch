@@ -101,10 +101,8 @@ test.describe("rendu visuel", () => {
       await shoot(app, `${format.name}-8-groupe`);
       await app.getByRole("button", { name: "QUITTER LE GROUPE" }).click();
       await expect(app.getByRole("group")).toBeVisible();
-      // Scrolled down, as one would: the ticket clear of the fixed navs.
-      await app.evaluate(() =>
-        window.scrollTo(0, document.documentElement.scrollHeight),
-      );
+      // As it opens (the app brings it clear of the nav): the viewport, since
+      // a fullPage image would draw the fixed nav over it.
       await shoot(app, `${format.name}-8b-groupe-quitter`, {
         fullPage: false,
       });

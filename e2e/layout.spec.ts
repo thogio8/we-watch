@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type Locator, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import {
+  box,
   emptyNameRefused,
   expect,
   leasInvitation,
@@ -172,12 +173,6 @@ test.describe("TIRER tient sur un écran", () => {
     });
   }
 });
-
-async function box(locator: Locator) {
-  const found = await locator.boundingBox();
-  expect(found).not.toBeNull();
-  return found!;
-}
 
 test.describe("mise en page et accessibilité, sans groupe", () => {
   test.beforeEach(() => {

@@ -1,5 +1,5 @@
 import { type Page } from "@playwright/test";
-import { expect, listTitles, swipe, test } from "./fixtures";
+import { box, expect, listTitles, swipe, test } from "./fixtures";
 import {
   copyInviteLink,
   createGroup,
@@ -129,6 +129,24 @@ test.describe("invitations", () => {
     // Gone with the group, its link opens nothing.
     await app.goto(link);
     await expect(heading(app, INVALID)).toBeVisible();
+  });
+
+  test("sur un téléphone, le ticket de confirmation s’ouvre au-dessus de la nav", async ({
+    app,
+    member,
+  }) => {
+    // The nav sits at the bottom on phones only.
+    test.skip(test.info().project.name !== "iphone");
+    await member("Hugo");
+    await app.goto("/groupe");
+    await app.getByRole("button", { name: "QUITTER LE GROUPE" }).click();
+
+    const leave = await box(ticket(app, /QUITTER «\s*NOUS DEUX\s*»/));
+    const nav = await box(
+      app.getByRole("navigation", { name: "Navigation principale" }),
+    );
+    expect(leave.y + leave.height).toBeLessThanOrEqual(nav.y);
+    await expect(app.getByRole("button", { name: "ANNULER" })).toBeFocused();
   });
 
   test("un membre déjà dans le groupe qui ouvre le lien y bascule", async ({

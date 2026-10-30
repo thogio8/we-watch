@@ -31,6 +31,7 @@ function ConfirmTicket({
 }: ConfirmTicketProps) {
   const questionId = useId();
   const warningId = useId();
+  const ticket = useRef<HTMLDivElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
   const confirm = useRef<HTMLButtonElement>(null);
   const { pending, error, run } = useConfirm(
@@ -40,7 +41,12 @@ function ConfirmTicket({
     },
     { failure, done: onDone, leaves },
   );
-  useEffect(() => cancel.current?.focus(), []);
+  useEffect(() => {
+    // Opened low on a phone, the ticket would sit under the fixed nav: brought
+    // into view, clear of it (scroll-margin), at once (no motion to reduce).
+    cancel.current?.focus({ preventScroll: true });
+    ticket.current?.scrollIntoView({ block: "nearest" });
+  }, []);
   useEffect(() => {
     // Disabled while it ran, the button lost focus: give it back.
     if (error !== null) confirm.current?.focus();
@@ -52,6 +58,7 @@ function ConfirmTicket({
 
   return (
     <div
+      ref={ticket}
       role="group"
       aria-labelledby={questionId}
       aria-describedby={warning ? warningId : undefined}
