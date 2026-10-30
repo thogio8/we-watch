@@ -170,40 +170,58 @@ describe("partir", () => {
     expect(await count(movieWant)).toBe(1);
   });
 
+  // The in-memory client has one connection: a concurrent member is staged
+  // with a TEMP trigger, fired by one of the departure's own statements.
+  const stage = (trigger: string) => db.run(sql.raw(trigger));
+
   it("deux départs concurrents d’un groupe à deux le suppriment une seule fois", async () => {
-    // Hugo leaves between the delete of Léa's membership and the group's
-    // (staged: the in-memory client has one connection).
-    await db.run(
-      sql.raw(`
+    await keep(1, lea);
+    await db.run(sql`PRAGMA foreign_keys = OFF`);
+    // Hugo's whole departure lands between Léa leaving and her emptiness
+    // check: it already took the group and its list along.
+    await stage(`
       CREATE TEMP TRIGGER hugo_leaves AFTER DELETE ON membership
       WHEN OLD.user_id = '${lea}'
       BEGIN
         DELETE FROM membership WHERE user_id = '${hugo}';
-      END`),
-    );
+        DELETE FROM movie_want WHERE group_id = OLD.group_id;
+        DELETE FROM group_movie WHERE group_id = OLD.group_id;
+        DELETE FROM app_group WHERE id = OLD.group_id;
+      END`);
 
-    expect(await groups.leave(groupA, lea)).toBe("group_deleted");
-    expect(await groups.leave(groupA, hugo)).toBe("not_member");
+    expect(await groups.leave(groupA, lea)).toBe("left");
 
     expect(await count(group)).toBe(0);
+    expect(await count(groupMovie)).toBe(0);
     expect(await count(membership)).toBe(0);
   });
 
-  it("quelqu’un qui rejoint pendant le départ du dernier membre garde le groupe", async () => {
+  it("quelqu’un qui rejoint entre le constat « plus personne » et la suppression garde le groupe, sans appartenance orpheline", async () => {
     const solo = await aGroup(db, "SOLO", [lea]);
-    // Hugo joins between the delete of Léa's membership and the group's
-    // (the in-memory client has one connection: the race is staged).
-    await db.run(
-      sql.raw(`
-      CREATE TEMP TRIGGER hugo_joins AFTER DELETE ON membership
+    await keep(1, lea, solo);
+    await keep(2, hugo);
+    await db.run(sql`PRAGMA foreign_keys = OFF`);
+    // Hugo joins once the departure has found the group empty, as it starts
+    // deleting the group's rows.
+    await stage(`
+      CREATE TEMP TRIGGER hugo_joins BEFORE DELETE ON group_movie
+      WHEN OLD.group_id = '${solo}'
       BEGIN
-        INSERT INTO membership (group_id, user_id, joined_at)
+        INSERT OR IGNORE INTO membership (group_id, user_id, joined_at)
         VALUES (OLD.group_id, '${hugo}', 0);
-      END`),
-    );
+      END`);
 
     expect(await groups.leave(solo, lea)).toBe("left");
 
+    expect(await db.$count(group, eq(group.id, solo))).toBe(1);
     expect(await groups.membersOf(solo)).toMatchObject([{ userId: hugo }]);
+    const orphans = await db.all(
+      sql`select 1 from membership where group_id not in (select id from app_group)`,
+    );
+    expect(orphans).toEqual([]);
+    // The other group is untouched.
+    expect(await list.findInList(groupA, 2)).toMatchObject({
+      wantedBy: ["Hugo"],
+    });
   });
 });
