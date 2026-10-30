@@ -27,6 +27,30 @@ export interface Memberships {
 export const membershipOf = (groupId: string, userId: string) =>
   and(eq(membership.groupId, groupId), eq(membership.userId, userId));
 
+type NewMembership = {
+  groupId: string;
+  userId: string;
+  joinedAt: Date;
+  lastUsedAt: Date | null;
+};
+
+/**
+ * One statement: inserts the membership only while the group exists, and
+ * never twice. True when a row was inserted. A group deleted concurrently
+ * leaves no orphan membership, whatever the foreign keys.
+ */
+export async function insertMembership(
+  executor: Executor,
+  { groupId, userId, joinedAt, lastUsedAt }: NewMembership,
+): Promise<boolean> {
+  const inserted = await executor.run(sql`
+    insert into ${membership} (group_id, user_id, joined_at, last_used_at)
+    select ${groupId}, ${userId}, ${joinedAt.getTime()}, ${lastUsedAt?.getTime() ?? null}
+    where exists (select 1 from ${group} where ${group.id} = ${groupId})
+    on conflict do nothing`);
+  return inserted.rowsAffected > 0;
+}
+
 /**
  * Children are deleted explicitly (foreign keys may be off) and only while
  * the group has no member, in the same statement: a join racing the last
@@ -49,13 +73,8 @@ async function deleteIfEmpty(tx: Executor, groupId: string) {
 export function createMemberships(db: Database): Memberships {
   return {
     async join(groupId, userId, now = new Date()) {
-      const at = now.getTime();
-      const inserted = await db.run(sql`
-        insert into ${membership} (group_id, user_id, joined_at, last_used_at)
-        select ${groupId}, ${userId}, ${at}, ${at}
-        where exists (select 1 from ${group} where ${group.id} = ${groupId})
-        on conflict do nothing`);
-      if (inserted.rowsAffected > 0) return "joined";
+      const row = { groupId, userId, joinedAt: now, lastUsedAt: now };
+      if (await insertMembership(db, row)) return "joined";
       const member = await db.$count(membership, membershipOf(groupId, userId));
       return member > 0 ? "already" : "gone";
     },

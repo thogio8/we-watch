@@ -3,6 +3,8 @@ import { accessDecision, type AccessDecision, decideAccess } from "./decision";
 
 type Session = "sans session" | "avec session";
 
+const INVITATION = `/invitation/${"A".repeat(43)}`;
+
 const cases: [string, string, Session, AccessDecision][] = [
   // Pages
   ["/", "GET", "sans session", "redirect"],
@@ -42,6 +44,15 @@ const cases: [string, string, Session, AccessDecision][] = [
   ["/api/auth/get-session", "GET", "sans session", "allow"],
   ["/api/auth", "GET", "sans session", "redirect"],
   ["/api/authentification", "POST", "sans session", "unauthorized"],
+  // An invite link: its page and its Server Actions, signed in or not
+  [INVITATION, "GET", "sans session", "allow"],
+  [INVITATION, "POST", "sans session", "allow"],
+  [INVITATION, "GET", "avec session", "allow"],
+  ["/invitation", "GET", "sans session", "redirect"],
+  ["/invitation", "POST", "sans session", "unauthorized"],
+  ["/invitations", "GET", "sans session", "redirect"],
+  [`/invitationsx/${"A".repeat(43)}`, "GET", "sans session", "redirect"],
+  [`/invitationsx/${"A".repeat(43)}`, "POST", "sans session", "unauthorized"],
   // Framework assets
   ["/_next/static/chunks/app.js", "GET", "sans session", "allow"],
   ["/_next/static/media/archivo.woff2", "GET", "sans session", "allow"],
@@ -125,6 +136,8 @@ describe("decideAccess : la session n'est lue que si elle change la réponse", (
     ["/tmdb-logo.svg", "GET"],
     ["/connexion", "GET"],
     ["/connexion", "POST"],
+    [INVITATION, "GET"],
+    [INVITATION, "POST"],
     ["/api/auth/get-session", "GET"],
     ["/api/auth/passkey/verify-registration", "POST"],
     ["/api/cron/refresh-movies", "GET"],

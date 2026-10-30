@@ -5,7 +5,7 @@ import {
   readSignupTicket,
   type IssuedSignupTicket,
 } from "@/access/signup-ticket";
-import { joinLegacyGroup } from "./legacy-group-join";
+import { joinGroupInSignup, signupJoins } from "./group-join";
 
 type Registration = NonNullable<PasskeyOptions["registration"]>;
 type ResolveUser = NonNullable<Registration["resolveUser"]>;
@@ -85,7 +85,8 @@ export function passkeySignup(secret: string): {
       if (await getSessionFromCtx(ctx)) {
         throw new APIError("BAD_REQUEST", { message: "Already signed in" });
       }
-      const { name, owner, jti } = await requireTicket(context, secret);
+      const ticket = await requireTicket(context, secret);
+      const { name, jti } = ticket;
       await consumeTicket(ctx, jti);
       // Better Auth requires a unique email; `.invalid` is a reserved TLD.
       const user = await ctx.context.internalAdapter.createUser(
@@ -96,8 +97,9 @@ export function passkeySignup(secret: string): {
         },
         { method: "passkey" },
       );
-      if (owner) {
-        await joinLegacyGroup(ctx.context.adapter, user.id);
+      const now = new Date();
+      for (const join of signupJoins(ticket, now)) {
+        await joinGroupInSignup(user.id, join, now);
       }
       return { userId: user.id };
     },

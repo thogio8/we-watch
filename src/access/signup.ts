@@ -5,6 +5,8 @@ export type SignupRight =
 
 type SignupInput = {
   mode: "open" | "invite";
+  /** The person came through a valid invite link. */
+  invited?: boolean;
   ownerCode?: string;
   submittedCode?: string;
 };
@@ -17,18 +19,21 @@ function submittedOwnerCode(submittedCode?: string): string | null {
 
 /**
  * Decides who may create an account. A valid owner code always grants the
- * owner role. Without one, signup is allowed only in "open" mode. A refusal
- * says why: "wrong_code" whenever a non-blank code was typed (in either mode),
- * "closed" when none was and signup is not open. The UI message derives from it.
+ * owner role, invited or not. Without a code, signup is allowed through an
+ * invitation (in either mode) or in "open" mode. A refusal says why:
+ * "wrong_code" whenever a non-blank code was typed (in either mode, invited
+ * or not), "closed" when none was and signup is not open. The UI message
+ * derives from it.
  */
 export function signupRight({
   mode,
+  invited = false,
   ownerCode,
   submittedCode,
 }: SignupInput): SignupRight {
   const submitted = submittedOwnerCode(submittedCode);
   if (submitted === null) {
-    return mode === "open"
+    return invited || mode === "open"
       ? { ok: true, owner: false }
       : { ok: false, reason: "closed" };
   }

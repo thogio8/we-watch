@@ -95,4 +95,37 @@ describe("signupRight", () => {
       signupRight({ mode: "invite", submittedCode: "quelque-chose" }),
     ).toEqual({ ok: false, reason: "wrong_code" });
   });
+
+  const OWNER = { ok: true, owner: true };
+  const MEMBER = { ok: true, owner: false };
+  const CLOSED = { ok: false, reason: "closed" };
+  const WRONG = { ok: false, reason: "wrong_code" };
+  const CODES = { bon: OWNER_CODE, mauvais: "autre-code-12345", absent: "" };
+
+  it.each([
+    ["open", false, "absent", MEMBER],
+    ["open", false, "bon", OWNER],
+    ["open", false, "mauvais", WRONG],
+    ["open", true, "absent", MEMBER],
+    ["open", true, "bon", OWNER],
+    ["open", true, "mauvais", WRONG],
+    ["invite", false, "absent", CLOSED],
+    ["invite", false, "bon", OWNER],
+    ["invite", false, "mauvais", WRONG],
+    ["invite", true, "absent", MEMBER],
+    ["invite", true, "bon", OWNER],
+    ["invite", true, "mauvais", WRONG],
+  ] as const)(
+    "mode %s, invité : %s, code %s → %j",
+    (mode, invited, code, expected) => {
+      expect(
+        signupRight({
+          mode,
+          invited,
+          ownerCode: OWNER_CODE,
+          submittedCode: CODES[code],
+        }),
+      ).toEqual(expected);
+    },
+  );
 });

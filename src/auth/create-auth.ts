@@ -4,11 +4,9 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
-import { group, membership } from "@/db/group-schema";
 import { parseDisplayName } from "@/domain/display-name";
-import { generateId } from "./ids";
-import { groupModels } from "./legacy-group-join";
 import { passkeySignup, signupTicketUses } from "./passkey-signup";
+import { trackTransactions } from "./signup-transaction";
 
 export type AuthConfig<Plugins extends BetterAuthPlugin[] = []> = {
   db: Database;
@@ -82,11 +80,11 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     appName: "WeWatch",
     secret,
     baseURL,
-    // A real transaction: a passkey signup creates the user, its passkey and
-    // its session together, or nothing at all.
-    database: drizzleAdapter(db, {
+    // A real transaction: a passkey signup creates the user, its passkey,
+    // its session and its group memberships together, or nothing at all.
+    database: drizzleAdapter(trackTransactions(db), {
       provider: "sqlite",
-      schema: { ...authSchema, group, membership },
+      schema: authSchema,
       transaction: true,
     }),
     session: {
@@ -97,7 +95,6 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
       // disableCookieCache. See CLAUDE.md « Pièges ».
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
-    advanced: { database: { generateId } },
     emailAndPassword: { enabled: false },
     disabledPaths: DISABLED_PATHS,
     hooks: { before: alwaysCreateSession },
@@ -122,7 +119,6 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
         registration: passkeySignup(secret),
       }),
       signupTicketUses,
-      groupModels,
       ...(plugins ?? []),
     ],
   });

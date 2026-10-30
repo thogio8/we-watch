@@ -9,7 +9,7 @@ import {
 const SECRET = "a-long-enough-better-auth-secret";
 const NOW = 1_800_000_000_000;
 const TEN_MINUTES = 10 * 60 * 1000;
-const TICKET: SignupTicket = { name: "Léa", owner: false };
+const TICKET: SignupTicket = { name: "Léa", owner: false, invite: null };
 const JTI = "AAAAAAAAAAAAAAAAAAAAAA";
 /** What reading a ticket issued for `ticket` gives back: a random jti too. */
 const issued = (ticket: SignupTicket) => ({
@@ -40,7 +40,7 @@ describe("createSignupTicket / readSignupTicket", () => {
   });
 
   it("relit un ticket propriétaire", async () => {
-    const owner = { name: "Léa", owner: true };
+    const owner = { name: "Léa", owner: true, invite: null };
     const token = await createSignupTicket(owner, SECRET, NOW);
     expect(await readSignupTicket(token, SECRET, NOW)).toEqual(issued(owner));
   });
@@ -111,6 +111,7 @@ describe("createSignupTicket / readSignupTicket", () => {
     const token = sign({
       name: `Léa${" ".repeat(600)}`,
       owner: false,
+      invite: null,
       exp: NOW + 1000,
       jti: JTI,
     });
@@ -120,18 +121,22 @@ describe("createSignupTicket / readSignupTicket", () => {
 
   it("normalise le nom à la création", async () => {
     const token = await createSignupTicket(
-      { name: "  Léa   Dupont ", owner: false },
+      { name: "  Léa   Dupont ", owner: false, invite: null },
       SECRET,
       NOW,
     );
     expect(await readSignupTicket(token, SECRET, NOW)).toEqual(
-      issued({ name: "Léa Dupont", owner: false }),
+      issued({ name: "Léa Dupont", owner: false, invite: null }),
     );
   });
 
   it("refuse de créer un ticket pour un nom invalide", async () => {
     await expect(
-      createSignupTicket({ name: "   ", owner: false }, SECRET, NOW),
+      createSignupTicket(
+        { name: "   ", owner: false, invite: null },
+        SECRET,
+        NOW,
+      ),
     ).rejects.toThrow("Invalid display name");
   });
 
@@ -142,6 +147,7 @@ describe("createSignupTicket / readSignupTicket", () => {
       JSON.stringify({
         name: "Léa",
         owner: true,
+        invite: null,
         exp: NOW + TEN_MINUTES,
         jti: JTI,
       }),
@@ -194,24 +200,37 @@ describe("createSignupTicket / readSignupTicket", () => {
     const token = sign({
       name: "   ",
       owner: false,
+      invite: null,
       exp: NOW + 1000,
       jti: JTI,
     });
     expect(await readSignupTicket(token, SECRET, NOW)).toBeNull();
   });
 
-  const VALID = { name: "Léa", owner: false, exp: NOW + 1000, jti: JTI };
+  const VALID = {
+    name: "Léa",
+    owner: false,
+    invite: null,
+    exp: NOW + 1000,
+    jti: JTI,
+  };
+  const without = (key: keyof typeof VALID) =>
+    Object.fromEntries(Object.entries(VALID).filter(([name]) => name !== key));
 
   it.each([
     ["owner non booléen", { ...VALID, owner: "true" }],
-    ["owner absent", { name: "Léa", exp: NOW + 1000, jti: JTI }],
-    ["exp absent", { name: "Léa", owner: false, jti: JTI }],
+    ["owner absent", without("owner")],
+    ["exp absent", without("exp")],
     ["exp non entier", { ...VALID, exp: NOW + 0.5 }],
     ["exp chaîne", { ...VALID, exp: `${NOW + 1000}` }],
-    ["jti absent", { name: "Léa", owner: false, exp: NOW + 1000 }],
+    ["jti absent", without("jti")],
     ["jti trop court", { ...VALID, jti: "AAAA" }],
     ["jti hors base64url", { ...VALID, jti: "A".repeat(21) + "=" }],
     ["champ inconnu", { ...VALID, admin: 1 }],
+    ["invite absent", without("invite")],
+    ["invite vide", { ...VALID, invite: "" }],
+    ["invite de 65 caractères", { ...VALID, invite: "g".repeat(65) }],
+    ["invite non chaîne", { ...VALID, invite: 42 }],
     ["tableau", [1, 2]],
     ["null", null],
   ])(
@@ -232,4 +251,40 @@ describe("createSignupTicket / readSignupTicket", () => {
       ).toBeNull();
     },
   );
+
+  describe("invitation", () => {
+    const INVITED: SignupTicket = { name: "Léa", owner: false, invite: "g-5" };
+
+    it("relit l’id du groupe de l’invitation", async () => {
+      const token = await createSignupTicket(INVITED, SECRET, NOW);
+      expect(await readSignupTicket(token, SECRET, NOW)).toEqual(
+        issued(INVITED),
+      );
+    });
+
+    it("refuse une invitation ajoutée ou changée après la signature", async () => {
+      const token = await createSignupTicket(TICKET, SECRET, NOW);
+      const [, signature] = token.split(".");
+      const forged = b64(
+        JSON.stringify({ ...VALID, exp: NOW + TEN_MINUTES, invite: "g-5" }),
+      );
+      expect(
+        await readSignupTicket(`${forged}.${signature}`, SECRET, NOW),
+      ).toBeNull();
+    });
+
+    it("le plus gros ticket légitime tient en 512 caractères et se relit", async () => {
+      // 30 four-byte characters, the longest group id, the owner role.
+      const largest: SignupTicket = {
+        name: "\u{1F3AC}".repeat(30),
+        owner: true,
+        invite: "g".repeat(64),
+      };
+      const token = await createSignupTicket(largest, SECRET, NOW);
+      expect(token.length).toBeLessThanOrEqual(512);
+      expect(await readSignupTicket(token, SECRET, NOW)).toEqual(
+        issued(largest),
+      );
+    });
+  });
 });
