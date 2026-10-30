@@ -269,7 +269,8 @@ describe("joinGroup", () => {
     expect(findByInvite).toHaveBeenCalledWith(TOKEN);
     expect(join).toHaveBeenCalledWith("g-5", "user-1");
     expect(rememberGroup).toHaveBeenCalledWith("g-5");
-    expect(touch).toHaveBeenCalledWith("g-5", "user-1");
+    // Joining already marks the group as just used.
+    expect(touch).not.toHaveBeenCalled();
     expect(revalidateGroupPages).toHaveBeenCalledOnce();
     expect(revalidatePath).toHaveBeenCalledWith("/groupe");
   });

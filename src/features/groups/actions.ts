@@ -112,12 +112,14 @@ export async function joinGroup(token: string): Promise<JoinGroupResult> {
   if (found === null) {
     return { ok: false, error: INVITE_INVALID };
   }
-  if ((await getGroups().join(found.id, userId)) === "gone") {
+  const joined = await getGroups().join(found.id, userId);
+  if (joined === "gone") {
     return { ok: false, error: INVITE_INVALID };
   }
   await rememberGroup(found.id);
-  // "already" does not touch the membership: opening the link still switches.
-  await getGroups().touch(found.id, userId);
+  // A new membership is just used; "already" one is not: opening the link
+  // still switches to the group.
+  if (joined === "already") await getGroups().touch(found.id, userId);
   revalidateGroupPages();
   revalidatePath("/groupe");
   return { ok: true, groupId: found.id };
