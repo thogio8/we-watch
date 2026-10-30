@@ -230,7 +230,9 @@ async function* longAccountName(page: Page) {
   await page.goto("/compte");
   await page.getByLabel("TON PRÉNOM").fill(name);
   await page.getByRole("button", { name: "CHANGER" }).click();
-  await expect(page.getByRole("status")).toContainText(name);
+  await expect(
+    page.getByRole("status").filter({ hasText: name }),
+  ).toBeVisible();
   yield "/compte (prénom long)";
   await page.getByRole("button", { name: "SUPPRIMER MON COMPTE" }).click();
   await page.getByLabel(`TAPE « ${name} » POUR CONFIRMER`).fill(name);

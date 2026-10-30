@@ -45,6 +45,8 @@ export function DeleteAccount({ name, remove }: DeleteAccountProps) {
       failure={DELETE_FAILED}
       ready={confirmsName(typed, name)}
       leaves
+      // Reopened, the ticket asks again from scratch.
+      onCancel={() => setTyped("")}
     >
       <label className={styles.field}>
         {deleteField(name)}

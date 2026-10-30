@@ -9,8 +9,9 @@
   overflow-wrap: anywhere;
 }
 
+/* Empty, it takes no room, but stays in the page: a live region must exist before it speaks. */
 .status:empty {
-  display: none;
+  margin: 0;
 }
 
 /* Why the last passkey has no « SUPPRIMER ». */
@@ -25,6 +26,12 @@
   composes: alert from "../../ui/Alert.module.css";
   width: 100%;
   margin: 0;
+}
+
+/* What became of a key or a device the list no longer shows, under the title. */
+.notice {
+  composes: alert;
+  margin: 8px 0 4px;
 }
 
 /* Signing out, then deleting the account: below the slips, centred. */

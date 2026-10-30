@@ -1,4 +1,5 @@
 import { formatLongDate } from "@/domain/time";
+import { CANCELLED_ERROR } from "@/features/signin/messages";
 import { quoted } from "@/ui/quoted";
 
 /** Texts of « MON COMPTE ». */
@@ -7,6 +8,9 @@ export const LAST_PASSKEY = "GARDE AU MOINS UNE CLÉ D’ACCÈS";
 export const WRONG_NAME = "TAPE TON PRÉNOM EXACT";
 export const RENAME_FAILED = "PAS RÉUSSI À CHANGER TON PRÉNOM, RÉESSAIE";
 export const REMOVE_PASSKEY_FAILED = "PAS RÉUSSI À SUPPRIMER LA CLÉ, RÉESSAIE";
+export const GONE_PASSKEY = "CETTE CLÉ N’EXISTE DÉJÀ PLUS";
+export const PASSKEY_ADDED = "CLÉ AJOUTÉE";
+const ALREADY_REGISTERED = "CET APPAREIL A DÉJÀ UNE CLÉ D’ACCÈS";
 export const REMOVE_PASSKEY_WARNING =
   "CET APPAREIL NE POURRA PLUS T’OUVRIR WEWATCH AVEC ELLE.";
 export const THIS_DEVICE = "CET APPAREIL";
@@ -46,4 +50,22 @@ export function revokeQuestion(device: string): string {
 /** The field of the deletion ticket: my name as stored, case included. */
 export function deleteField(name: string): string {
   return `TAPE ${quoted(name)} POUR CONFIRMER`;
+}
+
+/** « MAC · CHROME ÉTAIT DÉJÀ DÉCONNECTÉ » (signed out elsewhere meanwhile). */
+export function alreadyRevoked(device: string): string {
+  return `${device.toLocaleUpperCase("fr-FR")} ÉTAIT DÉJÀ DÉCONNECTÉ`;
+}
+
+/**
+ * A failed « AJOUTER UNE CLÉ D’ACCÈS »: this device holds one of my keys
+ * already (WebAuthn's InvalidStateError), else a cancelled ceremony. Only
+ * the code of a Better Auth client error is read.
+ */
+export function addPasskeyFailure(error: object | null): string {
+  return error !== null &&
+    "code" in error &&
+    error.code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED"
+    ? ALREADY_REGISTERED
+    : CANCELLED_ERROR;
 }

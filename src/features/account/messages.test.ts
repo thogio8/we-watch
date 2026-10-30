@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   activeOn,
+  addPasskeyFailure,
+  alreadyRevoked,
   addedOn,
   deleteField,
   removePasskeyQuestion,
@@ -39,5 +41,21 @@ describe("textes de « MON COMPTE »", () => {
 
   it("supprimer le compte : mon prénom tel quel, casse comprise", () => {
     expect(deleteField("Léa")).toBe("TAPE «\u00A0Léa\u00A0» POUR CONFIRMER");
+  });
+
+  it("un appareil déjà déconnecté : son nom en majuscules", () => {
+    expect(alreadyRevoked("Mac · Chrome")).toBe(
+      "MAC · CHROME ÉTAIT DÉJÀ DÉCONNECTÉ",
+    );
+  });
+
+  it("ajouter une clé : l’appareil qui en a déjà une, sinon une validation annulée", () => {
+    expect(
+      addPasskeyFailure({ code: "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED" }),
+    ).toBe("CET APPAREIL A DÉJÀ UNE CLÉ D’ACCÈS");
+    expect(addPasskeyFailure({ code: "ERROR_CEREMONY_ABORTED" })).toBe(
+      "VALIDATION ANNULÉE, RÉESSAIE",
+    );
+    expect(addPasskeyFailure(null)).toBe("VALIDATION ANNULÉE, RÉESSAIE");
   });
 });

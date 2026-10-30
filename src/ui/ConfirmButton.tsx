@@ -126,6 +126,8 @@ interface ConfirmButtonProps extends Omit<
    * this callback instead of coming back to the button.
    */
   onDone?: () => void;
+  /** Cancelled (« ANNULER », Escape): e.g. forget what was typed. */
+  onCancel?: () => void;
 }
 
 /**
@@ -137,6 +139,7 @@ export function ConfirmButton({
   small = false,
   leaves = false,
   onDone,
+  onCancel,
   ...ticket
 }: ConfirmButtonProps) {
   const [asking, setAsking] = useState(false);
@@ -151,6 +154,7 @@ export function ConfirmButton({
     const close = () => {
       answered.current = true;
       setAsking(false);
+      onCancel?.();
     };
     const done = () => {
       answered.current = onDone === undefined;

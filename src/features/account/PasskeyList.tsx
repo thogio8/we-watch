@@ -1,40 +1,52 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useRef } from "react";
+import { useId } from "react";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import sheet from "@/ui/Sheet.module.css";
 import styles from "./Account.module.css";
 import type { AccountResult, MyPasskey } from "./actions";
 import { AddPasskey } from "./AddPasskey";
+import { ListSection } from "./ListSection";
 import {
   addedOn,
+  GONE_PASSKEY,
   LAST_PASSKEY,
   REMOVE_PASSKEY_FAILED,
   REMOVE_PASSKEY_WARNING,
   removePasskeyQuestion,
 } from "./messages";
+import { useListNotice } from "./useListNotice";
 
 interface PasskeyRowProps {
   passkey: MyPasskey;
   /** The only one left: kept, so no « SUPPRIMER ». */
   last: boolean;
   remove: (id: string) => Promise<AccountResult>;
-  onRemoved: () => void;
+  /** The outcome to show above the list (null: none), the row may go. */
+  onSettled: (notice: string | null) => void;
+  onDone: () => void;
 }
 
-function PasskeyRow({ passkey, last, remove, onRemoved }: PasskeyRowProps) {
+function PasskeyRow({
+  passkey,
+  last,
+  remove,
+  onSettled,
+  onDone,
+}: PasskeyRowProps) {
   const router = useRouter();
   const nameId = useId();
-  // Refused (the last one) or failed (gone already?): the list may be stale.
   const removeIt = async () => {
-    const result = await remove(passkey.id).catch((error: unknown) => {
-      router.refresh();
-      throw error;
-    });
-    if (result.ok) return;
+    const result = await remove(passkey.id).catch(() => null);
+    if (result?.ok) {
+      onSettled(null);
+      return;
+    }
+    // Refused (the last one, another tab) or gone already: the list is
+    // stale, and reloading it may take this row along with the ticket.
+    onSettled(result === null ? GONE_PASSKEY : result.error);
     router.refresh();
-    return result.error;
   };
   return (
     <li className={sheet.row} aria-labelledby={nameId}>
@@ -55,7 +67,7 @@ function PasskeyRow({ passkey, last, remove, onRemoved }: PasskeyRowProps) {
           confirmLabel="SUPPRIMER"
           action={removeIt}
           failure={REMOVE_PASSKEY_FAILED}
-          onDone={onRemoved}
+          onDone={onDone}
         />
       )}
     </li>
@@ -69,28 +81,33 @@ interface PasskeyListProps {
 
 /** « TES CLÉS D’ACCÈS »: each one, then a new one from this device. */
 export function PasskeyList({ passkeys, remove }: PasskeyListProps) {
-  const titleId = useId();
-  const title = useRef<HTMLHeadingElement>(null);
+  const { title, notice, setNotice, focusTitle } = useListNotice();
   const last = passkeys.length === 1;
   return (
-    <section className={sheet.sheet} aria-labelledby={titleId}>
-      <h2 ref={title} id={titleId} className={sheet.title} tabIndex={-1}>
-        TES CLÉS D’ACCÈS
-      </h2>
-      <ul className={sheet.rows} aria-labelledby={titleId}>
-        {passkeys.map((passkey) => (
-          <PasskeyRow
-            key={passkey.id}
-            passkey={passkey}
-            last={last}
-            remove={remove}
-            // The row goes with its button: the focus goes to the title.
-            onRemoved={() => title.current?.focus()}
-          />
-        ))}
-      </ul>
-      {last && <p className={styles.last}>{LAST_PASSKEY}</p>}
-      <AddPasskey />
-    </section>
+    <ListSection
+      title="TES CLÉS D’ACCÈS"
+      titleRef={title}
+      notice={notice}
+      after={
+        <>
+          {last && notice !== LAST_PASSKEY && (
+            <p className={styles.last}>{LAST_PASSKEY}</p>
+          )}
+          <AddPasskey />
+        </>
+      }
+    >
+      {passkeys.map((passkey) => (
+        <PasskeyRow
+          key={passkey.id}
+          passkey={passkey}
+          last={last}
+          remove={remove}
+          onSettled={setNotice}
+          // The row may go with its button: the focus goes to the title.
+          onDone={focusTitle}
+        />
+      ))}
+    </ListSection>
   );
 }

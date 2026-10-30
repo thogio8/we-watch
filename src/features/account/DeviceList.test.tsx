@@ -37,7 +37,13 @@ afterEach(() => {
 
 function renderList(answer: Revoke = async () => true) {
   const revoke = vi.fn(answer);
-  render(<DeviceList sessions={[HERE, MAC]} revoke={revoke} />);
+  const { rerender } = render(
+    <DeviceList sessions={[HERE, MAC]} revoke={revoke} />,
+  );
+  // What router.refresh() brings back: the device gone from the list.
+  refresh.mockImplementation(() =>
+    rerender(<DeviceList sessions={[HERE]} revoke={revoke} />),
+  );
   return { user: userEvent.setup(), revoke };
 }
 
@@ -108,12 +114,21 @@ describe("DeviceList", () => {
     expect(replace).toHaveBeenCalledWith("/connexion");
   });
 
-  it("un appareil déjà déconnecté ailleurs : la liste se recharge", async () => {
+  it("un appareil déjà déconnecté ailleurs : la liste se recharge, le message reste, le focus sur le titre", async () => {
     const { user } = renderList(async () => false);
 
     await revokeRow(user, "Mac · Chrome");
 
     expect(refresh).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("listitem", { name: /Mac/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "MAC · CHROME ÉTAIT DÉJÀ DÉCONNECTÉ",
+    );
+    expect(
+      screen.getByRole("heading", { name: "TES APPAREILS" }),
+    ).toHaveFocus();
   });
 
   it("une panne affiche un message de la DA", async () => {

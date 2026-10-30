@@ -1,44 +1,50 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useRef } from "react";
+import { useId } from "react";
 import { SIGNIN_PATH } from "@/access/paths";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import sheet from "@/ui/Sheet.module.css";
 import type { MySession } from "./actions";
+import { ListSection } from "./ListSection";
 import {
   activeOn,
+  alreadyRevoked,
   REVOKE_FAILED,
   revokeQuestion,
   THIS_DEVICE,
   THIS_DEVICE_WARNING,
 } from "./messages";
+import { useListNotice } from "./useListNotice";
 
 interface DeviceRowProps {
   session: MySession;
   revoke: (id: string) => Promise<boolean>;
-  onRevoked: () => void;
+  /** The outcome to show above the list (null: none), the row may go. */
+  onSettled: (notice: string | null) => void;
+  onDone: () => void;
 }
 
-function DeviceRow({ session, revoke, onRevoked }: DeviceRowProps) {
+function DeviceRow({ session, revoke, onSettled, onDone }: DeviceRowProps) {
   const router = useRouter();
   const nameId = useId();
-  const { current } = session;
+  const { current, device } = session;
   const revokeIt = async () => {
     const revoked = await revoke(session.id);
     if (current) {
       // Signed out here too: replace, so Back does not return into the app.
       window.location.replace(SIGNIN_PATH);
-    } else if (!revoked) {
-      // Signed out elsewhere already: nothing was revalidated.
-      router.refresh();
+      return;
     }
+    onSettled(revoked ? null : alreadyRevoked(device));
+    // Signed out elsewhere already: nothing was revalidated.
+    if (!revoked) router.refresh();
   };
   return (
     <li className={sheet.row} aria-labelledby={nameId}>
       <p className={sheet.who}>
         <span id={nameId} className={sheet.rowName}>
-          {session.device}
+          {device}
         </span>
         {current && <span className={sheet.badge}>{THIS_DEVICE}</span>}
         <small className={sheet.rowNote}>
@@ -48,13 +54,13 @@ function DeviceRow({ session, revoke, onRevoked }: DeviceRowProps) {
       <ConfirmButton
         small
         label="DÉCONNECTER"
-        question={revokeQuestion(session.device)}
+        question={revokeQuestion(device)}
         warning={current ? THIS_DEVICE_WARNING : undefined}
         confirmLabel="DÉCONNECTER"
         action={revokeIt}
         failure={REVOKE_FAILED}
         leaves={current}
-        onDone={onRevoked}
+        onDone={onDone}
       />
     </li>
   );
@@ -68,24 +74,19 @@ interface DeviceListProps {
 
 /** « TES APPAREILS »: where I am signed in, each one signed out on demand. */
 export function DeviceList({ sessions, revoke }: DeviceListProps) {
-  const titleId = useId();
-  const title = useRef<HTMLHeadingElement>(null);
+  const { title, notice, setNotice, focusTitle } = useListNotice();
   return (
-    <section className={sheet.sheet} aria-labelledby={titleId}>
-      <h2 ref={title} id={titleId} className={sheet.title} tabIndex={-1}>
-        TES APPAREILS
-      </h2>
-      <ul className={sheet.rows} aria-labelledby={titleId}>
-        {sessions.map((session) => (
-          <DeviceRow
-            key={session.id}
-            session={session}
-            revoke={revoke}
-            // The row goes with its button: the focus goes to the title.
-            onRevoked={() => title.current?.focus()}
-          />
-        ))}
-      </ul>
-    </section>
+    <ListSection title="TES APPAREILS" titleRef={title} notice={notice}>
+      {sessions.map((session) => (
+        <DeviceRow
+          key={session.id}
+          session={session}
+          revoke={revoke}
+          onSettled={setNotice}
+          // The row goes with its button: the focus goes to the title.
+          onDone={focusTitle}
+        />
+      ))}
+    </ListSection>
   );
 }

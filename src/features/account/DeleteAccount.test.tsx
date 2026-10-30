@@ -72,6 +72,19 @@ describe("DeleteAccount", () => {
     ).toHaveFocus();
   });
 
+  it("rouvrir après avoir annulé : champ vide, bouton inactif", async () => {
+    const { user } = await openTicket();
+
+    await user.type(typed(), "Léa");
+    await user.click(screen.getByRole("button", { name: "ANNULER" }));
+    await user.click(
+      screen.getByRole("button", { name: "SUPPRIMER MON COMPTE" }),
+    );
+
+    expect(typed()).toHaveValue("");
+    expect(confirm()).toBeDisabled();
+  });
+
   it("un refus du serveur s’affiche, sans quitter la page", async () => {
     const { user } = await openTicket(async () => ({
       ok: false,
