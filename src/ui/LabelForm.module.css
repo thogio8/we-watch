@@ -1,4 +1,4 @@
-/* « NOM DU GROUPE » and its button: creating (panel, first group screen) or renaming. */
+/* A name field and its button: a group (create, rename) or my own name. */
 .form {
   display: flex;
   flex-direction: column;
@@ -36,7 +36,7 @@
 }
 
 .error {
-  composes: alert from "../../ui/Alert.module.css";
+  composes: alert from "./Alert.module.css";
   margin: 0;
 }
 

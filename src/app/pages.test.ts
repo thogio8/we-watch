@@ -3,6 +3,7 @@ import { isValidElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SIGNIN_PATH } from "@/access/paths";
 import { getCurrentUser } from "@/server/session";
+import AccountPage from "./compte/page";
 import DrawPage from "./page";
 import GroupPage from "./groupe/page";
 import MoviePage from "./list/[tmdbId]/page";
@@ -51,6 +52,7 @@ describe("pages de l'appli connectée (session révoquée depuis le passage du p
       () => MoviePage({ params: Promise.resolve(params) } as never),
     ],
     ["MEMBRES", () => GroupPage()],
+    ["MON COMPTE", () => AccountPage()],
   ])("%s sans session renvoie vers la connexion", async (_label, page) => {
     await expect(renderServer(page())).rejects.toThrow(
       `NEXT_REDIRECT ${SIGNIN_PATH}`,

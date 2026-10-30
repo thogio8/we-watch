@@ -166,8 +166,8 @@ describe("GroupPill", () => {
     const { user } = renderPill();
 
     await user.click(pill());
-    // ✓ NOUS DEUX → JEUDI → + CRÉER → MEMBRES → SE DÉCONNECTER → out.
-    for (let step = 0; step < 5; step += 1) await user.tab();
+    // ✓ NOUS DEUX → JEUDI → + CRÉER → MEMBRES → MON COMPTE → SE DÉCONNECTER → out.
+    for (let step = 0; step < 6; step += 1) await user.tab();
 
     expect(queryPanel()).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "la suite" })).toHaveFocus();
@@ -192,6 +192,24 @@ describe("GroupPill", () => {
     });
     expect(members).toHaveAttribute("href", "/groupe");
     await user.click(members);
+
+    expect(queryPanel()).not.toBeInTheDocument();
+  });
+
+  it("« MON COMPTE » mène à /compte, avant « SE DÉCONNECTER », et ferme le panneau", async () => {
+    const { user } = renderPill();
+
+    await user.click(pill());
+    const account = within(panel()).getByRole("link", { name: "MON COMPTE" });
+    expect(account).toHaveAttribute("href", "/compte");
+    const signOut = within(panel()).getByRole("button", {
+      name: "SE DÉCONNECTER",
+    });
+    expect(
+      account.compareDocumentPosition(signOut) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    await user.click(account);
 
     expect(queryPanel()).not.toBeInTheDocument();
   });

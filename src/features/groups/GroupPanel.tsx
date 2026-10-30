@@ -21,7 +21,7 @@ interface GroupPanelProps {
 
 /**
  * The white ticket under the pill: my groups, a new one, the displayed
- * group's members and invite link, signing out.
+ * group's members and invite link, my account, signing out.
  */
 export function GroupPanel({
   id,
@@ -92,6 +92,9 @@ export function GroupPanel({
       )}
       <Link href="/groupe" className={styles.item} onClick={panel.followed}>
         MEMBRES ET INVITATION
+      </Link>
+      <Link href="/compte" className={styles.item} onClick={panel.followed}>
+        MON COMPTE
       </Link>
       <div className={styles.signOut}>
         <SignOutButton />

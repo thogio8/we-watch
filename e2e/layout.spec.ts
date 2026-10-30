@@ -56,8 +56,18 @@ async function* members(page: Page) {
   yield "/groupe (quitter)";
 }
 
+/** « MON COMPTE », then its deletion ticket (the name not typed yet). */
+async function* account(page: Page) {
+  await page.goto("/compte");
+  await expect(page.getByRole("heading", { name: "MON COMPTE" })).toBeVisible();
+  yield "/compte";
+  await page.getByRole("button", { name: "SUPPRIMER MON COMPTE" }).click();
+  await expect(page.getByRole("group")).toBeVisible();
+  yield "/compte (supprimer)";
+}
+
 /**
- * Every page, the group panel, the members screen, then signed out (cookies
+ * Every page, the group panel, the members screen, my account, then signed out (cookies
  * cleared): an invite link, the sign-in home, its signup form showing an
  * error.
  */
@@ -68,6 +78,7 @@ async function* visitAll(page: Page) {
   }
   yield* groupPanel(page);
   yield* members(page);
+  yield* account(page);
   await page.context().clearCookies();
   await page.goto(await leasInvitation());
   await expect(
@@ -196,6 +207,38 @@ test.describe("mise en page et accessibilité, nom de groupe long", () => {
     }
   }
 });
+
+test.describe("mise en page et accessibilité, prénom long", () => {
+  test.beforeEach(() => {
+    test.skip(test.info().project.name !== "desktop");
+  });
+
+  for (const viewport of VIEWPORTS) {
+    test(`« MON COMPTE » : ${viewport.name}`, async ({ app }) => {
+      await app.setViewportSize(viewport);
+      for await (const path of longAccountName(app)) {
+        await expectNoOverflow(app, path);
+        expect(await seriousViolations(app, path)).toEqual([]);
+      }
+    });
+  }
+});
+
+/** Léa renamed with 30 of the widest glyph, then her deletion ticket. */
+async function* longAccountName(page: Page) {
+  const name = "W".repeat(30);
+  await page.goto("/compte");
+  await page.getByLabel("TON PRÉNOM").fill(name);
+  await page.getByRole("button", { name: "CHANGER" }).click();
+  await expect(page.getByRole("status")).toContainText(name);
+  yield "/compte (prénom long)";
+  await page.getByRole("button", { name: "SUPPRIMER MON COMPTE" }).click();
+  await page.getByLabel(`TAPE « ${name} » POUR CONFIRMER`).fill(name);
+  await expect(
+    page.getByRole("button", { name: "SUPPRIMER DÉFINITIVEMENT" }),
+  ).toBeEnabled();
+  yield "/compte (supprimer, prénom long)";
+}
 
 test.describe("TIRER tient sur un écran", () => {
   test.beforeEach(async ({ app }) => {
