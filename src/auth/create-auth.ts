@@ -6,6 +6,7 @@ import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
 import { parseDisplayName } from "@/domain/display-name";
 import { GROUP_COOKIE, groupCookieAttributes } from "@/domain/group";
+import { passkeyRegistration } from "./passkey-registration";
 import { passkeySignup, signupTicketUses } from "./passkey-signup";
 import { trackTransactions } from "./signup-transaction";
 
@@ -76,18 +77,6 @@ function normalisedName(name: unknown): { name: string } {
 }
 
 /**
- * A passkey signup always opens its session: the plugin only wraps the user,
- * passkey and session writes in one transaction when `createSession` is set,
- * so the server forces it rather than trusting the client.
- */
-const alwaysCreateSession = createAuthMiddleware(async (ctx) => {
-  if (ctx.path !== "/passkey/verify-registration") {
-    return;
-  }
-  return { context: { body: { ...ctx.body, createSession: true } } };
-});
-
-/**
  * Signing out also forgets the displayed group: another account signing in
  * on this device must not open on it.
  */
@@ -129,7 +118,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     },
     emailAndPassword: { enabled: false },
     disabledPaths: DISABLED_PATHS,
-    hooks: { before: alwaysCreateSession, after: forgetGroupOnSignOut },
+    hooks: { after: forgetGroupOnSignOut },
     databaseHooks: {
       user: {
         create: {
@@ -150,6 +139,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
         origin: url.origin,
         registration: passkeySignup(secret),
       }),
+      passkeyRegistration,
       signupTicketUses,
       ...(plugins ?? []),
     ],

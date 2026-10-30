@@ -247,8 +247,9 @@ describe("Better Auth (fonctionnel)", () => {
       /** Defaults to a fresh ticket for `name`. */
       ticket?: string;
     }) {
-      const ticket = options.ticket ?? (await ticketFor(options.name));
-      return signUpWith(auth.handler, { ...options, ticket });
+      const { name, ...registration } = options;
+      const ticket = options.ticket ?? (await ticketFor(name));
+      return signUpWith(auth.handler, { ...registration, ticket });
     }
 
     /** The session the response's cookies open, if any. */

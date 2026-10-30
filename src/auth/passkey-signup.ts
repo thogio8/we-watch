@@ -1,6 +1,6 @@
 import type { PasskeyOptions } from "@better-auth/passkey";
 import { getCurrentAdapter, type BetterAuthPlugin } from "better-auth";
-import { APIError, getSessionFromCtx } from "better-auth/api";
+import { APIError, getAuthoritativeSessionFromCtx } from "better-auth/api";
 import {
   readSignupTicket,
   type IssuedSignupTicket,
@@ -61,6 +61,28 @@ async function consumeTicket(ctx: EndpointContext, jti: string) {
 }
 
 /**
+ * Signed in, « AJOUTER UNE CLÉ D’ACCÈS »: returning nothing lets the plugin
+ * attach the passkey to the user the options were generated for, which must
+ * be the session's. A signup ticket while signed in is refused: never create
+ * an account that cannot be used.
+ */
+function attachToSession(
+  sessionUserId: string,
+  registeringId: string,
+  context: string | null | undefined,
+): undefined {
+  if (context) {
+    throw new APIError("BAD_REQUEST", { message: "Already signed in" });
+  }
+  if (registeringId !== sessionUserId) {
+    throw new APIError("UNAUTHORIZED", {
+      message: "Passkey options were made for another user",
+    });
+  }
+  return undefined;
+}
+
+/**
  * Passkey-first signup: the passkey ceremony carries the signed signup ticket
  * as its `context`. The ticket is checked when the options are generated and
  * again after the WebAuthn response is verified; only then is it consumed and
@@ -79,11 +101,12 @@ export function passkeySignup(secret: string): {
       const { name } = await requireTicket(context, secret);
       return { id: crypto.randomUUID(), name, displayName: name };
     },
-    afterVerification: async ({ ctx, context }) => {
-      // Signed in, the plugin would attach the passkey to the current user
-      // and refuse the new one: never create an account that cannot be used.
-      if (await getSessionFromCtx(ctx)) {
-        throw new APIError("BAD_REQUEST", { message: "Already signed in" });
+    afterVerification: async ({ ctx, context, user: registering }) => {
+      // Read from the database, never the signed cache: a session revoked
+      // elsewhere must not add a passkey to its account.
+      const session = await getAuthoritativeSessionFromCtx(ctx);
+      if (session) {
+        return attachToSession(session.user.id, registering.id, context);
       }
       const ticket = await requireTicket(context, secret);
       const { name, jti } = ticket;

@@ -1,51 +1,22 @@
 import { headers } from "next/headers";
-import { testUtils } from "better-auth/plugins";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { AUTHORITATIVE_SESSION_READ, createAuth } from "@/auth/create-auth";
+import { AUTHORITATIVE_SESSION_READ } from "@/auth/create-auth";
 import type { Database } from "@/db/create-database";
 import { assertSignedIn, getCurrentUser } from "@/server/session";
+import { aDeviceOf as aDeviceOfIn, aTestAuth } from "../helpers/devices";
 import { startServerStack } from "../helpers/functional";
-import { BASE_URL } from "../helpers/signup-ceremony";
 
 vi.mock("next/headers");
 
-const SECRET = "functional-auth-secret-0123456789abcdef";
-
 let db: Database;
-let auth: ReturnType<typeof buildAuth>;
-const buildAuth = () =>
-  createAuth({ db, secret: SECRET, baseURL: BASE_URL, plugins: [testUtils()] });
+let auth: ReturnType<typeof aTestAuth>;
 
 beforeAll(async () => {
   ({ db } = await startServerStack());
-  auth = buildAuth();
+  auth = aTestAuth(db);
 });
 
-/**
- * A signed-in device as the browser holds it: the session token and the
- * signed session cache (`session_data`, valid 5 minutes) Better Auth sets.
- */
-async function aDeviceOf(name: string) {
-  const ctx = await auth.$context;
-  const account = await ctx.test.saveUser(ctx.test.createUser({ name }));
-  const login = await ctx.test.login({ userId: account.id });
-  const read = await auth.api.getSession({
-    headers: login.headers,
-    returnHeaders: true,
-  });
-  const cache = read.headers
-    .getSetCookie()
-    .map((line) => line.split(";")[0] as string);
-  const cookie = [login.headers.get("cookie"), ...cache].join("; ");
-  return {
-    userId: account.id,
-    sessionId: login.session.id,
-    token: login.token,
-    headers: new Headers({ cookie }),
-    /** The session token alone: a read must go to the database. */
-    tokenOnly: login.headers,
-  };
-}
+const aDeviceOf = (name: string) => aDeviceOfIn(auth, name);
 
 describe("session lue par les pages et les actions (fonctionnel)", () => {
   it("donne l'utilisateur et l'id de sa session", async () => {

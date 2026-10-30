@@ -44,8 +44,10 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/app/api/cron/refresh-movies/route.ts | 100% | 100% | 100% | 100% |
 | src/auth/create-auth.ts | 100% | 100% | 100% | 100% |
 | src/auth/group-join.ts | 100% | 100% | 100% | 100% |
+| src/auth/passkey-registration.ts | 100% | 100% | 100% | 100% |
 | src/auth/passkey-signup.ts | 100% | 100% | 100% | 100% |
 | src/auth/signup-transaction.ts | 100% | 100% | 100% | 100% |
+| src/db/account.ts | 100% | 100% | 100% | 100% |
 | src/db/auth-schema.ts | 100% | 100% | 100% | 100% |
 | src/db/create-database.ts | 100% | 100% | 100% | 100% |
 | src/db/decisions.ts | 100% | 100% | 100% | 100% |
@@ -58,6 +60,7 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/db/schema.ts | 100% | 100% | 100% | 100% |
 | src/db/snapshots.ts | 100% | 100% | 100% | 100% |
 | src/domain/attribution.ts | 100% | 100% | 100% | 100% |
+| src/domain/device.ts | 100% | 100% | 100% | 100% |
 | src/domain/display-name.ts | 100% | 100% | 100% | 100% |
 | src/domain/draw-session.ts | 100% | 100% | 100% | 100% |
 | src/domain/genres.ts | 100% | 100% | 100% | 100% |
@@ -67,6 +70,8 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/domain/time.ts | 100% | 100% | 100% | 100% |
 | src/domain/tonight.ts | 100% | 100% | 100% | 100% |
 | src/domain/transitions.ts | 100% | 100% | 100% | 100% |
+| src/features/account/actions.ts | 100% | 100% | 100% | 100% |
+| src/features/account/messages.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/drawMotion.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/drawView.ts | 100% | 100% | 100% | 100% |
