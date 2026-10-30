@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { deviceLabel } from "@/domain/device";
-import { parseDisplayName } from "@/domain/display-name";
+import { confirmsName, parseDisplayName } from "@/domain/display-name";
 import { NAME_ERROR } from "@/features/signin/messages";
 import { getAccount, getAuth } from "@/server/container";
 import { revalidateListPages } from "@/server/revalidate";
@@ -99,7 +99,7 @@ export async function renameMe(formData: FormData): Promise<AccountResult> {
 }
 
 /**
- * « SUPPRIMER DÉFINITIVEMENT », once my exact name is typed: my account and
+ * « SUPPRIMER DÉFINITIVEMENT », once my name is typed (confirmsName): my account and
  * everything mine alone (db/account-deletion.ts), then this device is
  * signed out; the client goes to /connexion.
  */
@@ -107,10 +107,11 @@ export async function deleteAccount(
   formData: FormData,
 ): Promise<AccountResult> {
   const { userId, name } = await assertSignedIn();
-  const typed = field(formData, "name");
-  if (typeof typed !== "string" || typed.normalize("NFC").trim() !== name) {
+  if (!confirmsName(field(formData, "name"), name)) {
     return { ok: false, error: WRONG_NAME };
   }
+  // Already deleted by a concurrent request (another tab): false, but the
+  // end state is the same, so this device is signed out and it is ok.
   await getAccount().deleteUser(userId);
   await signOutThisDevice();
   revalidateListPages();

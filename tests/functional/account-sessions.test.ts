@@ -185,6 +185,20 @@ describe("supprimer mon compte (fonctionnel)", () => {
     expect(await allRows(db)).toEqual(before);
   });
 
+  it("un ancien prénom, écrit avant les règles actuelles, se confirme encore, apostrophe du téléphone comprise", async () => {
+    const zoe = await aDeviceOf(auth, "Zoé");
+    await db
+      .update(user)
+      .set({ name: "D'Artagnan\u2800" })
+      .where(eq(user.id, zoe.userId));
+    from(zoe);
+
+    await expect(
+      deleteAccount(aForm("D\u2019Artagnan\u2800")),
+    ).resolves.toEqual({ ok: true });
+    expect(await nameOf(zoe.userId)).toBeUndefined();
+  });
+
   it("mon prénom exact : mon compte disparaît, cet appareil est déconnecté, les autres gardent leur liste", async () => {
     const zoe = await aDeviceOf(auth, "Zoé");
     const hugo = await aDeviceOf(auth, "Hugo");

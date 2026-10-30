@@ -13,6 +13,8 @@ import { getAuth } from "./container";
  */
 export async function signOutThisDevice(): Promise<void> {
   const jar = await cookies();
+  // session_data is never split into chunks (.0, .1…): our session payload
+  // is far below the ~4 KB a cookie holds.
   const { sessionToken, sessionData, dontRememberToken } = getCookies(
     getAuth().options,
   );
@@ -24,8 +26,10 @@ export async function signOutThisDevice(): Promise<void> {
     jar.set(name, "", {
       path: attributes.path,
       httpOnly: attributes.httpOnly,
-      // Better Auth's own default (create-auth.ts never overrides it).
-      sameSite: "lax",
+      // Better Auth allows "Lax" as well as "lax"; Next only the latter.
+      sameSite: attributes.sameSite.toLowerCase() as Lowercase<
+        typeof attributes.sameSite
+      >,
       secure: attributes.secure,
       maxAge: 0,
     });

@@ -1,70 +1,87 @@
+import { getCookies } from "better-auth/cookies";
 import { cookies } from "next/headers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createAuth } from "@/auth/create-auth";
+import { createDatabase } from "@/db/create-database";
 import { signOutThisDevice } from "./sign-out";
 
 vi.mock("next/headers");
 
-let baseURL = "";
-vi.mock("./container", () => ({
-  getAuth: () => ({ options: { baseURL } }),
-}));
+// The real Better Auth configuration: only its options are read.
+let auth: ReturnType<typeof createAuth>;
+vi.mock("./container", () => ({ getAuth: () => auth }));
 
-const jar = async () => cookies();
+const useBaseURL = (baseURL: string) => {
+  auth = createAuth({
+    db: createDatabase(":memory:"),
+    secret: "sign-out-test-secret-0123456789abcdef",
+    baseURL,
+  });
+};
 
 beforeEach(async () => {
-  const cookieJar = await jar();
-  for (const name of [
-    "ww_group",
-    "better-auth.session_token",
-    "better-auth.session_data",
-    "better-auth.dont_remember",
-    "__Secure-better-auth.session_token",
-    "__Secure-better-auth.session_data",
-    "__Secure-better-auth.dont_remember",
-  ]) {
-    cookieJar.delete(name);
+  const jar = await cookies();
+  for (const prefix of ["", "__Secure-"]) {
+    for (const name of ["session_token", "session_data", "dont_remember"]) {
+      jar.delete(`${prefix}better-auth.${name}`);
+    }
   }
+  jar.delete("ww_group");
 });
 
-const expired = (name: string, secure: boolean) => ({
-  name,
-  value: "",
-  maxAge: 0,
-  path: "/",
-  httpOnly: true,
-  sameSite: "lax",
-  secure,
-});
+/** Better Auth's own cookies, as it names and sets them for this config. */
+const sessionCookies = () => {
+  const { sessionToken, sessionData, dontRememberToken } = getCookies(
+    auth.options,
+  );
+  return [sessionToken, sessionData, dontRememberToken];
+};
 
 describe("signOutThisDevice", () => {
-  it("en http : expire les cookies de session et le groupe affiché", async () => {
-    baseURL = "http://localhost:3000";
+  it.each([
+    ["http", "http://localhost:3000", "", false],
+    ["https", "https://wewatch.example", "__Secure-", true],
+  ])(
+    "en %s : expire les cookies de session avec les attributs de Better Auth",
+    async (_, baseURL, prefix, secure) => {
+      useBaseURL(baseURL);
+
+      await signOutThisDevice();
+
+      const jar = await cookies();
+      const expected = sessionCookies();
+      expect(expected.map(({ name }) => name)).toEqual([
+        `${prefix}better-auth.session_token`,
+        `${prefix}better-auth.session_data`,
+        `${prefix}better-auth.dont_remember`,
+      ]);
+      for (const { name, attributes } of expected) {
+        expect(jar.get(name)).toEqual({
+          name,
+          value: "",
+          maxAge: 0,
+          path: attributes.path,
+          httpOnly: attributes.httpOnly,
+          sameSite: attributes.sameSite.toLowerCase(),
+          secure,
+        });
+      }
+    },
+  );
+
+  it("oublie aussi le groupe affiché", async () => {
+    useBaseURL("http://localhost:3000");
 
     await signOutThisDevice();
 
-    const cookieJar = await jar();
-    for (const name of [
-      "better-auth.session_token",
-      "better-auth.session_data",
-      "better-auth.dont_remember",
-    ]) {
-      expect(cookieJar.get(name)).toMatchObject(expired(name, false));
-    }
-    expect(cookieJar.get("ww_group")).toMatchObject(expired("ww_group", false));
-  });
-
-  it("en https : les cookies de session portent le préfixe __Secure-", async () => {
-    baseURL = "https://wewatch.example";
-
-    await signOutThisDevice();
-
-    const cookieJar = await jar();
-    for (const name of [
-      "__Secure-better-auth.session_token",
-      "__Secure-better-auth.session_data",
-      "__Secure-better-auth.dont_remember",
-    ]) {
-      expect(cookieJar.get(name)).toMatchObject(expired(name, true));
-    }
+    expect((await cookies()).get("ww_group")).toMatchObject({
+      name: "ww_group",
+      value: "",
+      maxAge: 0,
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+    });
   });
 });

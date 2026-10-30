@@ -257,6 +257,17 @@ describe("deleteAccount", () => {
   });
 
   it.each([
+    ["avec une espace doublée", "Jean Pierre", "Jean  Pierre"],
+    ["avec l’apostrophe du téléphone", "D'Artagnan", "D\u2019Artagnan"],
+    ["avec l’apostrophe droite", "D\u2019Artagnan", "D'Artagnan"],
+  ])("mon prénom tapé %s confirme la suppression", async (_, name, typed) => {
+    vi.mocked(assertSignedIn).mockResolvedValue({ ...LEA, name });
+
+    await expect(deleteAccount(aForm(typed))).resolves.toEqual({ ok: true });
+    expect(deleteUser).toHaveBeenCalledWith("user-1");
+  });
+
+  it.each([
     ["un autre prénom", aForm("Hugo")],
     ["la casse changée", aForm("léa")],
     ["vide", aForm("")],
