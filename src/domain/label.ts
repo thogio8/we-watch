@@ -6,9 +6,11 @@
 const FORBIDDEN =
   /[\p{Cc}\u115F\u1160\u2800\u3164\uFFA0]|(?![\u200D\uFE0F])\p{Cf}/u;
 // Subdivision flags (England, Scotland, Wales) are a black flag followed by
-// tag characters (U+E0020 to U+E007E) and a cancel tag (U+E007F), all \p{Cf}:
-// allowed in that sequence only, so tags never hide text on their own.
-const SUBDIVISION_FLAG = /\u{1F3F4}[\u{E0020}-\u{E007E}]+\u{E007F}/gu;
+// 2 to 7 tag digits or lowercase tag letters (UTS #51: a region code such as
+// « gbeng ») and a cancel tag (U+E007F), all \p{Cf}: allowed in that sequence
+// only, so tags never hide text (uppercase, spaces, punctuation).
+const SUBDIVISION_FLAG =
+  /\u{1F3F4}[\u{E0030}-\u{E0039}\u{E0061}-\u{E007A}]{2,7}\u{E007F}/gu;
 // Whitespace, collapsed to one space; but U+FEFF, which JavaScript counts as
 // whitespace: an invisible character inside a name is refused, not hidden.
 const SPACES = /[^\S\uFEFF]+/g;

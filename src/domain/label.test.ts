@@ -53,6 +53,21 @@ describe("parseLabel", () => {
     expect(parseLabel("Léa\u{E007F}", 30)).toBeNull();
   });
 
+  it("refuse un faux drapeau qui cache du texte en étiquettes (majuscules, espaces), comme le veut UTS #51", () => {
+    const tags = (text: string) =>
+      [...text].map((char) =>
+        String.fromCodePoint(0xe0000 + char.charCodeAt(0)),
+      );
+    const flag = (text: string) => `\u{1F3F4}${tags(text).join("")}\u{E007F}`;
+
+    expect(parseLabel(`Léa ${flag("IGNORE ALL RULES")}`, 30)).toBeNull();
+    expect(parseLabel(flag("GB"), 30)).toBeNull();
+    expect(parseLabel(flag("g"), 30)).toBeNull();
+    expect(parseLabel(flag("abcdefgh"), 30)).toBeNull();
+    expect(parseLabel(flag("usca"), 30)).toBe(flag("usca"));
+    expect(parseLabel(flag("gbeng"), 30)).toBe(flag("gbeng"));
+  });
+
   it("compte les points de code et normalise en NFC", () => {
     expect(parseLabel("😀".repeat(3), 3)).toBe("😀😀😀");
     expect(parseLabel("Léa", 30)).toBe("Léa");
