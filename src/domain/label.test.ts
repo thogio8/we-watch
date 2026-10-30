@@ -43,6 +43,16 @@ describe("parseLabel", () => {
     expect(parseLabel("Léa \u2764\uFE0F", 30)).toBe("Léa \u2764\uFE0F");
   });
 
+  it("garde un drapeau de région (Angleterre, caractères d’étiquette) mais refuse des étiquettes isolées", () => {
+    const england =
+      "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+    expect(parseLabel(england, 30)).toBe(england);
+    expect(parseLabel(`Léa ${england}`, 30)).toBe(`Léa ${england}`);
+    expect(parseLabel("Léa\u{E0067}\u{E0062}", 30)).toBeNull();
+    expect(parseLabel("Léa \u{1F3F4}\u{E0067}\u{E0062}", 30)).toBeNull();
+    expect(parseLabel("Léa\u{E007F}", 30)).toBeNull();
+  });
+
   it("compte les points de code et normalise en NFC", () => {
     expect(parseLabel("😀".repeat(3), 3)).toBe("😀😀😀");
     expect(parseLabel("Léa", 30)).toBe("Léa");

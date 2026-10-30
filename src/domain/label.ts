@@ -5,6 +5,10 @@
 // (Hangul, braille).
 const FORBIDDEN =
   /[\p{Cc}\u115F\u1160\u2800\u3164\uFFA0]|(?![\u200D\uFE0F])\p{Cf}/u;
+// Subdivision flags (England, Scotland, Wales) are a black flag followed by
+// tag characters (U+E0020 to U+E007E) and a cancel tag (U+E007F), all \p{Cf}:
+// allowed in that sequence only, so tags never hide text on their own.
+const SUBDIVISION_FLAG = /\u{1F3F4}[\u{E0020}-\u{E007E}]+\u{E007F}/gu;
 // Whitespace, collapsed to one space; but U+FEFF, which JavaScript counts as
 // whitespace: an invisible character inside a name is refused, not hidden.
 const SPACES = /[^\S\uFEFF]+/g;
@@ -24,6 +28,8 @@ export function parseLabel(input: unknown, maxLength: number): string | null {
   const label = input.normalize("NFC").trim().replace(SPACES, " ");
   const length = [...label].length;
   const valid =
-    length <= maxLength && !FORBIDDEN.test(label) && VISIBLE.test(label);
+    length <= maxLength &&
+    !FORBIDDEN.test(label.replace(SUBDIVISION_FLAG, "")) &&
+    VISIBLE.test(label);
   return valid ? label : null;
 }
