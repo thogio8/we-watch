@@ -23,6 +23,26 @@ describe("parseLabel", () => {
     expect(parseLabel("\u0301", 30)).toBeNull();
   });
 
+  it.each([
+    ["une espace sans chasse (U+200B)", "Lé\u200Ba"],
+    ["un joiner de mot (U+2060)", "Lé\u2060a"],
+    ["une marque d’ordre des octets (U+FEFF)", "Lé\uFEFFa"],
+    ["un remplissage hangûl (U+3164)", "\u3164"],
+    ["un motif braille vide (U+2800)", "\u2800"],
+    ["un remplissage de choseong (U+115F)", "\u115F"],
+    ["un remplissage de jungseong (U+1160)", "Lé\u1160a"],
+    ["un remplissage hangûl demi-chasse (U+FFA0)", "\uFFA0"],
+  ])("refuse %s, même entouré de lettres", (_label, input) => {
+    expect(parseLabel(input, 30)).toBeNull();
+    expect(parseLabel(`Léa ${input}`, 30)).toBeNull();
+  });
+
+  it("garde une famille liée par des joiners et un cœur avec son sélecteur de variante", () => {
+    const family = "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}";
+    expect(parseLabel(family, 30)).toBe(family);
+    expect(parseLabel("Léa \u2764\uFE0F", 30)).toBe("Léa \u2764\uFE0F");
+  });
+
   it("compte les points de code et normalise en NFC", () => {
     expect(parseLabel("😀".repeat(3), 3)).toBe("😀😀😀");
     expect(parseLabel("Léa", 30)).toBe("Léa");
