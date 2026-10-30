@@ -4,7 +4,12 @@ import { SignOutButton } from "@/features/signin/SignOutButton";
 import { Headline } from "@/ui/Headline";
 import sheet from "@/ui/Sheet.module.css";
 import styles from "./Account.module.css";
-import type { AccountResult, MyPasskey, MySession } from "./actions";
+import type {
+  AccountResult,
+  DeletePasskeyResult,
+  MyPasskey,
+  MySession,
+} from "./actions";
 import { DeleteAccount } from "./DeleteAccount";
 import { DeviceList } from "./DeviceList";
 import { NameForm } from "./NameForm";
@@ -13,7 +18,7 @@ import { PasskeyList } from "./PasskeyList";
 /** The actions of features/account, passed by the page. */
 interface AccountActions {
   rename: (formData: FormData) => Promise<AccountResult>;
-  removePasskey: (id: string) => Promise<AccountResult>;
+  removePasskey: (id: string) => Promise<DeletePasskeyResult>;
   revokeSession: (id: string) => Promise<boolean>;
   deleteAccount: (formData: FormData) => Promise<AccountResult>;
 }

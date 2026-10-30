@@ -8,11 +8,16 @@ import { Button } from "@/ui/Button";
 import styles from "./Account.module.css";
 import { addPasskeyFailure, PASSKEY_ADDED } from "./messages";
 
+interface AddPasskeyProps {
+  /** Told once the key is added, before the list is reloaded. */
+  onAdded: () => void;
+}
+
 /**
  * « AJOUTER UNE CLÉ D’ACCÈS »: this device's lock makes one more passkey for
  * my account (over HTTP, not a Server Action), then the list is reloaded.
  */
-export function AddPasskey() {
+export function AddPasskey({ onAdded }: AddPasskeyProps) {
   const router = useRouter();
   const adding = useRef(false);
   const [pending, setPending] = useState(false);
@@ -31,6 +36,7 @@ export function AddPasskey() {
     setPending(false);
     if (result !== null && result.error === null) {
       setStatus(PASSKEY_ADDED);
+      onAdded();
       router.refresh();
       return;
     }

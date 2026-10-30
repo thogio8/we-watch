@@ -10,7 +10,7 @@ import { revalidateListPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
 import { signOutThisDevice } from "@/server/sign-out";
 import { assertId } from "@/server/validate";
-import { LAST_PASSKEY, UNNAMED_PASSKEY, WRONG_NAME } from "./messages";
+import { UNNAMED_PASSKEY, WRONG_NAME } from "./messages";
 
 export type MyPasskey = { id: string; name: string; createdAt: Date | null };
 
@@ -23,19 +23,21 @@ export async function listMyPasskeys(): Promise<MyPasskey[]> {
 
 export type AccountResult = { ok: true } | { ok: false; error: string };
 
+export type DeletePasskeyResult =
+  { ok: true } | { ok: false; reason: "last" | "not_found" };
+
 /**
- * « SUPPRIMER » a passkey of mine. The last one is kept (expected, shown);
- * someone else's or an unknown id is refused without any write.
+ * « SUPPRIMER » a passkey of mine. Both refusals are expected and told apart
+ * by the client: the last one is kept; someone else's, an unknown one or one
+ * already deleted (another tab) is "not_found". No write either way; only an
+ * unexpected failure (network, database) throws.
  */
-export async function deletePasskey(id: string): Promise<AccountResult> {
+export async function deletePasskey(id: string): Promise<DeletePasskeyResult> {
   const { userId } = await assertSignedIn();
   assertId("deletePasskey", id);
   const outcome = await getAccount().deletePasskey(userId, id);
-  if (outcome === "last") {
-    return { ok: false, error: LAST_PASSKEY };
-  }
-  if (outcome === "not_found") {
-    throw new Error("deletePasskey: not found");
+  if (outcome !== "deleted") {
+    return { ok: false, reason: outcome };
   }
   revalidatePath("/compte");
   return { ok: true };

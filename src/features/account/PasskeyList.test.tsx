@@ -2,14 +2,20 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AccountResult, MyPasskey } from "./actions";
+import type { DeletePasskeyResult, MyPasskey } from "./actions";
 import { PasskeyList } from "./PasskeyList";
 
-type Remove = (id: string) => Promise<AccountResult>;
+type Remove = (id: string) => Promise<DeletePasskeyResult>;
 
 const refresh = vi.fn();
 
-vi.mock("./AddPasskey", () => ({ AddPasskey: () => null }));
+vi.mock("./AddPasskey", () => ({
+  AddPasskey: ({ onAdded }: { onAdded: () => void }) => (
+    <button type="button" onClick={onAdded}>
+      AJOUTER
+    </button>
+  ),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const IPHONE: MyPasskey = {
@@ -90,7 +96,7 @@ describe("PasskeyList", () => {
   it("le serveur refuse la dernière (autre onglet) : le refus reste affiché après le rechargement, le focus sur le titre", async () => {
     const { user } = renderList(
       [IPHONE, MAC],
-      async () => ({ ok: false, error: LAST }),
+      async () => ({ ok: false, reason: "last" }),
       [IPHONE],
     );
 
@@ -104,7 +110,7 @@ describe("PasskeyList", () => {
   it("une clé déjà supprimée ailleurs : le message reste après le rechargement, le focus sur le titre", async () => {
     const { user } = renderList(
       [IPHONE, MAC],
-      () => Promise.reject(new Error("deletePasskey: not found")),
+      async () => ({ ok: false, reason: "not_found" }),
       [MAC],
     );
 
@@ -120,9 +126,27 @@ describe("PasskeyList", () => {
     expect(title()).toHaveFocus();
   });
 
+  it("un échec (réseau, base) : le message d’échec dans le ticket, jamais « déjà supprimée », la liste n’est pas rechargée", async () => {
+    const { user } = renderList([IPHONE, MAC], () =>
+      Promise.reject(new Error("Failed to fetch")),
+    );
+
+    await removeIPhone(user);
+
+    const ticket = screen.getByRole("group");
+    expect(within(ticket).getByRole("alert")).toHaveTextContent(
+      "PAS RÉUSSI À SUPPRIMER LA CLÉ, RÉESSAIE",
+    );
+    expect(
+      screen.queryByText("CETTE CLÉ N’EXISTE DÉJÀ PLUS"),
+    ).not.toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
+    expect(row("iPhone · Safari")).toBeVisible();
+  });
+
   it("une suppression réussie efface le message précédent", async () => {
     const answers = [
-      { ok: false, error: LAST } as const,
+      { ok: false, reason: "last" } as const,
       { ok: true } as const,
     ];
     const { user } = renderList([IPHONE, MAC], async () => answers.shift()!);
@@ -130,6 +154,19 @@ describe("PasskeyList", () => {
     await removeIPhone(user);
     expect(screen.getByRole("alert")).toHaveTextContent(LAST);
     await removeIPhone(user);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("une clé ajoutée efface le message précédent", async () => {
+    const { user } = renderList([IPHONE, MAC], async () => ({
+      ok: false,
+      reason: "last",
+    }));
+
+    await removeIPhone(user);
+    expect(screen.getByRole("alert")).toHaveTextContent(LAST);
+    await user.click(screen.getByRole("button", { name: "AJOUTER" }));
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

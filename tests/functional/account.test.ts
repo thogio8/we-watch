@@ -65,7 +65,7 @@ describe("mes passkeys (fonctionnel)", () => {
 
     await expect(deletePasskey("p-1")).resolves.toEqual({
       ok: false,
-      error: "GARDE AU MOINS UNE CLÉ D’ACCÈS",
+      reason: "last",
     });
     expect(await ids()).toEqual(["p-1"]);
   });
@@ -77,9 +77,10 @@ describe("mes passkeys (fonctionnel)", () => {
     await aPasskey(hugo, "p-3", null);
     await aPasskey(hugo, "p-4", null);
 
-    await expect(deletePasskey("p-3")).rejects.toThrow(
-      "deletePasskey: not found",
-    );
+    await expect(deletePasskey("p-3")).resolves.toEqual({
+      ok: false,
+      reason: "not_found",
+    });
     expect(await ids()).toEqual(["p-1", "p-2", "p-3", "p-4"]);
   });
 
@@ -93,10 +94,7 @@ describe("mes passkeys (fonctionnel)", () => {
     ]);
 
     expect(results).toContainEqual({ ok: true });
-    expect(results).toContainEqual({
-      ok: false,
-      error: "GARDE AU MOINS UNE CLÉ D’ACCÈS",
-    });
+    expect(results).toContainEqual({ ok: false, reason: "last" });
     expect(await ids()).toHaveLength(1);
   });
 });

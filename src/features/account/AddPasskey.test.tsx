@@ -15,10 +15,12 @@ vi.mock("@/features/signin/authClient", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const ADD = "AJOUTER UNE CLÉ D’ACCÈS";
+const onAdded = vi.fn();
 
 beforeEach(() => {
   addPasskey.mockReset();
   refresh.mockReset();
+  onAdded.mockReset();
   vi.stubGlobal("PublicKeyCredential", class {});
 });
 
@@ -27,12 +29,12 @@ afterEach(() => {
 });
 
 function renderAdd() {
-  render(<AddPasskey />);
+  render(<AddPasskey onAdded={onAdded} />);
   return userEvent.setup();
 }
 
 describe("AddPasskey", () => {
-  it("appelle addPasskey une seule fois, annonce « CLÉ AJOUTÉE », puis la liste se recharge", async () => {
+  it("appelle addPasskey une seule fois, annonce « CLÉ AJOUTÉE », le dit à la liste, puis elle se recharge", async () => {
     let finish: (value: unknown) => void = () => {};
     addPasskey.mockReturnValue(new Promise((resolve) => (finish = resolve)));
     const user = renderAdd();
@@ -43,6 +45,7 @@ describe("AddPasskey", () => {
 
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce());
     expect(addPasskey).toHaveBeenCalledOnce();
+    expect(onAdded).toHaveBeenCalledOnce();
     expect(screen.getByRole("status")).toHaveTextContent("CLÉ AJOUTÉE");
     expect(screen.getByRole("button", { name: ADD })).toBeEnabled();
   });
@@ -61,6 +64,7 @@ describe("AddPasskey", () => {
     );
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
     expect(refresh).not.toHaveBeenCalled();
+    expect(onAdded).not.toHaveBeenCalled();
   });
 
   it("cet appareil a déjà une clé : il le dit", async () => {

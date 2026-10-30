@@ -5,7 +5,7 @@ import { useId } from "react";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import sheet from "@/ui/Sheet.module.css";
 import styles from "./Account.module.css";
-import type { AccountResult, MyPasskey } from "./actions";
+import type { DeletePasskeyResult, MyPasskey } from "./actions";
 import { AddPasskey } from "./AddPasskey";
 import { ListSection } from "./ListSection";
 import {
@@ -18,11 +18,13 @@ import {
 } from "./messages";
 import { useListNotice } from "./useListNotice";
 
+const REFUSALS = { last: LAST_PASSKEY, not_found: GONE_PASSKEY } as const;
+
 interface PasskeyRowProps {
   passkey: MyPasskey;
   /** The only one left: kept, so no « SUPPRIMER ». */
   last: boolean;
-  remove: (id: string) => Promise<AccountResult>;
+  remove: (id: string) => Promise<DeletePasskeyResult>;
   /** The outcome to show above the list (null: none), the row may go. */
   onSettled: (notice: string | null) => void;
   onDone: () => void;
@@ -38,14 +40,15 @@ function PasskeyRow({
   const router = useRouter();
   const nameId = useId();
   const removeIt = async () => {
-    const result = await remove(passkey.id).catch(() => null);
-    if (result?.ok) {
+    // A throw (network, database) is left to the ticket: REMOVE_PASSKEY_FAILED.
+    const result = await remove(passkey.id);
+    if (result.ok) {
       onSettled(null);
       return;
     }
     // Refused (the last one, another tab) or gone already: the list is
     // stale, and reloading it may take this row along with the ticket.
-    onSettled(result === null ? GONE_PASSKEY : result.error);
+    onSettled(REFUSALS[result.reason]);
     router.refresh();
   };
   return (
@@ -76,7 +79,7 @@ function PasskeyRow({
 
 interface PasskeyListProps {
   passkeys: MyPasskey[];
-  remove: (id: string) => Promise<AccountResult>;
+  remove: (id: string) => Promise<DeletePasskeyResult>;
 }
 
 /** « TES CLÉS D’ACCÈS »: each one, then a new one from this device. */
@@ -93,7 +96,8 @@ export function PasskeyList({ passkeys, remove }: PasskeyListProps) {
           {last && notice !== LAST_PASSKEY && (
             <p className={styles.last}>{LAST_PASSKEY}</p>
           )}
-          <AddPasskey />
+          {/* A new key settles any earlier outcome (e.g. « GARDE AU MOINS… »). */}
+          <AddPasskey onAdded={() => setNotice(null)} />
         </>
       }
     >

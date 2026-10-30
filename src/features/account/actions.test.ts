@@ -91,22 +91,23 @@ describe("deletePasskey", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/compte");
   });
 
-  it("la dernière : refusée avec le message, rien à rafraîchir", async () => {
+  it("la dernière : refusée (« last »), rien à rafraîchir", async () => {
     remove.mockResolvedValue("last");
 
     await expect(deletePasskey("p-1")).resolves.toEqual({
       ok: false,
-      error: "GARDE AU MOINS UNE CLÉ D’ACCÈS",
+      reason: "last",
     });
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("celle d’un autre ou une inconnue : lève une exception", async () => {
+  it("celle d’un autre ou une inconnue : refusée (« not_found »), rien à rafraîchir", async () => {
     remove.mockResolvedValue("not_found");
 
-    await expect(deletePasskey("p-9")).rejects.toThrow(
-      "deletePasskey: not found",
-    );
+    await expect(deletePasskey("p-9")).resolves.toEqual({
+      ok: false,
+      reason: "not_found",
+    });
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
