@@ -60,7 +60,11 @@ export function InvitationScreen({
             return joined.ok ? null : joined.error;
           }}
           failure={JOIN_FAILED}
-        />
+        >
+          <ButtonLink href="/" variant="secondary">
+            PAS MAINTENANT
+          </ButtonLink>
+        </InvitationChoice>
       );
     case "member":
       return (

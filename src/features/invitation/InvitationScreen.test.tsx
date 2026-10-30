@@ -93,6 +93,15 @@ describe("InvitationScreen", () => {
     expect(actions.join).toHaveBeenCalledOnce();
   });
 
+  it("pas membre : « PAS MAINTENANT » ramène à l’accueil sans rejoindre", () => {
+    renderScreen({ state: "join", groupName: COLOC });
+
+    expect(
+      screen.getByRole("link", { name: "PAS MAINTENANT" }),
+    ).toHaveAttribute("href", "/");
+    expect(actions.join).not.toHaveBeenCalled();
+  });
+
   it("déjà membre : « Y ALLER » choisit le groupe une seule fois, puis mène à l’accueil", async () => {
     const answer = deferred<void>();
     actions.choose.mockReturnValue(answer.promise);
