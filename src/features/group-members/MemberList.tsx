@@ -16,10 +16,11 @@ interface MemberRowProps {
   member: GroupMember;
   isMe: boolean;
   remove: (userId: string) => Promise<void>;
+  onRemoved: () => void;
 }
 
 /** « Léa · toi · depuis le 23/10 », « RETIRER » on the others. */
-function MemberRow({ member, isMe, remove }: MemberRowProps) {
+function MemberRow({ member, isMe, remove, onRemoved }: MemberRowProps) {
   const nameId = useId();
   return (
     <li className={styles.member} aria-labelledby={nameId}>
@@ -40,6 +41,7 @@ function MemberRow({ member, isMe, remove }: MemberRowProps) {
           confirmLabel="RETIRER"
           action={() => remove(member.userId)}
           failure={REMOVE_FAILED}
+          onDone={onRemoved}
         />
       )}
     </li>
@@ -52,6 +54,8 @@ interface MemberListProps {
   remove: (userId: string) => Promise<void>;
   /** The id of the « MEMBRES » title. */
   labelledBy: string;
+  /** The removed row and its button go: where the focus goes instead. */
+  onRemoved: () => void;
 }
 
 export function MemberList({
@@ -59,6 +63,7 @@ export function MemberList({
   me,
   remove,
   labelledBy,
+  onRemoved,
 }: MemberListProps) {
   return (
     <ul className={styles.members} aria-labelledby={labelledBy}>
@@ -68,6 +73,7 @@ export function MemberList({
           member={member}
           isMe={member.userId === me}
           remove={remove}
+          onRemoved={onRemoved}
         />
       ))}
     </ul>

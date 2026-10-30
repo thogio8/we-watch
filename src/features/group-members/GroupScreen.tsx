@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useId, useRef } from "react";
 import type { GroupSummary } from "@/domain/group";
 import type { RenameResult } from "@/features/groups/actions";
 import { Headline } from "@/ui/Headline";
@@ -41,6 +41,10 @@ export function GroupScreen({
   pill,
 }: GroupScreenProps) {
   const membersId = useId();
+  const membersTitle = useRef<HTMLHeadingElement>(null);
+  // A new name remounts the form, a removed member takes his row along: the
+  // focus goes to this title, which stays.
+  const focusMembers = () => membersTitle.current?.focus();
   return (
     <main className={styles.screen}>
       {pill}
@@ -51,10 +55,16 @@ export function GroupScreen({
           key={`${group.id}:${group.name}`}
           name={group.name}
           rename={actions.rename}
+          onDone={focusMembers}
         />
       </div>
       <section className={styles.sheet} aria-labelledby={membersId}>
-        <h2 id={membersId} className={styles.title}>
+        <h2
+          ref={membersTitle}
+          id={membersId}
+          className={styles.title}
+          tabIndex={-1}
+        >
           MEMBRES
         </h2>
         <MemberList
@@ -62,6 +72,7 @@ export function GroupScreen({
           me={me}
           remove={actions.removeMember}
           labelledBy={membersId}
+          onRemoved={focusMembers}
         />
         <InviteLink
           key={group.id}

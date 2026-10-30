@@ -109,6 +109,11 @@ interface ConfirmButtonProps extends Omit<
   /** « RETIRER » in a row: a small chip rather than a full button. */
   small?: boolean;
   leaves?: boolean;
+  /**
+   * Done, and this button goes with what it removed: the focus is moved by
+   * this callback instead of coming back to the button.
+   */
+  onDone?: () => void;
 }
 
 /**
@@ -119,6 +124,7 @@ export function ConfirmButton({
   label,
   small = false,
   leaves = false,
+  onDone,
   ...ticket
 }: ConfirmButtonProps) {
   const [asking, setAsking] = useState(false);
@@ -134,12 +140,17 @@ export function ConfirmButton({
       answered.current = true;
       setAsking(false);
     };
+    const done = () => {
+      answered.current = onDone === undefined;
+      setAsking(false);
+      onDone?.();
+    };
     return (
       <ConfirmTicket
         {...ticket}
         leaves={leaves}
         // Leaving: the action navigates away, the ticket stays meanwhile.
-        onDone={leaves ? () => {} : close}
+        onDone={leaves ? () => {} : done}
         onCancel={close}
       />
     );

@@ -50,18 +50,25 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderScreen(members: GroupMember[] = [LEA, HUGO]) {
-  const user = userEvent.setup();
-  render(
+function screenOf(members: GroupMember[], name = NOUS_DEUX.name) {
+  return (
     <GroupScreen
-      group={{ ...NOUS_DEUX, memberCount: members.length }}
+      group={{ ...NOUS_DEUX, name, memberCount: members.length }}
       me={LEA.userId}
       members={members}
       actions={actions}
-    />,
+    />
   );
-  return user;
 }
+
+function renderScreen(members: GroupMember[] = [LEA, HUGO]) {
+  const user = userEvent.setup();
+  const { rerender } = render(screenOf(members));
+  return Object.assign(user, { rerender });
+}
+
+const membersTitle = () =>
+  screen.getByRole("heading", { level: 2, name: "MEMBRES" });
 
 const button = (name: string) => screen.getByRole("button", { name });
 const queryButton = (name: string) => screen.queryByRole("button", { name });
@@ -84,6 +91,22 @@ describe("GroupScreen", () => {
 
     expect(actions.rename).toHaveBeenCalledOnce();
     expect(actions.rename.mock.lastCall?.[0].get("name")).toBe("LA COLOC");
+  });
+
+  it("renommé : le formulaire revient avec le nouveau nom, le focus sur « MEMBRES »", async () => {
+    const user = renderScreen();
+    const field = screen.getByRole("textbox", { name: "NOM DU GROUPE" });
+
+    await user.clear(field);
+    await user.type(field, "LA COLOC");
+    await user.click(button("RENOMMER"));
+    // The new name comes back from the server: the form is a new one.
+    user.rerender(screenOf([LEA, HUGO], "LA COLOC"));
+
+    expect(screen.getByRole("textbox", { name: "NOM DU GROUPE" })).toHaveValue(
+      "LA COLOC",
+    );
+    expect(membersTitle()).toHaveFocus();
   });
 
   it("un nom invalide affiche l’erreur et n’appelle rien", async () => {
@@ -161,6 +184,25 @@ describe("GroupScreen", () => {
 
     expect(actions.removeMember).toHaveBeenCalledExactlyOnceWith("u-hugo");
     expect(screen.queryByRole("group")).not.toBeInTheDocument();
+  });
+
+  it("retiré : sa ligne part avec son bouton, le focus va sur « MEMBRES »", async () => {
+    const user = renderScreen();
+
+    await user.click(
+      within(row("Hugo")).getByRole("button", { name: "RETIRER" }),
+    );
+    await user.click(
+      within(screen.getByRole("group", { name: REMOVE_HUGO })).getByRole(
+        "button",
+        { name: "RETIRER" },
+      ),
+    );
+    // The list comes back from the server without him.
+    user.rerender(screenOf([LEA]));
+
+    expect(screen.queryByRole("listitem", { name: /Hugo/ })).toBeNull();
+    expect(membersTitle()).toHaveFocus();
   });
 
   it("retirer en panne : le message, le ticket reste pour réessayer", async () => {
