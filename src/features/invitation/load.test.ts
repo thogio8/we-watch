@@ -18,6 +18,7 @@ beforeEach(() => {
   vi.mocked(getCurrentUser).mockReset().mockResolvedValue({
     userId: "user-1",
     name: "Léa",
+    sessionId: "session-1",
   });
 });
 

@@ -46,7 +46,7 @@ vi.mock("@/server/container", () => ({
   }),
 }));
 
-const LEA = { userId: "user-1", name: "Léa" };
+const LEA = { userId: "user-1", name: "Léa", sessionId: "session-1" };
 const REFUSED = "Server Action refused: not a member";
 
 const named = (name?: unknown) => {

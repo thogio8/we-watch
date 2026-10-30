@@ -12,7 +12,7 @@ import { getActiveGroup } from "@/server/groups";
 async function DrawData() {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
+  if (!active.group) return <FirstGroupScreen create={createGroup} />;
   const groupId = active.group.id;
   const list = getGroupList();
   const [toWatch, counts] = await Promise.all([

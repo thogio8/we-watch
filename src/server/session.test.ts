@@ -19,14 +19,18 @@ beforeEach(() => {
 });
 
 describe("getCurrentUser", () => {
-  it("lit la session à partir des en-têtes de la requête", async () => {
+  it("relit la session en base à partir des en-têtes, sans le cache du cookie (révocation immédiate) ni écrire de cookie", async () => {
     getSession.mockResolvedValue(SESSION);
 
     await expect(getCurrentUser()).resolves.toEqual({
       userId: "user-1",
       name: "Léa",
+      sessionId: "session-1",
     });
-    expect(getSession).toHaveBeenCalledWith({ headers: requestHeaders });
+    expect(getSession).toHaveBeenCalledWith({
+      headers: requestHeaders,
+      query: { disableCookieCache: true, disableRefresh: true },
+    });
   });
 
   it("si getSession lève (base injoignable, session supprimée) : null, journalisé sans détail sensible", async () => {
@@ -54,6 +58,7 @@ describe("assertSignedIn", () => {
     await expect(assertSignedIn()).resolves.toEqual({
       userId: "user-1",
       name: "Léa",
+      sessionId: "session-1",
     });
   });
 

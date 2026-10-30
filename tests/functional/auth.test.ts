@@ -7,7 +7,11 @@ import { passkey, user } from "@/db/auth-schema";
 import { createDatabase, type Database } from "@/db/create-database";
 import { group, membership } from "@/db/group-schema";
 import { createGroups } from "@/db/groups";
-import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
+import {
+  GROUP_COOKIE,
+  LEGACY_GROUP_ID,
+  LEGACY_GROUP_NAME,
+} from "@/domain/group";
 import { startServerStack } from "../helpers/functional";
 import { BASE_URL, cookiesOf, signUpWith } from "../helpers/signup-ceremony";
 
@@ -129,6 +133,63 @@ describe("Better Auth (fonctionnel)", () => {
     );
 
     expect(response.status).toBe(404);
+  });
+
+  it.each([
+    ["GET", "/list-sessions"],
+    ["POST", "/revoke-session"],
+    ["POST", "/revoke-sessions"],
+    ["POST", "/revoke-other-sessions"],
+  ])(
+    "%s %s est coupée (404), même connecté : l'appli gère les sessions elle-même",
+    async (method, path) => {
+      const ctx = await auth.$context;
+      const lea = await saveUser("Léa");
+      const signedIn = await ctx.test.getAuthHeaders({ userId: lea.id });
+
+      const response = await auth.handler(
+        new Request(`${BASE_URL}/api/auth${path}`, {
+          method,
+          headers: {
+            "content-type": "application/json",
+            origin: BASE_URL,
+            cookie: signedIn.get("cookie") as string,
+          },
+          body: method === "POST" ? JSON.stringify({ token: "x" }) : null,
+        }),
+      );
+
+      expect(response.status).toBe(404);
+    },
+  );
+
+  it("la déconnexion efface aussi le groupe affiché (cookie ww_group)", async () => {
+    const ctx = await auth.$context;
+    const lea = await saveUser("Léa");
+    const signedIn = await ctx.test.getAuthHeaders({ userId: lea.id });
+
+    const response = await auth.handler(
+      new Request(`${BASE_URL}/api/auth/sign-out`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: BASE_URL,
+          cookie: `${signedIn.get("cookie")}; ${GROUP_COOKIE}=groupe-1`,
+        },
+        body: "{}",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const cleared = response.headers
+      .getSetCookie()
+      .find((line) => line.startsWith(`${GROUP_COOKIE}=`));
+    expect(cleared).toBeDefined();
+    expect(cleared).toMatch(new RegExp(`^${GROUP_COOKIE}=;`));
+    expect(cleared).toMatch(/Max-Age=0/);
+    expect(cleared).toMatch(/Path=\//);
+    expect(cleared).toMatch(/HttpOnly/);
+    expect(cleared).toMatch(/SameSite=Lax/i);
   });
 
   it("sans plugin supplémentaire, l'instance répond aussi", async () => {

@@ -17,7 +17,7 @@ async function MovieData({
 }: Pick<PageProps<"/list/[tmdbId]">, "params">) {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
+  if (!active.group) return <FirstGroupScreen create={createGroup} />;
   const groupId = active.group.id;
   // Only a movie of the displayed group: another group's id is not found.
   const page = await loadMoviePage(groupId, (await params).tmdbId);

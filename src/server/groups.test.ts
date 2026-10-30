@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SIGNIN_PATH } from "@/access/paths";
 import { GROUP_COOKIE, type GroupSummary } from "@/domain/group";
 import {
   assertMember,
@@ -14,10 +16,15 @@ const groupsOf = vi.fn();
 const isMember = vi.fn();
 
 vi.mock("next/headers");
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT ${url}`);
+  }),
+}));
 vi.mock("./session");
 vi.mock("./container", () => ({ getGroups: () => ({ groupsOf, isMember }) }));
 
-const LEA = { userId: "user-1", name: "Léa" };
+const LEA = { userId: "user-1", name: "Léa", sessionId: "session-1" };
 const NOUS_DEUX: GroupSummary = {
   id: "g-1",
   name: "NOUS DEUX",
@@ -73,10 +80,13 @@ describe("getActiveGroup", () => {
     });
   });
 
-  it("sans session, on obtient null sans lire les groupes", async () => {
+  it("sans session (révoquée depuis que le proxy a laissé passer), renvoie vers la connexion sans lire les groupes", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(null);
 
-    await expect(getActiveGroup()).resolves.toBeNull();
+    await expect(getActiveGroup()).rejects.toThrow(
+      `NEXT_REDIRECT ${SIGNIN_PATH}`,
+    );
+    expect(redirect).toHaveBeenCalledWith(SIGNIN_PATH);
     expect(groupsOf).not.toHaveBeenCalled();
   });
 });

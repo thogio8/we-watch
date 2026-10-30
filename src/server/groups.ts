@@ -1,6 +1,12 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { GROUP_COOKIE, type GroupSummary } from "@/domain/group";
+import { redirect } from "next/navigation";
+import { SIGNIN_PATH } from "@/access/paths";
+import {
+  GROUP_COOKIE,
+  groupCookieAttributes,
+  type GroupSummary,
+} from "@/domain/group";
 import { getGroups } from "./container";
 import { assertSignedIn, type CurrentUser, getCurrentUser } from "./session";
 
@@ -12,14 +18,16 @@ const MAX_GROUP_ID_LENGTH = 64;
 const ONE_YEAR_AND_A_MONTH = 400 * 24 * 60 * 60;
 
 /**
- * The group on screen: the one the cookie names if I am a member of it,
- * else my last used one. Null when signed out; `group: null` when I belong
- * to no group yet. Reads cookies(): callers render under <Suspense>.
+ * For pages: the group on screen, the one the cookie names if I am a member
+ * of it, else my last used one; `group: null` when I belong to no group yet.
+ * Signed out (a session revoked since the proxy let the request through),
+ * redirects to the sign-in page. Reads cookies(): callers render under
+ * <Suspense>.
  */
-export async function getActiveGroup(): Promise<ActiveGroup | null> {
+export async function getActiveGroup(): Promise<ActiveGroup> {
   const user = await getCurrentUser();
   if (user === null) {
-    return null;
+    redirect(SIGNIN_PATH);
   }
   const groups = await getGroups().groupsOf(user.userId);
   const [first] = groups;
@@ -35,11 +43,8 @@ export async function getActiveGroup(): Promise<ActiveGroup | null> {
 /** Remembers the displayed group on this device. Server Actions only. */
 export async function rememberGroup(groupId: string): Promise<void> {
   (await cookies()).set(GROUP_COOKIE, groupId, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    ...groupCookieAttributes(process.env.NODE_ENV === "production"),
     maxAge: ONE_YEAR_AND_A_MONTH,
-    path: "/",
   });
 }
 

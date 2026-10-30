@@ -114,6 +114,7 @@ describe("groupes (fonctionnel)", () => {
     vi.mocked(assertSignedIn).mockResolvedValueOnce({
       userId: hugo,
       name: "Hugo",
+      sessionId: "session-hugo",
     });
 
     await removeMember(groupId, LEA_ID);
