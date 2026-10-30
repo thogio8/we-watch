@@ -74,6 +74,8 @@ function attachToSession(
   if (context) {
     throw new APIError("BAD_REQUEST", { message: "Already signed in" });
   }
+  // Duplicates the plugin's own check (it answers 401 when the resolved
+  // user is not the session's): defence in depth, not the only guard.
   if (registeringId !== sessionUserId) {
     throw new APIError("UNAUTHORIZED", {
       message: "Passkey options were made for another user",
