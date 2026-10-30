@@ -7,15 +7,11 @@ import { signOutThisDevice } from "@/server/sign-out";
 import {
   deleteAccount,
   deletePasskey,
-  listMyPasskeys,
-  listMySessions,
   renameMe,
   revokeSession,
 } from "./actions";
 
-const passkeysOf = vi.fn();
 const remove = vi.fn();
-const sessionsOf = vi.fn();
 const deleteSession = vi.fn();
 const deleteUser = vi.fn();
 const updateUser = vi.fn();
@@ -27,9 +23,7 @@ vi.mock("next/cache");
 vi.mock("next/headers");
 vi.mock("@/server/container", () => ({
   getAccount: () => ({
-    passkeysOf,
     deletePasskey: remove,
-    sessionsOf,
     deleteSession,
     deleteUser,
   }),
@@ -37,14 +31,11 @@ vi.mock("@/server/container", () => ({
 }));
 
 const LEA = { userId: "user-1", name: "Léa", sessionId: "session-1" };
-const T0 = new Date(2026, 9, 1);
 
 beforeEach(() => {
   vi.mocked(assertSignedIn).mockReset().mockResolvedValue(LEA);
   vi.mocked(revalidatePath).mockReset();
-  passkeysOf.mockReset().mockResolvedValue([]);
   remove.mockReset().mockResolvedValue("deleted");
-  sessionsOf.mockReset().mockResolvedValue([]);
   deleteSession.mockReset().mockResolvedValue(true);
   deleteUser.mockReset().mockResolvedValue(true);
   updateUser.mockReset().mockResolvedValue({ status: true });
@@ -60,28 +51,6 @@ const aForm = (name: unknown) => {
 
 const signedOut = () =>
   vi.mocked(assertSignedIn).mockRejectedValue(new Error("not signed in"));
-
-describe("listMyPasskeys", () => {
-  it("donne mes passkeys ; sans nom, « CLÉ D’ACCÈS »", async () => {
-    passkeysOf.mockResolvedValue([
-      { id: "p-1", name: "iPhone · Safari", createdAt: T0 },
-      { id: "p-2", name: null, createdAt: null },
-    ]);
-
-    await expect(listMyPasskeys()).resolves.toEqual([
-      { id: "p-1", name: "iPhone · Safari", createdAt: T0 },
-      { id: "p-2", name: "CLÉ D’ACCÈS", createdAt: null },
-    ]);
-    expect(passkeysOf).toHaveBeenCalledWith("user-1");
-  });
-
-  it("sans session : refuse sans rien lire", async () => {
-    signedOut();
-
-    await expect(listMyPasskeys()).rejects.toThrow("not signed in");
-    expect(passkeysOf).not.toHaveBeenCalled();
-  });
-});
 
 describe("deletePasskey", () => {
   it("supprime la mienne et rafraîchit « MON COMPTE »", async () => {
@@ -128,40 +97,6 @@ describe("deletePasskey", () => {
 
     await expect(deletePasskey("p-1")).rejects.toThrow("not signed in");
     expect(remove).not.toHaveBeenCalled();
-  });
-});
-
-describe("listMySessions", () => {
-  it("donne mes appareils, nommés d’après leur navigateur, sans jeton ; « CET APPAREIL » pour le mien", async () => {
-    const iphone =
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
-    sessionsOf.mockResolvedValue([
-      { id: "session-1", userAgent: iphone, updatedAt: T0 },
-      { id: "session-2", userAgent: null, updatedAt: T0 },
-    ]);
-
-    await expect(listMySessions()).resolves.toEqual([
-      {
-        id: "session-1",
-        device: "iPhone · Safari",
-        lastActiveAt: T0,
-        current: true,
-      },
-      {
-        id: "session-2",
-        device: "APPAREIL INCONNU",
-        lastActiveAt: T0,
-        current: false,
-      },
-    ]);
-    expect(sessionsOf).toHaveBeenCalledWith("user-1");
-  });
-
-  it("sans session : refuse sans rien lire", async () => {
-    signedOut();
-
-    await expect(listMySessions()).rejects.toThrow("not signed in");
-    expect(sessionsOf).not.toHaveBeenCalled();
   });
 });
 

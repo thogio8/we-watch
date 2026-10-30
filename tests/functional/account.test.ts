@@ -2,7 +2,8 @@ import { revalidatePath } from "next/cache";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { passkey } from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
-import { deletePasskey, listMyPasskeys } from "@/features/account/actions";
+import { deletePasskey } from "@/features/account/actions";
+import { listMyPasskeys } from "@/features/account/load";
 import { startServerStack } from "../helpers/functional";
 import { aUser } from "../helpers/groups";
 
@@ -45,7 +46,7 @@ describe("mes passkeys (fonctionnel)", () => {
     await aPasskey(LEA_ID, "p-2", null);
     await aPasskey(hugo, "p-3", "Mac · Chrome");
 
-    expect(await listMyPasskeys()).toEqual([
+    expect(await listMyPasskeys(LEA_ID)).toEqual([
       { id: "p-1", name: "iPhone · Safari", createdAt: T0 },
       { id: "p-2", name: "CLÉ D’ACCÈS", createdAt: T0 },
     ]);

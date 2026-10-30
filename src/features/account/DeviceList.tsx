@@ -5,7 +5,7 @@ import { useId } from "react";
 import { SIGNIN_PATH } from "@/access/paths";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import sheet from "@/ui/Sheet.module.css";
-import type { MySession } from "./actions";
+import type { MySession } from "./load";
 import { ListSection } from "./ListSection";
 import {
   activeOn,

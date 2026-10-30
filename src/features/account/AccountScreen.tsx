@@ -4,14 +4,10 @@ import { SignOutButton } from "@/features/signin/SignOutButton";
 import { Headline } from "@/ui/Headline";
 import sheet from "@/ui/Sheet.module.css";
 import styles from "./Account.module.css";
-import type {
-  AccountResult,
-  DeletePasskeyResult,
-  MyPasskey,
-  MySession,
-} from "./actions";
+import type { AccountResult, DeletePasskeyResult } from "./actions";
 import { DeleteAccount } from "./DeleteAccount";
 import { DeviceList } from "./DeviceList";
+import type { MyPasskey, MySession } from "./load";
 import { NameForm } from "./NameForm";
 import { PasskeyList } from "./PasskeyList";
 

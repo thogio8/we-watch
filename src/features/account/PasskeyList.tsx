@@ -5,7 +5,8 @@ import { useId } from "react";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import sheet from "@/ui/Sheet.module.css";
 import styles from "./Account.module.css";
-import type { DeletePasskeyResult, MyPasskey } from "./actions";
+import type { DeletePasskeyResult } from "./actions";
+import type { MyPasskey } from "./load";
 import { AddPasskey } from "./AddPasskey";
 import { ListSection } from "./ListSection";
 import {

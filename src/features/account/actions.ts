@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { deviceLabel } from "@/domain/device";
 import { confirmsName, parseDisplayName } from "@/domain/display-name";
 import { NAME_ERROR } from "@/features/signin/messages";
 import { getAccount, getAuth } from "@/server/container";
@@ -10,16 +9,7 @@ import { revalidateListPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
 import { signOutThisDevice } from "@/server/sign-out";
 import { assertId } from "@/server/validate";
-import { UNNAMED_PASSKEY, WRONG_NAME } from "./messages";
-
-export type MyPasskey = { id: string; name: string; createdAt: Date | null };
-
-/** « TES CLÉS D’ACCÈS »: mine only, named after the device that made them. */
-export async function listMyPasskeys(): Promise<MyPasskey[]> {
-  const { userId } = await assertSignedIn();
-  const rows = await getAccount().passkeysOf(userId);
-  return rows.map((row) => ({ ...row, name: row.name ?? UNNAMED_PASSKEY }));
-}
+import { WRONG_NAME } from "./messages";
 
 export type AccountResult = { ok: true } | { ok: false; error: string };
 
@@ -41,26 +31,6 @@ export async function deletePasskey(id: string): Promise<DeletePasskeyResult> {
   }
   revalidatePath("/compte");
   return { ok: true };
-}
-
-export type MySession = {
-  id: string;
-  device: string;
-  lastActiveAt: Date;
-  /** « CET APPAREIL »: the session of this request. */
-  current: boolean;
-};
-
-/** « TES APPAREILS »: my signed-in devices, never their session token. */
-export async function listMySessions(): Promise<MySession[]> {
-  const { userId, sessionId } = await assertSignedIn();
-  const rows = await getAccount().sessionsOf(userId);
-  return rows.map(({ id, userAgent, updatedAt }) => ({
-    id,
-    device: deviceLabel(userAgent),
-    lastActiveAt: updatedAt,
-    current: id === sessionId,
-  }));
 }
 
 /**

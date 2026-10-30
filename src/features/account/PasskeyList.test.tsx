@@ -2,7 +2,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DeletePasskeyResult, MyPasskey } from "./actions";
+import type { DeletePasskeyResult } from "./actions";
+import type { MyPasskey } from "./load";
 import { PasskeyList } from "./PasskeyList";
 
 type Remove = (id: string) => Promise<DeletePasskeyResult>;

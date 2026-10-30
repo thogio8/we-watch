@@ -8,10 +8,10 @@ import { group, membership, movieWant } from "@/db/group-schema";
 import { GROUP_COOKIE } from "@/domain/group";
 import {
   deleteAccount,
-  listMySessions,
   renameMe,
   revokeSession,
 } from "@/features/account/actions";
+import { listMySessions } from "@/features/account/load";
 import { assertSignedIn } from "@/server/session";
 import { aDeviceOf, aTestAuth } from "../helpers/devices";
 import { startServerStack } from "../helpers/functional";
@@ -101,9 +101,8 @@ describe("mes appareils (fonctionnel)", () => {
     const ctx = await auth.$context;
     const laptop = await ctx.test.login({ userId: phone.userId });
     await aDeviceOf(auth, "Hugo");
-    from(phone);
 
-    const sessions = await listMySessions();
+    const sessions = await listMySessions(phone.userId, phone.sessionId);
 
     expect(sessions.map(({ id, current }) => [id, current]).sort()).toEqual(
       [

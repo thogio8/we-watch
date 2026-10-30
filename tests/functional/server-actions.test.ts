@@ -90,9 +90,7 @@ const ARGUMENTS: Record<string, () => unknown[]> = {
   "features/groups/actions.ts#joinGroup": () => [token],
   "features/list/actions.ts#searchCatalog": () => [groupId, "Fight Club"],
   "features/swipe/actions.ts#loadMoreCards": () => [groupId, "popular", 2],
-  "features/account/actions.ts#listMyPasskeys": () => [],
   "features/account/actions.ts#deletePasskey": () => ["passkey-1"],
-  "features/account/actions.ts#listMySessions": () => [],
   "features/account/actions.ts#revokeSession": () => ["session-1"],
   "features/account/actions.ts#renameMe": () => [aName("Zoé")],
   // Léa's exact name: the deletion would go through with a session.

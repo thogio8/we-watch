@@ -6,8 +6,6 @@ import { SIGNIN_PATH } from "@/access/paths";
 import {
   deleteAccount,
   deletePasskey,
-  listMyPasskeys,
-  listMySessions,
   renameMe,
   revokeSession,
 } from "@/features/account/actions";
@@ -15,13 +13,14 @@ import {
   AccountScreen,
   AccountScreenFallback,
 } from "@/features/account/AccountScreen";
+import { listMyPasskeys, listMySessions } from "@/features/account/load";
 import { APP_NAME } from "@/features/pwa/brand";
 import { getCurrentUser } from "@/server/session";
 
 export const metadata: Metadata = { title: `Mon compte · ${APP_NAME}` };
 
 /**
- * My account, per request. Signed out (a session revoked since the proxy
+ * My account, per request, for the session read once here. Signed out (a session revoked since the proxy
  * let the request through): the sign-in page.
  */
 async function AccountData() {
@@ -31,8 +30,8 @@ async function AccountData() {
     redirect(SIGNIN_PATH);
   }
   const [passkeys, sessions] = await Promise.all([
-    listMyPasskeys(),
-    listMySessions(),
+    listMyPasskeys(user.userId),
+    listMySessions(user.userId, user.sessionId),
   ]);
   return (
     <AccountScreen
