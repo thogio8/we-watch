@@ -104,6 +104,27 @@ describe("ajouter une passkey quand on est connecté (fonctionnel)", () => {
     expect(await count(passkey)).toBe(0);
     expect(await count(user)).toBe(1 + 1); // Léa (stack) and Hugo
   });
+
+  it("une session supprimée, cache encore valide, et un ticket : le compte est créé normalement", async () => {
+    const hugo = await aDeviceOf(auth, "Hugo");
+    await deleteSession(auth, hugo);
+    expect(await auth.api.getSession({ headers: hugo.headers })).not.toBe(null);
+
+    const { options, response } = await registerWith(auth.handler, {
+      ticket: await ticketFor("Sam"),
+      credentialId: aCredential(),
+      cookies: hugo.cookies,
+    });
+
+    expect(options.user).toMatchObject({ name: "Sam", displayName: "Sam" });
+    expect(response.status).toBe(200);
+    const sam = await auth.api.getSession({
+      headers: new Headers({ cookie: cookiesOf(response).join("; ") }),
+    });
+    expect(sam?.user.name).toBe("Sam");
+    expect(await passkeysOf(sam?.user.id as string)).toHaveLength(1);
+    expect(await passkeysOf(hugo.userId)).toHaveLength(0);
+  });
 });
 
 describe("nom des passkeys, fixé par le serveur (fonctionnel)", () => {
