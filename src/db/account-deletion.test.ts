@@ -4,7 +4,14 @@ import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
 import { aSnapshot } from "@tests/helpers/movies";
 import { allRows } from "@tests/helpers/rows";
 import { createAccount, type Account } from "./account";
-import { account as accountTable, passkey, session, user } from "./auth-schema";
+import {
+  account as accountTable,
+  passkey,
+  session,
+  signupTicketUse,
+  user,
+  verification,
+} from "./auth-schema";
 import type { Database } from "./create-database";
 import { createDecisions } from "./decisions";
 import {
@@ -12,9 +19,9 @@ import {
   groupMovie,
   membership,
   movieRejection,
-  movieSnapshot,
   movieWant,
 } from "./group-schema";
+import { movies } from "./schema";
 
 const T0 = new Date(2026, 9, 1);
 
@@ -164,24 +171,86 @@ const wholeGroup = async (groupId: string) => ({
     .where(eq(movieWant.groupId, groupId)),
 });
 
-type Movie = typeof groupMovie.$inferSelect;
-/** What Léa's deletion changes in a movie row: her name, on the shared list. */
-const asFormerMember = (row: Movie): Movie => ({
-  ...row,
-  addedBy: row.addedBy === lea ? null : row.addedBy,
-  watchedBy: row.watchedBy === lea ? null : row.watchedBy,
-});
+type Row = Record<string, unknown>;
+type Tables = Record<string, Row[]>;
 
-/** Others' data; in their movie rows, Léa already « un ancien membre ». */
-const othersData = async () => ({
-  hugo: await rowsNaming(hugo).then((rows) => ({
-    ...rows,
-    movies: rows.movies.map(asFormerMember),
-  })),
-  zoe: await rowsNaming(zoe),
-  hugos: await wholeGroup(hugos),
-  snapshots: await db.select().from(movieSnapshot),
-});
+/** Rows in a stable order: a deletion may reorder what a scan returns. */
+const canonical = (tables: Tables): Record<string, string[]> =>
+  Object.fromEntries(
+    Object.entries(tables).map(([name, rows]) => [
+      name,
+      rows.map((row) => JSON.stringify(row)).sort(),
+    ]),
+  );
+
+/** Léa's own rows, and her solo group with everything in it. */
+const isLeas = (table: string, row: Row) =>
+  row.user_id === lea ||
+  row.group_id === solo ||
+  (table === "user" && row.id === lea) ||
+  (table === "app_group" && row.id === solo);
+
+const formerMember = (value: unknown) => (value === lea ? null : value);
+
+/**
+ * The whole database as `before` but without Léa: her rows and solo group
+ * gone, and on the lists she shared, « un ancien membre » in her place.
+ */
+const withoutLea = (before: Tables): Tables =>
+  Object.fromEntries(
+    Object.entries(before).map(([table, rows]) => [
+      table,
+      rows
+        .filter((row) => !isLeas(table, row))
+        .map((row) =>
+          table === "group_movie"
+            ? {
+                ...row,
+                added_by: formerMember(row.added_by),
+                watched_by: formerMember(row.watched_by),
+              }
+            : row,
+        ),
+    ]),
+  );
+
+/** Rows that belong to nobody in particular: none of them may move. */
+async function unrelatedRows() {
+  await db
+    .update(group)
+    .set({ inviteToken: "invite-shared" })
+    .where(eq(group.id, shared));
+  await db
+    .update(group)
+    .set({ inviteToken: "invite-zoes" })
+    .where(eq(group.id, zoes));
+  // A movie of the pre-accounts list, copied into the shared group.
+  await keep(shared, hugo, 8);
+  await db
+    .update(groupMovie)
+    .set({ addedBy: null, addedVia: "legacy", legacy: true })
+    .where(and(eq(groupMovie.groupId, shared), eq(groupMovie.tmdbId, 8)));
+  await db.insert(verification).values({
+    id: "verification-1",
+    identifier: "passkey-challenge",
+    value: "challenge",
+    expiresAt: new Date(2026, 11, 1),
+  });
+  await db.insert(signupTicketUse).values({ id: "jti-1", usedAt: T0 });
+  await db
+    .insert(movies)
+    .values({ ...aSnapshot(9), status: "watched", decidedAt: T0 });
+}
+
+/** Deletes Léa: every other row of the database stays as it was. */
+async function expectOnlyLeaGone() {
+  await unrelatedRows();
+  const before = await allRows(db);
+
+  expect(await account.deleteUser(lea)).toBe(true);
+
+  expect(canonical(await allRows(db))).toEqual(canonical(withoutLea(before)));
+}
 
 const nothingLeftOf = async (userId: string) =>
   expect(Object.values(await rowsNaming(userId)).flat()).toEqual([]);
@@ -244,13 +313,8 @@ describe("supprimer un compte", () => {
     ]);
   });
 
-  it("les données des autres sont identiques avant et après", async () => {
-    const before = await othersData();
-
-    await account.deleteUser(lea);
-
-    expect(await othersData()).toEqual(before);
-  });
+  it("toute la base est identique avant et après, Léa en moins", () =>
+    expectOnlyLeaGone());
 
   it("une erreur au milieu de la transaction annule tout", async () => {
     // Fails on the very last statement: everything before it is undone.
@@ -268,14 +332,10 @@ describe("supprimer un compte", () => {
 
   it("supprime tout sans compter sur les clés étrangères", async () => {
     await db.run(sql`PRAGMA foreign_keys = OFF`);
-    const before = await othersData();
 
-    await account.deleteUser(lea);
+    await expectOnlyLeaGone();
 
     await nothingLeftOf(lea);
-    expect((await wholeGroup(solo)).movies).toEqual([]);
-    expect((await wholeGroup(solo)).group).toEqual([]);
-    expect(await othersData()).toEqual(before);
   });
 
   it("un utilisateur inconnu : false, rien n’est écrit", async () => {
