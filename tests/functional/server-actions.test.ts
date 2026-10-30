@@ -1,11 +1,16 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { passkey, session } from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
 import { createGroups } from "@/db/groups";
 import { GROUP_COOKIE } from "@/domain/group";
+import {
+  aDeviceSignedInAs,
+  aTestAuth,
+  deleteSession,
+} from "../helpers/devices";
 import { startServerStack } from "../helpers/functional";
 import { allRows } from "../helpers/rows";
 import {
@@ -13,7 +18,7 @@ import {
   isServerModule,
 } from "../helpers/server-directive";
 
-// No session mock: the real session read, from a request without cookies.
+// No session mock: the real session read, from the request of each pass.
 vi.mock("next/headers");
 vi.mock("next/cache");
 
@@ -36,8 +41,16 @@ const serverActionModules = sources
 let db: Database;
 let groupId = "";
 let token = "";
+/** Léa's device, its session deleted: only its cache still vouches for it. */
+let revoked: Headers;
 beforeAll(async () => {
   ({ db } = await startServerStack());
+  const auth = aTestAuth(db);
+  const device = await aDeviceSignedInAs(auth, "user-1");
+  await deleteSession(auth, device);
+  // The signed cache alone would still let a cache-trusting read through.
+  expect(await auth.api.getSession({ headers: device.headers })).not.toBe(null);
+  revoked = device.headers;
   // Two passkeys of Léa's: deleting one would be allowed with a session.
   await db.insert(passkey).values(
     ["passkey-1", "passkey-2"].map((id) => ({
@@ -131,30 +144,45 @@ describe("Server Actions sans session (fonctionnel, méta-test)", () => {
 
     expect(exported).toEqual(expect.arrayContaining(Object.keys(ARGUMENTS)));
   });
-
-  it.each(serverActionModules)(
-    "chaque action de %s est refusée sans rien écrire",
-    async (path) => {
-      const actions = (await import(join(SRC, path))) as Record<
-        string,
-        unknown
-      >;
-      const guarded = Object.entries(actions).filter(
-        ([name]) => !PUBLIC_ACTIONS.has(`${path}#${name}`),
-      );
-      const before = await allRows(db);
-
-      for (const [name, action] of guarded) {
-        expect(action, name).toBeTypeOf("function");
-        const call = (action as (...args: unknown[]) => Promise<unknown>)(
-          ...argumentsFor(`${path}#${name}`),
-        );
-        await expect(call, name).rejects.toThrow(
-          "Server Action refused: not signed in",
-        );
-      }
-      expect(await allRows(db)).toEqual(before);
-      expect((await cookies()).get(GROUP_COOKIE)).toBeUndefined();
-    },
-  );
 });
+
+/** Each request an action may come from without a live session. */
+const SIGNED_OUT_REQUESTS: [string, () => Headers][] = [
+  ["sans cookie", () => new Headers()],
+  ["session supprimée, cache encore valide", () => revoked],
+];
+
+describe.each(SIGNED_OUT_REQUESTS)(
+  "Server Actions, requête %s (fonctionnel, méta-test)",
+  (_, request) => {
+    beforeEach(() => {
+      vi.mocked(headers).mockResolvedValue(request() as never);
+    });
+
+    it.each(serverActionModules)(
+      "chaque action de %s est refusée sans rien écrire",
+      async (path) => {
+        const actions = (await import(join(SRC, path))) as Record<
+          string,
+          unknown
+        >;
+        const guarded = Object.entries(actions).filter(
+          ([name]) => !PUBLIC_ACTIONS.has(`${path}#${name}`),
+        );
+        const before = await allRows(db);
+
+        for (const [name, action] of guarded) {
+          expect(action, name).toBeTypeOf("function");
+          const call = (action as (...args: unknown[]) => Promise<unknown>)(
+            ...argumentsFor(`${path}#${name}`),
+          );
+          await expect(call, name).rejects.toThrow(
+            "Server Action refused: not signed in",
+          );
+        }
+        expect(await allRows(db)).toEqual(before);
+        expect((await cookies()).get(GROUP_COOKIE)).toBeUndefined();
+      },
+    );
+  },
+);

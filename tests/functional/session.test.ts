@@ -3,7 +3,11 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { AUTHORITATIVE_SESSION_READ } from "@/auth/create-auth";
 import type { Database } from "@/db/create-database";
 import { assertSignedIn, getCurrentUser } from "@/server/session";
-import { aDeviceOf as aDeviceOfIn, aTestAuth } from "../helpers/devices";
+import {
+  aDeviceOf as aDeviceOfIn,
+  aTestAuth,
+  deleteSession,
+} from "../helpers/devices";
 import { startServerStack } from "../helpers/functional";
 
 vi.mock("next/headers");
@@ -48,8 +52,7 @@ describe("session lue par les pages et les actions (fonctionnel)", () => {
 
   it("une session supprimée en base est refusée aussitôt, même avec un cache de session encore valide", async () => {
     const device = await aDeviceOf("Hugo");
-    const ctx = await auth.$context;
-    await ctx.internalAdapter.deleteSession(device.token);
+    await deleteSession(auth, device);
     // The cache alone still vouches for the session: the lag being closed.
     expect(await auth.api.getSession({ headers: device.headers })).not.toBe(
       null,

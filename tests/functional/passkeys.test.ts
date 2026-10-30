@@ -3,7 +3,12 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createSignupTicket } from "@/access/signup-ticket";
 import { passkey, session, user } from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
-import { aDeviceOf, aTestAuth, AUTH_SECRET } from "../helpers/devices";
+import {
+  aDeviceOf,
+  aTestAuth,
+  AUTH_SECRET,
+  deleteSession,
+} from "../helpers/devices";
 import { startServerStack } from "../helpers/functional";
 import { cookiesOf, registerWith } from "../helpers/signup-ceremony";
 
@@ -86,7 +91,7 @@ describe("ajouter une passkey quand on est connecté (fonctionnel)", () => {
 
   it("une session supprimée en base, même avec un cache encore valide, n’ajoute rien", async () => {
     const hugo = await aDeviceOf(auth, "Hugo");
-    await (await auth.$context).internalAdapter.deleteSession(hugo.token);
+    await deleteSession(auth, hugo);
     // The cache alone still vouches for the session.
     expect(await auth.api.getSession({ headers: hugo.headers })).not.toBe(null);
 
