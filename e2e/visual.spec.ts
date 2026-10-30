@@ -4,6 +4,7 @@ import {
   emptyNameRefused,
   expect,
   joinedOn,
+  leasAccountOn,
   leasInvitation,
   listTitles,
   settled,
@@ -104,6 +105,21 @@ test.describe("rendu visuel", () => {
       // As it opens (the app brings it clear of the nav): the viewport, since
       // a fullPage image would draw the fixed nav over it.
       await shoot(app, `${format.name}-8b-groupe-quitter`, {
+        fullPage: false,
+      });
+
+      // « MON COMPTE »: this iPhone and a Mac, a passkey of each.
+      await leasAccountOn(FROZEN_NOW);
+      await app.goto("/compte");
+      await expect(app.getByText("Mac · Chrome")).toHaveCount(2);
+      await shoot(app, `${format.name}-10-compte`);
+      await app.getByRole("button", { name: "SUPPRIMER MON COMPTE" }).click();
+      // Half typed: « SUPPRIMER DÉFINITIVEMENT » still waits, in-palette.
+      await app.getByLabel("TAPE « Léa » POUR CONFIRMER").fill("Lé");
+      await expect(
+        app.getByRole("button", { name: "SUPPRIMER DÉFINITIVEMENT" }),
+      ).toBeDisabled();
+      await shoot(app, `${format.name}-10b-compte-supprimer`, {
         fullPage: false,
       });
 

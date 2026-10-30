@@ -73,6 +73,35 @@ export async function deleteSessions() {
   await db().delete(session);
 }
 
+/** Better Auth's test helpers, on the worker's database and server. */
+async function authHelpers() {
+  const worker = base.info().parallelIndex;
+  const auth = createAuth({
+    db: db(),
+    secret: E2E_AUTH_SECRET,
+    baseURL: appUrl(worker),
+    plugins: [testUtils()],
+  });
+  return (await auth.$context).test;
+}
+
+/** A session of `userId`'s, written to the worker's database: its cookies. */
+async function sessionCookies(userId: string) {
+  return (await authHelpers()).getCookies({ userId, domain: "localhost" });
+}
+
+/** The cookie of the group displayed on the device. */
+const groupCookie = (groupId: string) => ({
+  name: GROUP_COOKIE,
+  value: groupId,
+  domain: "localhost",
+  path: "/",
+  httpOnly: true,
+  sameSite: "Lax" as const,
+  // The e2e server runs in production mode over http: not `secure`.
+  secure: false,
+});
+
 /**
  * Signs `name` in without a passkey ceremony: a user and a session written
  * straight to the worker's database, their cookies given to the browser.
@@ -86,19 +115,9 @@ async function signIn(
     group: joined = LEAS_GROUP,
   }: { name?: string; group?: typeof LEAS_GROUP | null } = {},
 ) {
-  const worker = base.info().parallelIndex;
-  const auth = createAuth({
-    db: db(),
-    secret: E2E_AUTH_SECRET,
-    baseURL: appUrl(worker),
-    plugins: [testUtils()],
-  });
-  const { test: helpers } = await auth.$context;
+  const helpers = await authHelpers();
   const account = await helpers.saveUser(helpers.createUser({ name }));
-  const cookies = await helpers.getCookies({
-    userId: account.id,
-    domain: "localhost",
-  });
+  const cookies = await sessionCookies(account.id);
   if (joined === null) {
     await page.context().addCookies(cookies);
     return;
@@ -107,19 +126,26 @@ async function signIn(
   await db()
     .insert(membership)
     .values({ groupId: joined.id, userId: account.id });
-  await page.context().addCookies([
-    ...cookies,
-    // The e2e server runs in production mode over http: not `secure`.
-    {
-      name: GROUP_COOKIE,
-      value: joined.id,
-      domain: "localhost",
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-      secure: false,
-    },
-  ]);
+  await page.context().addCookies([...cookies, groupCookie(joined.id)]);
+}
+
+/** Léa's id in the worker's database. */
+async function leasId() {
+  const [lea] = await db()
+    .select({ id: user.id })
+    .from(user)
+    .where(eq(user.name, "Léa"));
+  return lea!.id;
+}
+
+/** Léa again, on another device: a session of her own, « NOUS DEUX » shown. */
+async function signInLeaAgain(page: Page) {
+  await page
+    .context()
+    .addCookies([
+      ...(await sessionCookies(await leasId())),
+      groupCookie(LEAS_GROUP.id),
+    ]);
 }
 
 /** Names of the accounts in the worker's database. */
@@ -132,9 +158,9 @@ export async function accountNames() {
  * Gives the page a device that unlocks passkeys: a virtual platform
  * authenticator (Chromium, through CDP) that keeps its passkeys and always
  * says yes.
- * Returns how to take it away again.
+ * Returns how to take it away again; it also goes with its browser context.
  */
-async function virtualAuthenticator(page: Page) {
+export async function virtualAuthenticator(page: Page) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("WebAuthn.enable");
   const { authenticatorId } = await cdp.send(
@@ -185,7 +211,8 @@ async function secondDevices(
 /**
  * `app`: every test starts signed in as Léa, on the empty list of « NOUS
  * DEUX », on its worker's server. On second devices, besides Léa's:
- * `member(name)`, another member of that group; `outsider(name)`, signed in
+ * `member(name)`, another member of that group; `myOtherDevice()`, Léa
+ * again, with a session of her own; `outsider(name)`, signed in
  * but in no group; `guest()`, signed out, with a device that unlocks
  * passkeys. `newcomer`: signed in, but in no group yet. `visitor`: an empty
  * database, no session, a device that unlocks passkeys.
@@ -193,6 +220,7 @@ async function secondDevices(
 export const test = base.extend<{
   app: Page;
   member: (name: string) => Promise<Page>;
+  myOtherDevice: () => Promise<Page>;
   outsider: (name: string) => Promise<Page>;
   guest: () => Promise<Page>;
   newcomer: Page;
@@ -212,6 +240,9 @@ export const test = base.extend<{
     await secondDevices(browser, (open) =>
       use((name) => open((page) => signIn(page, { name }))),
     );
+  },
+  myOtherDevice: async ({ app: {}, browser }, use) => {
+    await secondDevices(browser, (open) => use(() => open(signInLeaAgain)));
   },
   outsider: async ({ app: {}, browser }, use) => {
     await secondDevices(browser, (open) =>
@@ -346,4 +377,52 @@ export async function box(locator: Locator) {
   const found = await locator.boundingBox();
   expect(found).not.toBeNull();
   return found!;
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+const IPHONE_SAFARI =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+const MAC_CHROME =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+
+/**
+ * Léa's account as « MON COMPTE » shows it, fixed for captures: this device
+ * an iPhone active on `date`, a Mac signed in too, and a passkey of each,
+ * added before. Only `updatedAt` moves: Better Auth renews a session on its
+ * `expiresAt`, left untouched, so the dates stay put.
+ */
+export async function leasAccountOn(date: Date) {
+  const userId = await leasId();
+  await db()
+    .update(session)
+    .set({ userAgent: IPHONE_SAFARI, updatedAt: date })
+    .where(eq(session.userId, userId));
+  await db()
+    .insert(session)
+    .values({
+      id: "session-mac-e2e",
+      token: "session-mac-e2e-token",
+      userId,
+      userAgent: MAC_CHROME,
+      expiresAt: new Date(Date.now() + 7 * DAY),
+      updatedAt: new Date(date.getTime() - 2 * DAY),
+    });
+  await db()
+    .insert(passkey)
+    .values(
+      [
+        { id: "passkey-iphone-e2e", name: "iPhone · Safari", daysBefore: 9 },
+        { id: "passkey-mac-e2e", name: "Mac · Chrome", daysBefore: 3 },
+      ].map(({ id, name, daysBefore }) => ({
+        id,
+        name,
+        userId,
+        publicKey: "key",
+        credentialID: id,
+        counter: 0,
+        deviceType: "multiDevice",
+        backedUp: true,
+        createdAt: new Date(date.getTime() - daysBefore * DAY),
+      })),
+    );
 }
