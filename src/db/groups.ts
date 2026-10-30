@@ -1,7 +1,13 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import type { GroupSummary } from "@/domain/group";
 import type { Database } from "./create-database";
 import { group, membership } from "./group-schema";
+import { createInvitations, type Invitations } from "./invitations";
+import {
+  createMemberships,
+  membershipOf,
+  type Memberships,
+} from "./membership";
 
 interface CreateInput {
   name: string;
@@ -9,7 +15,7 @@ interface CreateInput {
   now?: Date;
 }
 
-export interface Groups {
+export interface Groups extends Invitations, Memberships {
   /** A new group whose creator is the only member, just used. */
   create(input: CreateInput): Promise<GroupSummary>;
   /** Last used first (never used last), then the oldest joined. */
@@ -17,13 +23,14 @@ export interface Groups {
   isMember(groupId: string, userId: string): Promise<boolean>;
   /** Remembers that the member displayed this group. */
   touch(groupId: string, userId: string, now?: Date): Promise<void>;
+  rename(groupId: string, name: string): Promise<void>;
 }
-
-const membershipOf = (groupId: string, userId: string) =>
-  and(eq(membership.groupId, groupId), eq(membership.userId, userId));
 
 export function createGroups(db: Database): Groups {
   return {
+    ...createInvitations(db),
+    ...createMemberships(db),
+
     async create({ name, userId, now = new Date() }) {
       const id = crypto.randomUUID();
       await db.transaction(async (tx) => {
@@ -61,6 +68,10 @@ export function createGroups(db: Database): Groups {
         .update(membership)
         .set({ lastUsedAt: now })
         .where(membershipOf(groupId, userId));
+    },
+
+    async rename(groupId, name) {
+      await db.update(group).set({ name }).where(eq(group.id, groupId));
     },
   };
 }

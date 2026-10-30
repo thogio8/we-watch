@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   GROUP_COOKIE,
   type GroupSummary,
+  isInviteToken,
   LEGACY_GROUP_ID,
   LEGACY_GROUP_NAME,
   parseGroupName,
@@ -47,5 +48,34 @@ describe("parseGroupName", () => {
     };
     expect(LEGACY_GROUP_ID).toBe("nous-deux");
     expect(parseGroupName(legacy.name)).toBe("NOUS DEUX");
+  });
+});
+
+describe("isInviteToken", () => {
+  const TOKEN = "Ab0_-".repeat(8) + "xyz";
+
+  it("accepte 43 caractères base64url", () => {
+    expect(TOKEN).toHaveLength(43);
+    expect(isInviteToken(TOKEN)).toBe(true);
+  });
+
+  it("refuse une autre longueur", () => {
+    expect(isInviteToken(TOKEN.slice(1))).toBe(false);
+    expect(isInviteToken(`${TOKEN}a`)).toBe(false);
+    expect(isInviteToken("")).toBe(false);
+  });
+
+  it.each(["+", "/", "=", " ", "%", "é", "\n"])(
+    "refuse le caractère %j",
+    (char) => {
+      expect(isInviteToken(TOKEN.slice(1) + char)).toBe(false);
+    },
+  );
+
+  it("refuse ce qui n’est pas une chaîne", () => {
+    expect(isInviteToken(null)).toBe(false);
+    expect(isInviteToken(undefined)).toBe(false);
+    expect(isInviteToken(12)).toBe(false);
+    expect(isInviteToken([TOKEN])).toBe(false);
   });
 });

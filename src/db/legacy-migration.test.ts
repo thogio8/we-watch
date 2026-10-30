@@ -141,7 +141,7 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     expect(GROUPS[0]).toMatch(/^0005_/);
     expect(GROUPS[1]).toBe(COPY);
     expect(GROUPS[2]).toBe(WATCHED_LEGACY);
-    expect(tags).toHaveLength(8);
+    expect(tags).toHaveLength(9);
   });
 
   it("écrit dans le SQL l'id et le nom du groupe hérité du domaine", () => {
