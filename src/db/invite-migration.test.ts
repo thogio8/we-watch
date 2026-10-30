@@ -11,7 +11,7 @@ type Journal = { entries: { tag: string }[] };
 const { entries } = JSON.parse(
   readFileSync("drizzle/meta/_journal.json", "utf8"),
 ) as Journal;
-const invites = entries[8]?.tag ?? "";
+const invites = entries.find(({ tag }) => /^0008_/.test(tag))?.tag ?? "";
 
 const statements = readFileSync(`drizzle/${invites}.sql`, "utf8")
   .split("--> statement-breakpoint")
@@ -26,8 +26,10 @@ const statements = readFileSync(`drizzle/${invites}.sql`, "utf8")
 
 describe("migration des liens d’invitation", () => {
   it("vient juste après celles des groupes", () => {
-    expect(entries).toHaveLength(9);
+    // Later versions add theirs after it.
+    expect(entries.length).toBeGreaterThanOrEqual(9);
     expect(invites).toMatch(/^0008_/);
+    expect(entries.map(({ tag }) => tag).indexOf(invites)).toBe(8);
   });
 
   it("ne fait qu’ajouter : une colonne nullable et son index unique", () => {
