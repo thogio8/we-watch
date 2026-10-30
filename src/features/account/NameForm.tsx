@@ -38,6 +38,7 @@ export function NameForm({ name, rename }: NameFormProps) {
         submitLabel="CHANGER"
         failure={RENAME_FAILED}
         defaultName={name}
+        asTyped
       />
       <p className={styles.status} role="status">
         {status}

@@ -49,6 +49,12 @@ describe("DeleteAccount", () => {
     expect(remove).not.toHaveBeenCalled();
   });
 
+  it("le clavier du téléphone ne change pas la casse du prénom tapé", async () => {
+    await openTicket();
+
+    expect(typed()).toHaveAttribute("autocapitalize", "none");
+  });
+
   it("le prénom exact puis « SUPPRIMER DÉFINITIVEMENT » : le compte part, puis la connexion", async () => {
     const { user, remove } = await openTicket();
 

@@ -2,6 +2,7 @@
 
 import { type FormEvent, useId, useRef, useState } from "react";
 import { Button } from "./Button";
+import { cx } from "./cx";
 import styles from "./LabelForm.module.css";
 import { useFocusBack } from "./useFocusBack";
 
@@ -20,6 +21,8 @@ export interface LabelFormProps<R extends Result> {
   /** Shown when `send` throws, never its raw text. */
   failure: string;
   defaultName?: string;
+  /** Shown as typed, not in capitals: a person's name, not a group's. */
+  asTyped?: boolean;
   onDone?: (result: Extract<R, { ok: true }>) => void;
 }
 
@@ -35,6 +38,7 @@ export function LabelForm<R extends Result>({
   submitLabel,
   failure,
   defaultName,
+  asTyped = false,
   onDone,
 }: LabelFormProps<R>) {
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +83,7 @@ export function LabelForm<R extends Result>({
         {label}
         <input
           ref={input}
-          className={styles.input}
+          className={cx(styles.input, asTyped && styles.asTyped)}
           name="name"
           defaultValue={defaultName}
           autoComplete="off"

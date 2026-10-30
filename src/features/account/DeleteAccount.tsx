@@ -55,7 +55,7 @@ export function DeleteAccount({ name, remove }: DeleteAccountProps) {
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
           autoComplete="off"
-          autoCapitalize="words"
+          autoCapitalize="none"
           spellCheck={false}
         />
       </label>

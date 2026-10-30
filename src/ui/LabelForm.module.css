@@ -30,6 +30,11 @@
   text-transform: uppercase;
 }
 
+/* A person's name: shown as typed, the case is theirs. */
+.input.asTyped {
+  text-transform: none;
+}
+
 .input:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);
