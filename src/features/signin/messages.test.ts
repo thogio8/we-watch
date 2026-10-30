@@ -3,6 +3,7 @@ import {
   CANCELLED_ERROR,
   CLOSED_ERROR,
   errorField,
+  invitedTitle,
   NAME_ERROR,
   NO_ACCOUNT_ERROR,
   refusalMessage,
@@ -45,5 +46,14 @@ describe("refusalMessage", () => {
 
   it("code tapé et refusé : mauvais code", () => {
     expect(refusalMessage("wrong_code")).toBe(WRONG_CODE_ERROR);
+  });
+});
+
+describe("invitedTitle", () => {
+  it("nomme le groupe qui invite, entre guillemets", () => {
+    expect(invitedTitle("LA COLOC")).toEqual([
+      "TU ES INVITÉ·E",
+      "DANS «\u00A0LA COLOC\u00A0»",
+    ]);
   });
 });

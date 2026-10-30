@@ -36,6 +36,12 @@
   text-shadow: var(--shadow-offset-sm-paper);
 }
 
+/* A group's name (invitation): one size down, never wider than the ticket. */
+.long {
+  font-size: var(--text-xl);
+  overflow-wrap: anywhere;
+}
+
 /* The invitation note on the stub. */
 .note {
   margin: 4px 0 0;
@@ -129,6 +135,11 @@
 
   .form {
     margin-top: 16px;
+  }
+
+  /* The poster is 80 px high: even a 30-letter name keeps to it. */
+  .long {
+    font-size: var(--text-lg);
   }
 
   /* Clear of the ticket's offset shadow. */

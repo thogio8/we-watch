@@ -47,4 +47,11 @@ describe("BottomNav", () => {
 
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
+
+  it("BottomNav disparaît sur une invitation, page hors de l'appli", () => {
+    pathname.current = `/invitation/${"A".repeat(43)}`;
+    render(<BottomNav />);
+
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  });
 });

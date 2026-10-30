@@ -10,10 +10,21 @@ import { SIGNIN_ERROR_ID, SigninTicket } from "./SigninTicket";
 interface SignupFormProps {
   /** The owner code field: the only way in on invitation, optional when open. */
   withCode: boolean;
+  /** The token of the invite link the form came from, sent along. */
+  invite?: string;
   error: string | null;
   pending: boolean;
   onSubmit: (formData: FormData) => void;
   onBack: () => void;
+}
+
+type Field = "name" | "ownerCode";
+
+/** The field at fault is flagged invalid and points to the error. */
+function flag(invalid: Field | null, field: Field) {
+  return invalid === field
+    ? { "aria-invalid": true, "aria-describedby": SIGNIN_ERROR_ID }
+    : {};
 }
 
 /**
@@ -23,6 +34,7 @@ interface SignupFormProps {
  */
 export function SignupForm({
   withCode,
+  invite,
   error,
   pending,
   onSubmit,
@@ -45,11 +57,6 @@ export function SignupForm({
     onSubmit(new FormData(event.currentTarget));
   };
 
-  const flag = (field: "name" | "ownerCode") =>
-    invalid === field
-      ? { "aria-invalid": true, "aria-describedby": SIGNIN_ERROR_ID }
-      : {};
-
   return (
     <form className={styles.form} onSubmit={submit} noValidate>
       <SigninTicket title={["CRÉER", "UN COMPTE"]} error={error}>
@@ -61,7 +68,7 @@ export function SignupForm({
             name="name"
             autoComplete="nickname"
             autoFocus
-            {...flag("name")}
+            {...flag(invalid, "name")}
           />
         </label>
         {withCode && (
@@ -76,10 +83,12 @@ export function SignupForm({
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              {...flag("ownerCode")}
+              {...flag(invalid, "ownerCode")}
             />
           </label>
         )}
+        {/* Last, so the name label stays the ticket's first child. */}
+        {invite && <input type="hidden" name="invite" value={invite} />}
       </SigninTicket>
       <PasskeyActions
         after={

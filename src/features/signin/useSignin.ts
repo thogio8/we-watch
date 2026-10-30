@@ -43,8 +43,12 @@ async function signUpWithPasskey(
   return error ? CANCELLED_ERROR : null;
 }
 
-/** The sign-in screen's state: which view, the error shown, the ceremonies. */
-export function useSignin(prepareSignup: PrepareSignup) {
+/**
+ * The sign-in screen's state: which view, the error shown, the ceremonies.
+ * `signedInPath`: where a sign-in leads (an invite link returns to itself); a
+ * new account always goes to the app, its invitation already joined.
+ */
+export function useSignin(prepareSignup: PrepareSignup, signedInPath = "/") {
   const [view, setView] = useState<SigninView>({
     name: "home",
     returning: false,
@@ -52,7 +56,7 @@ export function useSignin(prepareSignup: PrepareSignup) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const run = async (ceremony: Ceremony) => {
+  const run = async (ceremony: Ceremony, destination: string) => {
     setPending(true);
     setError(null);
     // The client may also throw (network, WebAuthn): never show raw text.
@@ -61,7 +65,7 @@ export function useSignin(prepareSignup: PrepareSignup) {
       // A full load, so no page kept in the client cache (staleTimes) shows
       // the signed-out state; replace, so Back does not return here. Stays
       // pending while the app loads.
-      window.location.replace("/");
+      window.location.replace(destination);
       return;
     }
     setError(failure);
@@ -77,9 +81,9 @@ export function useSignin(prepareSignup: PrepareSignup) {
     view,
     error,
     pending,
-    signIn: () => run(signInWithPasskey),
+    signIn: () => run(signInWithPasskey, signedInPath),
     signUp: (formData: FormData) =>
-      run(() => signUpWithPasskey(prepareSignup, formData)),
+      run(() => signUpWithPasskey(prepareSignup, formData), "/"),
     openForm: (withCode: boolean) => show({ name: "form", withCode }),
     back: () => show({ name: "home", returning: true }),
   };

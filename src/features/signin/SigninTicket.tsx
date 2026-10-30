@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Lines } from "@/ui/Lines";
+import { cx } from "@/ui/cx";
 import { Ticket } from "@/ui/Ticket";
 import styles from "./SigninScreen.module.css";
 
@@ -7,6 +8,9 @@ import styles from "./SigninScreen.module.css";
 const POSTER_HEIGHT = "clamp(80px, calc(100dvh - 330px), 150px)";
 
 export const SIGNIN_ERROR_ID = "signin-error";
+
+/** Beyond this, a title (one naming a group) goes a size down to stay on the poster. */
+const SHORT_TITLE = 20;
 
 interface SigninTicketProps {
   title: readonly string[];
@@ -22,7 +26,12 @@ export function SigninTicket({ title, error, children }: SigninTicketProps) {
       posterHeight={POSTER_HEIGHT}
       poster={
         <div className={styles.head}>
-          <h2 className={styles.title}>
+          <h2
+            className={cx(
+              styles.title,
+              title.join(" ").length > SHORT_TITLE && styles.long,
+            )}
+          >
             <Lines lines={title} />
           </h2>
         </div>

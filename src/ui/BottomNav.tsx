@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SIGNIN_PATH } from "@/access/paths";
+import { INVITATION_PREFIX, SIGNIN_PATH } from "@/access/paths";
 import styles from "./BottomNav.module.css";
 import { cx } from "./cx";
 
@@ -41,8 +41,8 @@ function NavTabs({ pathname }: { pathname: string | null }) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  // The app stays hidden until someone signs in.
-  if (pathname === SIGNIN_PATH) {
+  // The app stays hidden until someone signs in, or goes in from an invite link.
+  if (pathname === SIGNIN_PATH || pathname.startsWith(INVITATION_PREFIX)) {
     return null;
   }
   return <NavTabs pathname={pathname} />;
