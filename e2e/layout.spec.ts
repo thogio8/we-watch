@@ -8,7 +8,7 @@ import {
   swipe,
   test,
 } from "./fixtures";
-import { COPY_LINK } from "./groups";
+import { COPY_LINK, pill } from "./groups";
 
 /** Formats from spec §12: small and large phones, sideways, tablet, desktop. */
 const VIEWPORTS = [
@@ -136,6 +136,64 @@ test.describe("mise en page et accessibilité", () => {
         expect(await seriousViolations(page, path)).toEqual([]);
       }
     });
+  }
+});
+
+/** Spec §6: up to 30 characters, the widest glyph or long French words. */
+const LONG_NAMES = ["W".repeat(30), "SOIRÉES CINÉ DE LA COLOCATION"];
+
+/**
+ * Léa's group renamed `name`: its members screen and leaving question, its
+ * invite link as she sees it, as Inès sees it, then signed out.
+ */
+async function* longName(
+  name: string,
+  viewport: Viewport,
+  { app, outsider }: Omit<Devices, "member">,
+): AsyncGenerator<{ page: Page; path: string }> {
+  await app.setViewportSize(viewport);
+  await app.goto("/groupe");
+  await app.getByLabel("NOM DU GROUPE").fill(name);
+  await app.getByRole("button", { name: "RENOMMER" }).click();
+  await expect(pill(app, name)).toBeVisible();
+  yield { page: app, path: "/groupe" };
+  await app.getByRole("button", { name: "QUITTER LE GROUPE" }).click();
+  await expect(app.getByRole("group")).toBeVisible();
+  yield { page: app, path: "/groupe (quitter)" };
+  const link = await leasInvitation();
+  await app.goto(link);
+  await expect(app.getByRole("button", { name: "Y ALLER" })).toBeVisible();
+  yield { page: app, path: "/invitation (déjà membre)" };
+  const ines = await outsider("Inès");
+  await ines.setViewportSize(viewport);
+  await ines.goto(link);
+  await expect(ines.getByRole("button", { name: "REJOINDRE" })).toBeVisible();
+  yield { page: ines, path: "/invitation (rejoindre)" };
+  await ines.context().clearCookies();
+  await ines.reload();
+  await expect(
+    ines.getByRole("button", { name: "CRÉER UN COMPTE" }),
+  ).toBeVisible();
+  yield { page: ines, path: "/invitation (déconnecté)" };
+}
+
+test.describe("mise en page et accessibilité, nom de groupe long", () => {
+  test.beforeEach(() => {
+    test.skip(test.info().project.name !== "desktop");
+  });
+
+  for (const viewport of VIEWPORTS) {
+    for (const name of LONG_NAMES) {
+      test(`${name} : ${viewport.name}`, async ({ app, outsider }) => {
+        for await (const { page, path } of longName(name, viewport, {
+          app,
+          outsider,
+        })) {
+          await expectNoOverflow(page, path);
+          expect(await seriousViolations(page, path)).toEqual([]);
+        }
+      });
+    }
   }
 });
 

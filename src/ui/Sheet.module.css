@@ -1,6 +1,8 @@
 /* A narrow screen of white slips under its title (first group, members). */
 .screen {
   display: grid;
+  /* Never wider than the screen, however long the group's name in the pill. */
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   /* Narrow by nature, even in the wide column (spec §12). */
   width: 100%;
