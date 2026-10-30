@@ -38,13 +38,13 @@ export async function chooseGroup(groupId: string): Promise<void> {
   revalidateGroupPages();
 }
 
-type Outcome = { ok: true } | { ok: false; error: string };
+export type RenameResult = { ok: true } | { ok: false; error: string };
 
 /** « RENOMMER »: any member may. */
 export async function renameGroup(
   groupId: string,
   formData: FormData,
-): Promise<Outcome> {
+): Promise<RenameResult> {
   await assertMember(groupId);
   const name =
     formData instanceof FormData ? parseGroupName(formData.get("name")) : null;

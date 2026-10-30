@@ -1,10 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { TicketPage } from "@/features/signin/TicketPage";
 import { Button } from "@/ui/Button";
+import { useConfirm } from "@/ui/useConfirm";
 import styles from "./InvitationScreen.module.css";
-import { useConfirm } from "./useConfirm";
 
 interface InvitationChoiceProps {
   title: readonly string[];
@@ -22,7 +23,14 @@ export function InvitationChoice({
   confirm,
   failure,
 }: InvitationChoiceProps) {
-  const { pending, error, run } = useConfirm(confirm, failure);
+  const router = useRouter();
+  // Leads to the app (replace, so Back does not return to the link), and
+  // stays pending while it loads.
+  const { pending, error, run } = useConfirm(confirm, {
+    failure,
+    done: () => router.replace("/"),
+    leaves: true,
+  });
   const button = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     // Disabled while it ran, the button lost focus: give it back.

@@ -1,21 +1,10 @@
 /* A newcomer without a group: the title, a white slip with the form, sign out. */
 .screen {
-  display: grid;
-  justify-items: center;
-  /* Narrow by nature, even in the wide column (spec §12). */
-  width: 100%;
-  max-width: var(--column-max);
-  margin: 0 auto;
+  composes: screen from "../../ui/Sheet.module.css";
 }
 
 .sheet {
-  width: 100%;
-  margin-top: 22px;
-  padding: 16px;
-  border: var(--border);
-  border-radius: var(--radius-ticket);
-  background: var(--white);
-  box-shadow: var(--shadow-offset);
+  composes: sheet from "../../ui/Sheet.module.css";
 }
 
 .signOut {

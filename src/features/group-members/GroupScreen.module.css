@@ -1,0 +1,108 @@
+/* « MEMBRES ET INVITATION »: white slips under the title, narrow like a form. */
+.screen {
+  composes: screen from "../../ui/Sheet.module.css";
+}
+
+.sheet {
+  composes: sheet from "../../ui/Sheet.module.css";
+}
+
+.title {
+  font-size: var(--text-xs);
+  letter-spacing: 1px;
+}
+
+.members {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A row: who, since when, and « RETIRER » (its ticket below, full width). */
+.member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-bottom: var(--border-thin-dashed);
+}
+
+.who {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.name {
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+/* « toi »: ink on pink, as everywhere on pink. */
+.me {
+  padding: 0 6px;
+  border: var(--border-thin);
+  border-radius: var(--radius-chip);
+  background: var(--pink);
+  color: var(--on-pink);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.since {
+  flex-basis: 100%;
+  font-size: var(--text-2xs);
+}
+
+.invite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.wide {
+  width: 100%;
+}
+
+.status {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+}
+
+.alert {
+  composes: alert from "../../ui/Alert.module.css";
+  width: 100%;
+  margin: 0;
+}
+
+/* Neither share nor clipboard: the link, to select by hand. */
+.link {
+  width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border: var(--border-thin);
+  border-radius: var(--radius-chip);
+  background: var(--paper);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.leave {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 28px;
+}
