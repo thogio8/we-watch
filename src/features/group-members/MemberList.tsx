@@ -3,7 +3,12 @@
 import { useId } from "react";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import styles from "./GroupScreen.module.css";
-import { memberSince, REMOVE_FAILED, removeQuestion } from "./messages";
+import {
+  memberSince,
+  REMOVE_FAILED,
+  removeQuestion,
+  removeWarning,
+} from "./messages";
 
 export type GroupMember = { userId: string; name: string; joinedAt: Date };
 
@@ -31,6 +36,7 @@ function MemberRow({ member, isMe, remove }: MemberRowProps) {
           small
           label="RETIRER"
           question={removeQuestion(member.name)}
+          warning={removeWarning(member.name)}
           confirmLabel="RETIRER"
           action={() => remove(member.userId)}
           failure={REMOVE_FAILED}

@@ -132,6 +132,10 @@ describe("GroupScreen", () => {
       within(row("Hugo")).getByRole("button", { name: "RETIRER" }),
     );
     const ticket = screen.getByRole("group", { name: REMOVE_HUGO });
+    // Spec §7: the invite link still works for him until regenerated.
+    expect(ticket).toHaveAccessibleDescription(
+      "HUGO POURRA REVENIR PAR LE LIEN D’INVITATION TANT QU’IL N’EST PAS RÉGÉNÉRÉ.",
+    );
     expect(
       within(ticket).getByRole("button", { name: "ANNULER" }),
     ).toHaveFocus();

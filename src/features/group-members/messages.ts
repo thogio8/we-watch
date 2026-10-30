@@ -23,6 +23,11 @@ export function removeQuestion(name: string): string {
   return `RETIRER ${name.toLocaleUpperCase("fr-FR")} DU GROUPE\u00A0?`;
 }
 
+/** Spec §7: a removed member may come back by the link until it is regenerated. */
+export function removeWarning(name: string): string {
+  return `${name.toLocaleUpperCase("fr-FR")} POURRA REVENIR PAR LE LIEN D’INVITATION TANT QU’IL N’EST PAS RÉGÉNÉRÉ.`;
+}
+
 /** « QUITTER « NOUS DEUX » ? ». */
 export function leaveQuestion(groupName: string): string {
   return `QUITTER ${quoted(groupName)}\u00A0?`;
