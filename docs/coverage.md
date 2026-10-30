@@ -1,6 +1,6 @@
 # Couverture et tests
 
-Date : 2026-10-23 · mise à jour : 2026-10-30 (V2.0, comptes, passkeys, groupes et invitations)
+Date : 2026-10-23 · mise à jour : 2026-10-30 (V2.0, comptes, passkeys, groupes, invitations et « MON COMPTE »)
 
 ## Les trois niveaux de tests
 
@@ -8,17 +8,17 @@ Date : 2026-10-23 · mise à jour : 2026-10-30 (V2.0, comptes, passkeys, groupes
 | --- | --- | --- | --- | --- |
 | Unitaires | `src/**/*.test.ts(x)` | une fonction, un composant (Testing Library) | ses dépendances | `npm test` |
 | Fonctionnels | `tests/functional/` | actions serveur → container → repository → SQLite, client TMDB → zod → mapping | TMDB (faux catalogue `tests/fake-tmdb/`), la session (`@/server/session`) | `npm test` |
-| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe, les passkeys (authentificateur virtuel, WebAuthn via CDP), plusieurs membres d'un groupe (un contexte de navigateur chacun), les liens d'invitation (copiés par le presse-papiers), en mode `SIGNUP=open` (le mode `invite` est couvert par les fonctionnels) | TMDB (même faux catalogue, servi en HTTP) ; la session des parcours hors connexion (écrite en base) | `npm run test:e2e` |
+| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe, les passkeys (authentificateur virtuel, WebAuthn via CDP), plusieurs membres d'un groupe et plusieurs appareils d'un même compte (un contexte de navigateur chacun), les liens d'invitation (copiés par le presse-papiers), en mode `SIGNUP=open` (le mode `invite` est couvert par les fonctionnels) | TMDB (même faux catalogue, servi en HTTP) ; la session des parcours hors connexion (écrite en base) | `npm run test:e2e` |
 
 Tout tourne dans `npm run ci` (hook `pre-push`, et GitHub Actions en filet).
 
 ## Porte de couverture
 
-`npm run test:coverage` : 1145 tests, 98 fichiers, **100 %** partout.
+`npm run test:coverage` : 1344 tests, 118 fichiers, **100 %** partout.
 
 Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`, la route `/api/auth/*` et le client navigateur de Better Auth `features/signin/authClient.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
 
-Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys) ; 920 (+ 96 e2e, dont 44 captures visuelles) après la V2.0 (groupes) ; 1145 (+ 150 e2e, dont 60 captures visuelles) après la V2.0 (invitations).
+Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys) ; 920 (+ 96 e2e, dont 44 captures visuelles) après la V2.0 (groupes) ; 1145 (+ 150 e2e, dont 60 captures visuelles) après la V2.0 (invitations) ; 1344 (+ 143 e2e exécutés, dont 68 captures visuelles) après la V2.0 (« MON COMPTE »).
 
 ## Seuils
 

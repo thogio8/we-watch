@@ -118,6 +118,11 @@ Toute la DA reste celle de la spec historique (§5) ; les nouveaux écrans sont 
 - Livré (Groupe) : retirer un membre ou quitter passe par un ticket de confirmation dans la DA ; quitter en étant le dernier annonce la suppression du groupe et de sa liste. Après un renommage ou un retrait, le focus va sur le titre « MEMBRES ».
 - **Groupe** (« MEMBRES ET INVITATION ») : nom (modifiable), membres (nom, « toi », depuis quand), « COPIER LE LIEN D'INVITATION », « RÉGÉNÉRER LE LIEN », « RETIRER » à côté de chaque membre, « QUITTER LE GROUPE ».
 - **Mon compte** : nom affiché, passkeys (en ajouter / liste / supprimer), Google (lié ou non), **appareils connectés** (déconnecter un appareil), « SE DÉCONNECTER », « SUPPRIMER MON COMPTE » (confirmation forte).
+  - Livré (morceau 5, `/compte`, sans pastille) : « TON PRÉNOM », « TES CLÉS D’ACCÈS », « TES APPAREILS », « SE DÉCONNECTER », « SUPPRIMER MON COMPTE ». Google viendra avec le morceau 4.
+  - Une passkey est nommée par le serveur d'après l'appareil qui la crée (« iPhone · Safari »), jamais par le texte du client ; une ancienne sans nom s'affiche « CLÉ D’ACCÈS ». **La dernière ne se supprime pas** (« GARDE AU MOINS UNE CLÉ D’ACCÈS ») tant que Google n'existe pas : ce serait se fermer la porte. Le morceau 4 la permettra si Google est lié.
+  - « DÉCONNECTER » un appareil est **immédiat** pour les pages et les actions, qui relisent la session en base : sa page suivante est la connexion. Seul le proxy garde son cache de 5 minutes (fichiers, décision rapide). Déconnecter cet appareil-ci revient à se déconnecter.
+  - Se déconnecter oublie le groupe affiché sur l'appareil (cookie `ww_group`) : un autre compte sur le même téléphone n'en hérite pas.
+  - Confirmation forte : taper son prénom exact (casse comprise, espaces et apostrophes typographiques tolérés), puis « SUPPRIMER DÉFINITIVEMENT », inactif jusque-là.
 
 Le détail visuel de ces écrans est laissé au builder, dans la DA, vérifié sur les 6 formats habituels.
 
@@ -125,6 +130,7 @@ Le détail visuel de ces écrans est laissé au builder, dans la DA, vérifié s
 
 - Supprime le compte, ses passkeys, ses sessions, ses BOF ; le retire de ses groupes (un groupe devenu vide disparaît).
 - Les films qu'il a ajoutés restent dans les listes de ses groupes, attribués à « un ancien membre ».
+- Livré (morceau 5) : en **une transaction**, pour chaque groupe la même sortie que « QUITTER » (ses « voulu » partent, le groupe aussi s'il se vide), puis ses BOF, ses « ajouté par » et « marqué par » remis à personne (« un ancien membre »), ses passkeys, ses sessions et le compte. Rien d'un autre membre ni d'un autre groupe n'est touché. L'appareil est ensuite déconnecté et va sur la connexion.
 
 ## 11. Bascule de la prod (1.3.x → 2.0.0)
 

@@ -39,7 +39,7 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 
 **👥 LES GROUPES** : une liste par groupe
 
-- La pastille « ● NOUS DEUX ▾ », en haut de TIRER, SWIPER et LISTE, dit quel groupe est affiché. Son panneau liste mes groupes (nombre de membres, ✓ sur celui affiché), propose « + CRÉER UN GROUPE », « MEMBRES ET INVITATION » et « SE DÉCONNECTER ».
+- La pastille « ● NOUS DEUX ▾ », en haut de TIRER, SWIPER et LISTE, dit quel groupe est affiché. Son panneau liste mes groupes (nombre de membres, ✓ sur celui affiché), propose « + CRÉER UN GROUPE », « MEMBRES ET INVITATION », « MON COMPTE » et « SE DÉCONNECTER ».
 - Chaque groupe a sa liste et sa soirée (la pile « PAS CE SOIR », les filtres). Le groupe choisi est retenu sur l'appareil.
 - **ON LE VEUT ♥** met le film dans la liste du groupe et ajoute mon nom à « voulu par ». **✕ BOF** ne vaut que pour moi : le film disparaît de ma pile de swipe, dans tous mes groupes, sans toucher la liste ni la pile des autres. Ajouter un film depuis la recherche efface mon BOF ; **✕** dans la liste l'écarte pour tout le groupe.
 - Un compte sans groupe arrive sur **CRÉER TON PREMIER GROUPE**.
@@ -49,6 +49,13 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 - **Inviter** : chaque groupe a son lien d'invitation. « COPIER LE LIEN D’INVITATION » (« PARTAGER » sur un téléphone, qui ouvre son menu de partage) ; on l'envoie par message à qui l'on veut. « RÉGÉNÉRER LE LIEN » en donne un nouveau : l'ancien ne marche plus.
 - **Rejoindre** : qui ouvre le lien voit « TU ES INVITÉ·E DANS « NOM » ». Sans compte, il en crée un sur place (prénom, puis Face ID) et arrive directement dans le groupe ; avec un compte, « REJOINDRE ». Déjà membre, « Y ALLER » bascule sur ce groupe. Un lien régénéré ou d'un groupe disparu répond « CE LIEN N’EST PLUS VALABLE ».
 - **Les membres** : qui est là et depuis quand (« depuis le 23/10 »), le nom du groupe à « RENOMMER ». Chaque membre peut en retirer un autre (« RETIRER ») ou « QUITTER LE GROUPE », toujours après confirmation. Qui part perd ses « voulu » dans ce groupe ; ses ajouts restent. **Le dernier membre qui part supprime le groupe et sa liste** (l'écran le dit avant).
+
+**🪪 MON COMPTE** : à moi, rien qu'à moi
+
+- **Mon prénom** : on le change d'un geste, il change partout (« voulu par… », la liste des membres).
+- **Mes clés d'accès** : une par appareil, nommée d'après lui (« iPhone · Safari », ajoutée le…). « AJOUTER UNE CLÉ D’ACCÈS » en crée une pour l'appareil en main : on ouvre ensuite WeWatch sur l'ordinateur sans le téléphone. On en supprime une après confirmation, **jamais la dernière** (« GARDE AU MOINS UNE CLÉ D’ACCÈS ») : sans elle, la porte serait fermée.
+- **Mes appareils** : où je suis connecté·e et quand, « CET APPAREIL » en rose. « DÉCONNECTER » un téléphone perdu le met dehors **tout de suite** : sa page suivante est l'écran de connexion.
+- **Supprimer mon compte** : on tape son prénom, puis « SUPPRIMER DÉFINITIVEMENT ». Partent mes clés, mes appareils, mes BOF et les groupes où j'étais seul·e ; ailleurs, mes films restent aux autres, « ajouté par un ancien membre ».
 
 <p align="center">
   <img src="docs/readme/desktop.webp" alt="Le ticket tiré sur un écran large" width="74%">
@@ -107,7 +114,7 @@ Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base
 Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre avec une passkey, c'est-à-dire Face ID, empreinte ou code du téléphone ; sur un ordinateur sans rien de tout ça, le navigateur propose un QR code à scanner avec son téléphone. Rien à retenir, rien à se faire voler, aucun email envoyé. Sans compte, toutes les pages mènent à **ENTRE DANS WEWATCH**.
 
 - **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis « CRÉER MON COMPTE » et le verrou de l'appareil. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
-- **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est dans le panneau de la pastille du groupe.
+- **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est dans le panneau de la pastille du groupe et dans « MON COMPTE ». Se déconnecter oublie aussi le groupe affiché : le compte suivant sur ce téléphone repart de ses propres groupes.
 - **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et un compte ne se crée que de deux façons : depuis un **lien d'invitation** d'un groupe (le nouveau compte en devient membre), ou avec le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée. Un lien d'invitation marche aussi en mode `open`.
 - **Le groupe « NOUS DEUX »** : la liste d'avant les comptes (1.x) y est gardée telle quelle, films, statuts et dates. Un compte créé avec le code propriétaire le rejoint aussitôt ; ensuite, on y invite par son lien, comme dans tout groupe. En mode `open`, le lien « J’AI UN CODE PROPRIÉTAIRE » reste proposé, avec un code facultatif.
 - Un navigateur trop ancien pour les passkeys affiche « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS… » à la place des boutons.
@@ -115,7 +122,7 @@ Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre a
 
 - **Le lien d'invitation est un secret** : qui l'a peut entrer dans le groupe. L'appli ne l'écrit jamais dans ses journaux et ne le transmet pas aux sites ouverts depuis la page (`Referrer-Policy: no-referrer`), mais l'hébergeur peut journaliser les adresses visitées : s'il a trop circulé, « RÉGÉNÉRER LE LIEN ».
 
-> À venir : la connexion avec Google et une page « mon compte ».
+> À venir : la connexion avec Google (on pourra alors supprimer sa dernière clé d'accès).
 
 ## L'installer comme une appli
 
