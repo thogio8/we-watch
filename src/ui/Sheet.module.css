@@ -1,0 +1,21 @@
+/* A narrow screen of white slips under its title (first group, members). */
+.screen {
+  display: grid;
+  /* Never wider than the screen, however long the group's name in the pill. */
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  /* Narrow by nature, even in the wide column (spec §12). */
+  width: 100%;
+  max-width: var(--column-max);
+  margin: 0 auto;
+}
+
+.sheet {
+  width: 100%;
+  margin-top: 22px;
+  padding: 16px;
+  border: var(--border);
+  border-radius: var(--radius-ticket);
+  background: var(--white);
+  box-shadow: var(--shadow-offset);
+}

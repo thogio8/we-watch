@@ -1,4 +1,5 @@
 import type { SignupRight } from "@/access/signup";
+import { quoted } from "@/ui/quoted";
 
 /** Error texts of the sign-in screen (spec §9). Raw error text is never shown. */
 export const NAME_ERROR = "UN PRÉNOM DE 1 À 30 CARACTÈRES";
@@ -34,4 +35,9 @@ export function errorField(error: string | null): "name" | "ownerCode" | null {
   return error === WRONG_CODE_ERROR || error === CLOSED_ERROR
     ? "ownerCode"
     : null;
+}
+
+/** The ticket's title on an invite link: « TU ES INVITÉ·E DANS « NOM » ». */
+export function invitedTitle(groupName: string): string[] {
+  return ["TU ES INVITÉ·E", `DANS ${quoted(groupName)}`];
 }

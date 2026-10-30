@@ -367,3 +367,91 @@ describe("SigninScreen, navigateur sans clés d’accès", () => {
     expect(onBack).toHaveBeenCalledOnce();
   });
 });
+
+describe("SigninScreen, arrivé par un lien d’invitation", () => {
+  const TOKEN = "A".repeat(43);
+  const INVITE = { token: TOKEN, groupName: "LA COLOC" };
+
+  beforeEach(() => {
+    signInPasskey.mockResolvedValue({ data: { session: {} }, error: null });
+    prepareSignup.mockResolvedValue({ ok: true, ticket: "le-ticket" });
+    addPasskey.mockResolvedValue({ data: { id: "p1" }, error: null });
+  });
+
+  function renderInvited(signup: "open" | "invite") {
+    render(
+      <SigninScreen
+        signup={signup}
+        prepareSignup={prepareSignup}
+        invite={INVITE}
+      />,
+    );
+    return userEvent.setup();
+  }
+
+  async function signUp(user: ReturnType<typeof userEvent.setup>) {
+    await openForm(user, "open");
+    await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Hugo");
+    await user.click(screen.getByRole("button", { name: CREATE }));
+  }
+
+  it("le ticket nomme le groupe qui invite, sans le message de fermeture", () => {
+    renderInvited("invite");
+
+    expect(
+      screen.getByRole("heading", {
+        name: "TU ES INVITÉ·E DANS « LA COLOC »",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("WEWATCH SE REJOINT SUR INVITATION"),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each(["invite", "open"] as const)(
+    "mode %s : « CRÉER UN COMPTE » envoie le jeton, puis ouvre l’appli",
+    async (signup) => {
+      const user = renderInvited(signup);
+
+      await signUp(user);
+
+      const formData = prepareSignup.mock.calls[0]?.[0] as FormData;
+      expect(formData.get("name")).toBe("Hugo");
+      expect(formData.get("invite")).toBe(TOKEN);
+      // The new account is in the group already.
+      expect(replace).toHaveBeenCalledWith("/");
+    },
+  );
+
+  it("« SE CONNECTER » ramène sur le lien, pour rejoindre le groupe", async () => {
+    const user = renderInvited("invite");
+
+    await user.click(screen.getByRole("button", { name: SIGN_IN }));
+
+    expect(replace).toHaveBeenCalledWith(`/invitation/${TOKEN}`);
+  });
+
+  it("un lien régénéré entre-temps : le message sur le ticket", async () => {
+    prepareSignup.mockResolvedValue({
+      ok: false,
+      error: "CE LIEN N’EST PLUS VALABLE",
+    });
+    const user = renderInvited("invite");
+
+    await signUp(user);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "CE LIEN N’EST PLUS VALABLE",
+    );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("sans invitation, le formulaire n’envoie aucun jeton", async () => {
+    const user = renderScreen("open");
+
+    await signUp(user);
+
+    const formData = prepareSignup.mock.calls[0]?.[0] as FormData;
+    expect(formData.has("invite")).toBe(false);
+  });
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId } from "react";
 import type { GroupSummary } from "@/domain/group";
 import { SignOutButton } from "@/features/signin/SignOutButton";
@@ -18,7 +19,10 @@ interface GroupPanelProps {
   create: (formData: FormData) => Promise<CreateGroupResult>;
 }
 
-/** The white ticket under the pill: my groups, a new one, signing out. */
+/**
+ * The white ticket under the pill: my groups, a new one, the displayed
+ * group's members and invite link, signing out.
+ */
 export function GroupPanel({
   id,
   active,
@@ -86,6 +90,9 @@ export function GroupPanel({
           <CreateGroupForm create={create} onCreated={panel.created} />
         </div>
       )}
+      <Link href="/groupe" className={styles.item} onClick={panel.followed}>
+        MEMBRES ET INVITATION
+      </Link>
       <div className={styles.signOut}>
         <SignOutButton />
       </div>

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GROUP_COOKIE, type GroupSummary } from "@/domain/group";
 import {
   assertMember,
+  forgetGroup,
   getActiveGroup,
   isMemberOf,
   rememberGroup,
@@ -185,5 +186,23 @@ describe("isMemberOf (lectures)", () => {
 
     await expect(isMemberOf("g-1")).resolves.toBe(false);
     expect(isMember).not.toHaveBeenCalled();
+  });
+});
+
+describe("forgetGroup", () => {
+  it("supprime le cookie quand il désigne ce groupe", async () => {
+    await rememberGroup(COLOC.id);
+
+    await forgetGroup(COLOC.id);
+
+    expect((await cookies()).get(GROUP_COOKIE)).toBeUndefined();
+  });
+
+  it("laisse le cookie d’un autre groupe", async () => {
+    await rememberGroup(NOUS_DEUX.id);
+
+    await forgetGroup(COLOC.id);
+
+    expect((await cookies()).get(GROUP_COOKIE)?.value).toBe(NOUS_DEUX.id);
   });
 });

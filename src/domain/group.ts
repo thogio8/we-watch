@@ -15,3 +15,11 @@ export type GroupSummary = { id: string; name: string; memberCount: number };
 export function parseGroupName(input: unknown): string | null {
   return parseLabel(input, MAX_LENGTH);
 }
+
+// 32 random bytes in base64url (no padding): 43 characters.
+const INVITE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+/** A well-formed invite token; anything else is never looked up. */
+export function isInviteToken(value: unknown): value is string {
+  return typeof value === "string" && INVITE_TOKEN_PATTERN.test(value);
+}

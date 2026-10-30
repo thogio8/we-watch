@@ -1,6 +1,14 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type Locator, type Page } from "@playwright/test";
-import { emptyNameRefused, expect, swipe, test } from "./fixtures";
+import { type Page } from "@playwright/test";
+import {
+  box,
+  emptyNameRefused,
+  expect,
+  leasInvitation,
+  swipe,
+  test,
+} from "./fixtures";
+import { COPY_LINK, pill } from "./groups";
 
 /** Formats from spec §12: small and large phones, sideways, tablet, desktop. */
 const VIEWPORTS = [
@@ -38,9 +46,20 @@ async function* firstGroup(page: Page) {
   yield "/ (premier groupe, nom refusé)";
 }
 
+/** « MEMBRES ET INVITATION », then its leaving ticket. */
+async function* members(page: Page) {
+  await page.goto("/groupe");
+  await expect(page.getByRole("button", { name: COPY_LINK })).toBeEnabled();
+  yield "/groupe";
+  await page.getByRole("button", { name: "QUITTER LE GROUPE" }).click();
+  await expect(page.getByRole("group")).toBeVisible();
+  yield "/groupe (quitter)";
+}
+
 /**
- * Every page, the group panel, then the sign-in one signed out (cookies
- * cleared): its home, then its signup form showing an error.
+ * Every page, the group panel, the members screen, then signed out (cookies
+ * cleared): an invite link, the sign-in home, its signup form showing an
+ * error.
  */
 async function* visitAll(page: Page) {
   for (const path of PAGES) {
@@ -48,11 +67,44 @@ async function* visitAll(page: Page) {
     yield path;
   }
   yield* groupPanel(page);
+  yield* members(page);
   await page.context().clearCookies();
+  await page.goto(await leasInvitation());
+  await expect(
+    page.getByRole("button", { name: "CRÉER UN COMPTE" }),
+  ).toBeVisible();
+  yield "/invitation (déconnecté)";
   await page.goto(SIGNIN);
   yield SIGNIN;
   await emptyNameRefused(page);
   yield `${SIGNIN} (formulaire refusé)`;
+}
+
+type Viewport = { width: number; height: number };
+type Devices = {
+  app: Page;
+  member: (name: string) => Promise<Page>;
+  outsider: (name: string) => Promise<Page>;
+};
+
+/**
+ * Léa's screens (visitAll), Hugo a member beside her; then the invite link
+ * as Inès sees it, signed in but not a member: offering to join.
+ */
+async function* everyScreen(
+  viewport: Viewport,
+  { app, member, outsider }: Devices,
+): AsyncGenerator<{ page: Page; path: string }> {
+  await app.setViewportSize(viewport);
+  await member("Hugo");
+  for await (const path of visitAll(app)) {
+    yield { page: app, path };
+  }
+  const ines = await outsider("Inès");
+  await ines.setViewportSize(viewport);
+  await ines.goto(await leasInvitation());
+  await expect(ines.getByRole("button", { name: "REJOINDRE" })).toBeVisible();
+  yield { page: ines, path: "/invitation (rejoindre)" };
 }
 
 test.describe("mise en page et accessibilité", () => {
@@ -63,21 +115,85 @@ test.describe("mise en page et accessibilité", () => {
   });
 
   for (const viewport of VIEWPORTS) {
-    test(`rien ne déborde en largeur : ${viewport.name}`, async ({ app }) => {
-      await app.setViewportSize(viewport);
-      for await (const path of visitAll(app)) {
-        await expectNoOverflow(app, path);
+    test(`rien ne déborde en largeur : ${viewport.name}`, async ({
+      app,
+      member,
+      outsider,
+    }) => {
+      const devices = { app, member, outsider };
+      for await (const { page, path } of everyScreen(viewport, devices)) {
+        await expectNoOverflow(page, path);
       }
     });
 
     test(`aucun défaut d'accessibilité grave (axe) : ${viewport.name}`, async ({
       app,
+      member,
+      outsider,
     }) => {
-      await app.setViewportSize(viewport);
-      for await (const path of visitAll(app)) {
-        expect(await seriousViolations(app, path)).toEqual([]);
+      const devices = { app, member, outsider };
+      for await (const { page, path } of everyScreen(viewport, devices)) {
+        expect(await seriousViolations(page, path)).toEqual([]);
       }
     });
+  }
+});
+
+/** Spec §6: up to 30 characters, the widest glyph or long French words. */
+const LONG_NAMES = ["W".repeat(30), "SOIRÉES CINÉ DE LA COLOCATION"];
+
+/**
+ * Léa's group renamed `name`: its members screen and leaving question, its
+ * invite link as she sees it, as Inès sees it, then signed out.
+ */
+async function* longName(
+  name: string,
+  viewport: Viewport,
+  { app, outsider }: Omit<Devices, "member">,
+): AsyncGenerator<{ page: Page; path: string }> {
+  await app.setViewportSize(viewport);
+  await app.goto("/groupe");
+  await app.getByLabel("NOM DU GROUPE").fill(name);
+  await app.getByRole("button", { name: "RENOMMER" }).click();
+  await expect(pill(app, name)).toBeVisible();
+  yield { page: app, path: "/groupe" };
+  await app.getByRole("button", { name: "QUITTER LE GROUPE" }).click();
+  await expect(app.getByRole("group")).toBeVisible();
+  yield { page: app, path: "/groupe (quitter)" };
+  const link = await leasInvitation();
+  await app.goto(link);
+  await expect(app.getByRole("button", { name: "Y ALLER" })).toBeVisible();
+  yield { page: app, path: "/invitation (déjà membre)" };
+  const ines = await outsider("Inès");
+  await ines.setViewportSize(viewport);
+  await ines.goto(link);
+  await expect(ines.getByRole("button", { name: "REJOINDRE" })).toBeVisible();
+  yield { page: ines, path: "/invitation (rejoindre)" };
+  await ines.context().clearCookies();
+  await ines.reload();
+  await expect(
+    ines.getByRole("button", { name: "CRÉER UN COMPTE" }),
+  ).toBeVisible();
+  yield { page: ines, path: "/invitation (déconnecté)" };
+}
+
+test.describe("mise en page et accessibilité, nom de groupe long", () => {
+  test.beforeEach(() => {
+    test.skip(test.info().project.name !== "desktop");
+  });
+
+  for (const viewport of VIEWPORTS) {
+    for (const name of LONG_NAMES) {
+      test(`${name} : ${viewport.name}`, async ({ app, outsider }) => {
+        for await (const { page, path } of longName(name, viewport, {
+          app,
+          outsider,
+        })) {
+          await expectNoOverflow(page, path);
+          expect(await seriousViolations(page, path)).toEqual([]);
+        }
+      });
+    }
   }
 });
 
@@ -115,12 +231,6 @@ test.describe("TIRER tient sur un écran", () => {
     });
   }
 });
-
-async function box(locator: Locator) {
-  const found = await locator.boundingBox();
-  expect(found).not.toBeNull();
-  return found!;
-}
 
 test.describe("mise en page et accessibilité, sans groupe", () => {
   test.beforeEach(() => {

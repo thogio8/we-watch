@@ -1,5 +1,5 @@
 import { CRON_PATH, isCronAuthorized } from "./cron";
-import { AUTH_API_PREFIX, SIGNIN_PATH } from "./paths";
+import { AUTH_API_PREFIX, INVITATION_PREFIX, SIGNIN_PATH } from "./paths";
 
 export type AccessDecision = "allow" | "redirect" | "unauthorized";
 
@@ -26,6 +26,14 @@ function isReadOnly(method: string): boolean {
   return method === "GET" || method === "HEAD";
 }
 
+function isSigninRoute(pathname: string): boolean {
+  return (
+    pathname === SIGNIN_PATH ||
+    pathname.startsWith(AUTH_API_PREFIX) ||
+    pathname.startsWith(INVITATION_PREFIX)
+  );
+}
+
 /** What the proxy does with a request, given whether it carries a session. */
 export function accessDecision({
   pathname,
@@ -40,8 +48,8 @@ export function accessDecision({
       ? "allow"
       : "unauthorized";
   }
-  // Signing in happens there: the page, its Server Actions, Better Auth.
-  if (pathname === SIGNIN_PATH || pathname.startsWith(AUTH_API_PREFIX)) {
+  // Signing in happens there: the pages, their Server Actions, Better Auth.
+  if (isSigninRoute(pathname)) {
     return "allow";
   }
   if (isReadOnly(method) && PUBLIC_ASSET.test(pathname)) {

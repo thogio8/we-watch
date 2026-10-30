@@ -9,9 +9,8 @@ import { group, membership } from "@/db/group-schema";
 import { createGroups } from "@/db/groups";
 import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
 import { startServerStack } from "../helpers/functional";
-import { fakeRegistration } from "../helpers/webauthn";
+import { BASE_URL, cookiesOf, signUpWith } from "../helpers/signup-ceremony";
 
-const BASE_URL = "http://localhost:3000";
 const SECRET = "functional-auth-secret-0123456789abcdef";
 
 function buildAuth() {
@@ -158,7 +157,7 @@ describe("Better Auth (fonctionnel)", () => {
 
   it("une inscription par passkey avec un ticket valide donne des options WebAuthn", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false },
+      { name: "Léa", owner: false, invite: null },
       SECRET,
     );
 
@@ -176,53 +175,19 @@ describe("Better Auth (fonctionnel)", () => {
   });
 
   describe("cérémonie d'inscription complète", () => {
-    /** Cookies `name=value` a response sets, ready for a `cookie` header. */
-    const cookiesOf = (response: Response) =>
-      response.headers.getSetCookie().map((line) => line.split(";")[0]);
-
     const ticketFor = (name: string) =>
-      createSignupTicket({ name, owner: false }, SECRET);
+      createSignupTicket({ name, owner: false, invite: null }, SECRET);
 
     async function signUp(options: {
       name: string;
       credentialId: Uint8Array;
       cookies?: string[];
-      /** What the client asks for; the server opens a session regardless. */
       createSession?: boolean;
       /** Defaults to a fresh ticket for `name`. */
       ticket?: string;
     }) {
       const ticket = options.ticket ?? (await ticketFor(options.name));
-      const cookies = options.cookies ?? [];
-      const challenge = await auth.handler(
-        new Request(
-          `${BASE_URL}/api/auth/passkey/generate-register-options?context=${encodeURIComponent(ticket)}`,
-          { headers: { cookie: cookies.join("; ") } },
-        ),
-      );
-      const { challenge: value } = (await challenge.json()) as {
-        challenge: string;
-      };
-      const response = await fakeRegistration({
-        challenge: value,
-        origin: BASE_URL,
-        rpId: "localhost",
-        credentialId: options.credentialId,
-      });
-      return auth.handler(
-        new Request(`${BASE_URL}/api/auth/passkey/verify-registration`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            origin: BASE_URL,
-            cookie: [...cookies, ...cookiesOf(challenge)].join("; "),
-          },
-          body: JSON.stringify({
-            response,
-            createSession: options.createSession,
-          }),
-        }),
-      );
+      return signUpWith(auth.handler, { ...options, ticket });
     }
 
     /** The session the response's cookies open, if any. */
@@ -329,7 +294,7 @@ describe("Better Auth (fonctionnel)", () => {
 
     describe("avec le code propriétaire", () => {
       const ownerTicket = (name: string) =>
-        createSignupTicket({ name, owner: true }, SECRET);
+        createSignupTicket({ name, owner: true, invite: null }, SECRET);
 
       const legacyMembers = async () =>
         db

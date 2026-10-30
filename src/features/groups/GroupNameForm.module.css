@@ -1,4 +1,4 @@
-/* « NOM DU GROUPE » and « CRÉER LE GROUPE », in the panel or on its own screen. */
+/* « NOM DU GROUPE » and its button: creating (panel, first group screen) or renaming. */
 .form {
   display: flex;
   flex-direction: column;

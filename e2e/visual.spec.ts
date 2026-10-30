@@ -3,6 +3,8 @@ import {
   decidedOn,
   emptyNameRefused,
   expect,
+  joinedOn,
+  leasInvitation,
   listTitles,
   settled,
   swipe,
@@ -11,6 +13,7 @@ import {
   UNSUPPORTED_MESSAGE,
   withoutPasskeys,
 } from "./fixtures";
+import { COPY_LINK } from "./groups";
 
 /**
  * Visual regression: one reference image per screen and format
@@ -37,12 +40,13 @@ async function freeze(page: Page) {
 /**
  * Captures once the screen is final: data loaded, fonts in, no request left.
  * In a fullPage capture the fixed bottom nav sits where the first viewport
- * ends, so it may cover content in the image only (the shell pads for it).
+ * ends, so it may cover content in the image only (the shell pads for it);
+ * `fullPage: false` captures the viewport as it is, scrolled.
  */
-async function shoot(page: Page, name: string) {
+async function shoot(page: Page, name: string, { fullPage = true } = {}) {
   await settled(page);
   await page.evaluate(() => document.fonts.ready);
-  await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
+  await expect(page).toHaveScreenshot(`${name}.png`, { fullPage });
 }
 
 test.describe("rendu visuel", () => {
@@ -56,8 +60,9 @@ test.describe("rendu visuel", () => {
   });
 
   for (const format of FORMATS) {
-    test(`écrans : ${format.name}`, async ({ app }) => {
+    test(`écrans : ${format.name}`, async ({ app, member, outsider }) => {
       await app.setViewportSize(format);
+      const invitation = await leasInvitation();
 
       await app.goto("/");
       await shoot(app, `${format.name}-1-accueil`);
@@ -87,9 +92,39 @@ test.describe("rendu visuel", () => {
         app.getByRole("dialog", { name: "TES GROUPES" }),
       ).toBeVisible();
       await shoot(app, `${format.name}-7-groupes-panneau`);
+      // Hugo joins now: the screens before show Léa alone.
+      await member("Hugo");
+      // « depuis le … » on the members screen, stamped by the server.
+      await joinedOn(FROZEN_NOW);
+      await app.getByRole("link", { name: "MEMBRES ET INVITATION" }).click();
+      await expect(app.getByRole("button", { name: COPY_LINK })).toBeEnabled();
+      await shoot(app, `${format.name}-8-groupe`);
+      await app.getByRole("button", { name: "QUITTER LE GROUPE" }).click();
+      await expect(app.getByRole("group")).toBeVisible();
+      // As it opens (the app brings it clear of the nav): the viewport, since
+      // a fullPage image would draw the fixed nav over it.
+      await shoot(app, `${format.name}-8b-groupe-quitter`, {
+        fullPage: false,
+      });
 
-      // Signed out: the sign-in page, as a newcomer sees it.
+      // Signed in, not a member yet: the invite link offers to join.
+      const ines = await outsider("Inès");
+      await ines.setViewportSize(format);
+      await freeze(ines);
+      await ines.goto(invitation);
+      await expect(
+        ines.getByRole("button", { name: "REJOINDRE" }),
+      ).toBeVisible();
+      await shoot(ines, `${format.name}-9b-invitation-rejoindre`);
+
+      // Signed out: the invite link, then the sign-in page, as a newcomer
+      // sees them.
       await app.context().clearCookies();
+      await app.goto(invitation);
+      await expect(
+        app.getByRole("button", { name: "CRÉER UN COMPTE" }),
+      ).toBeVisible();
+      await shoot(app, `${format.name}-9-invitation`);
       await app.goto("/connexion");
       await expect(
         app.getByRole("button", { name: "SE CONNECTER" }),

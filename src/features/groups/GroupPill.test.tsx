@@ -166,8 +166,8 @@ describe("GroupPill", () => {
     const { user } = renderPill();
 
     await user.click(pill());
-    // ✓ NOUS DEUX → JEUDI → + CRÉER → SE DÉCONNECTER → out.
-    for (let step = 0; step < 4; step += 1) await user.tab();
+    // ✓ NOUS DEUX → JEUDI → + CRÉER → MEMBRES → SE DÉCONNECTER → out.
+    for (let step = 0; step < 5; step += 1) await user.tab();
 
     expect(queryPanel()).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "la suite" })).toHaveFocus();
@@ -181,5 +181,18 @@ describe("GroupPill", () => {
     expect(
       within(panel()).getByRole("button", { name: "SE DÉCONNECTER" }),
     ).toBeVisible();
+  });
+
+  it("« MEMBRES ET INVITATION » mène à /groupe et ferme le panneau", async () => {
+    const { user } = renderPill();
+
+    await user.click(pill());
+    const members = within(panel()).getByRole("link", {
+      name: "MEMBRES ET INVITATION",
+    });
+    expect(members).toHaveAttribute("href", "/groupe");
+    await user.click(members);
+
+    expect(queryPanel()).not.toBeInTheDocument();
   });
 });

@@ -7,7 +7,10 @@ import styles from "./SigninScreen.module.css";
 import { SigninTicket } from "./SigninTicket";
 
 interface SigninHomeProps {
-  signup: "open" | "invite";
+  /** The ticket's title: « ENTRE DANS WEWATCH », or the inviting group. */
+  title: readonly string[];
+  /** Whether « CRÉER UN COMPTE » is offered (signup open, or an invite link). */
+  canCreate: boolean;
   error: string | null;
   pending: boolean;
   /** Back from the form: focus returns to the main button. */
@@ -22,7 +25,8 @@ interface SigninHomeProps {
  * and in either mode the owner code, which joins « NOUS DEUX ».
  */
 export function SigninHome({
-  signup,
+  title,
+  canCreate,
   error,
   pending,
   returning,
@@ -36,8 +40,8 @@ export function SigninHome({
 
   return (
     <div className={styles.form}>
-      <SigninTicket title={["ENTRE DANS", "WEWATCH"]} error={error}>
-        {signup === "invite" && (
+      <SigninTicket title={title} error={error}>
+        {!canCreate && (
           <p className={styles.note}>WEWATCH SE REJOINT SUR INVITATION</p>
         )}
       </SigninTicket>
@@ -52,7 +56,7 @@ export function SigninHome({
         >
           SE CONNECTER
         </Button>
-        {signup === "open" && (
+        {canCreate && (
           <Button
             variant="secondary"
             className={styles.wide}

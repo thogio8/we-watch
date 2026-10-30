@@ -120,6 +120,8 @@ export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
     pick,
     /** The page re-rendered with the new group came with the response. */
     created: () => close(true),
+    /** A link in the panel was followed: the next page takes the focus. */
+    followed: () => close(false),
     onBlur,
     refs,
     panelId,

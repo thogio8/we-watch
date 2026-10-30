@@ -4,6 +4,8 @@ import { signupRight } from "@/access/signup";
 import { createSignupTicket } from "@/access/signup-ticket";
 import { parseDisplayName } from "@/domain/display-name";
 import { getServerEnv } from "@/env";
+import { INVITE_INVALID } from "@/features/groups/messages";
+import { findInvitedGroup } from "@/server/invitations";
 import { NAME_ERROR, refusalMessage, WRONG_CODE_ERROR } from "./messages";
 
 export type PrepareSignupResult =
@@ -18,8 +20,23 @@ function field(formData: FormData, name: string): string | undefined {
 }
 
 /**
- * « CRÉER MON COMPTE », first step: checks the name and the right to sign
- * up, then hands out a short-lived signed ticket that the passkey ceremony
+ * The group of the invite link the form came from: none when the field is
+ * absent or empty, refused when it is anything but a known token. A malformed
+ * token never reaches the database; the token itself is never kept.
+ */
+async function invitedGroup(
+  value: FormDataEntryValue | null,
+): Promise<{ ok: true; invite: string | null } | { ok: false }> {
+  if (value === null || value === "") {
+    return { ok: true, invite: null };
+  }
+  const found = await findInvitedGroup(value);
+  return found === null ? { ok: false } : { ok: true, invite: found.id };
+}
+
+/**
+ * « CRÉER MON COMPTE », first step: checks the name, the invite link if any
+ * and the right to sign up, then hands out a short-lived signed ticket that the passkey ceremony
  * carries to Better Auth.
  *
  * Public on purpose, unlike every other action: it runs before the account
@@ -35,16 +52,21 @@ export async function prepareSignup(
   if (name === null) {
     return { ok: false, error: NAME_ERROR };
   }
+  const invited = await invitedGroup(fields.get("invite"));
+  if (!invited.ok) {
+    return { ok: false, error: INVITE_INVALID };
+  }
   const env = getServerEnv();
   const submittedCode = field(fields, "ownerCode");
   const right = signupRight({
     mode: env.SIGNUP,
+    invited: invited.invite !== null,
     ownerCode: env.OWNER_CODE,
     submittedCode,
   });
   if (right.ok) {
     const ticket = await createSignupTicket(
-      { name, owner: right.owner },
+      { name, owner: right.owner, invite: invited.invite },
       env.BETTER_AUTH_SECRET,
     );
     return { ok: true, ticket };

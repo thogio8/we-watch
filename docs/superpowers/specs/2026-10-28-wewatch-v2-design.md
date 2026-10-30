@@ -57,7 +57,7 @@ C'est une **version majeure** : le code d'accès disparaît, la liste unique dev
 
 Bibliothèque : **Better Auth** (1.7.x, compatible Next 16 et Drizzle, stockage dans notre base Turso, gratuit et auto-hébergé). *(Choix de conception.)*
 
-- **Créer un compte par passkey** : on tape son **nom affiché** (prénom ou surnom), puis le verrou de l'appareil (Face ID, empreinte ou code du téléphone) enregistre une passkey. Ni email ni mot de passe. Livré : un ticket d'inscription signé à usage unique (nom + drapeau propriétaire, 10 min) est passé comme contexte WebAuthn et consommé par `afterVerification` dans la transaction de création du compte.
+- **Créer un compte par passkey** : on tape son **nom affiché** (prénom ou surnom), puis le verrou de l'appareil (Face ID, empreinte ou code du téléphone) enregistre une passkey. Ni email ni mot de passe. Livré : un ticket d'inscription signé à usage unique (nom + drapeau propriétaire + id du groupe invitant s'il vient d'un lien, 10 min) est passé comme contexte WebAuthn et consommé par `afterVerification` dans la transaction de création du compte.
 - **Se connecter** : « SE CONNECTER ». Les passkeys se synchronisent d'elles-mêmes entre les appareils d'une personne (trousseau iCloud, gestionnaire de mots de passe Google) ; sur un appareil qui n'est pas à soi, le navigateur propose de scanner un QR code avec son téléphone. Plusieurs passkeys possibles par compte.
 - **Google** (facultatif) : « CONTINUER AVEC GOOGLE » crée un compte ou s'y connecte ; un compte créé par passkey peut **lier** Google depuis « Mon compte » (et inversement ajouter une passkey). Google sert ainsi aussi de secours.
   - Si la connexion Google ne revient pas dans la **PWA installée sur iPhone**, le bouton n'est affiché que dans le navigateur. À vérifier sur un vrai iPhone **au début** du morceau Google. *(Choix de conception, accepté par le mainteneur.)*
@@ -78,6 +78,7 @@ Bibliothèque : **Better Auth** (1.7.x, compatible Next 16 et Drizzle, stockage 
 - **Groupe affiché** : celui choisi dans la pastille (§9), mémorisé sur l'appareil ; par défaut le dernier utilisé, sinon le premier. *(Choix de conception.)*
 - **Aucun groupe** (nouveau compte en mode `open`, ou après avoir quitté le dernier) : écran « CRÉER TON PREMIER GROUPE ».
 - La session de tirage (pile « pas ce soir », filtres) est **propre à chaque groupe** : changer de groupe ne mélange pas les piles. *(Choix de conception.)*
+- Livré (morceau 3, décisions du mainteneur du 2026-10-29) : un membre qui quitte le groupe ou en est retiré perd ses « voulu » dans ce groupe ; ses ajouts et ses « marqué par » restent, avec son prénom. Le dernier membre qui part supprime le groupe avec sa liste (pas les instantanés TMDB ni les BOF) ; « NOUS DEUX » sans membre n'est jamais concerné, personne ne le quittant.
 
 ## 7. Invitations
 
@@ -88,6 +89,7 @@ Bibliothèque : **Better Auth** (1.7.x, compatible Next 16 et Drizzle, stockage 
   - **connecté, pas membre** : « REJOINDRE « LES POTES DU JEUDI » ? » puis entrée dans le groupe ;
   - **déjà membre** : on bascule simplement sur ce groupe.
 - Un membre retiré peut revenir par le lien tant qu'il n'est pas régénéré (on régénère si on veut l'en empêcher). *(Choix de conception.)*
+- Livré (morceau 3, décision du mainteneur) : ouvrir un lien **bascule sur son groupe**, comme en créer un : rejoindre le rend affiché (cookie `ww_group`, dernier usage mis à jour) ; déjà membre, « Y ALLER » fait de même. Un lien mal formé, inconnu, régénéré ou d'un groupe disparu répond « CE LIEN N’EST PLUS VALABLE », sans dire lequel. Le jeton n'apparaît jamais dans un message d'erreur ni un journal de l'appli.
 
 ## 8. La liste, le swipe et le tirage en groupe
 
@@ -112,6 +114,8 @@ Toute la DA reste celle de la spec historique (§5) ; les nouveaux écrans sont 
 - **Connexion** : un ticket « ENTRE DANS WEWATCH », dessous une ligne discrète « Face ID, empreinte ou code de ton téléphone », puis « SE CONNECTER », « CONTINUER AVEC GOOGLE » (sauf PWA iPhone si §5 l'exige), et « CRÉER UN COMPTE ». En mode `invite`, « CRÉER UN COMPTE » n'apparaît qu'en arrivant par une invitation ; ailleurs, un message clair (« WEWATCH SE REJOINT SUR INVITATION ») et un lien discret « J'AI UN CODE PROPRIÉTAIRE ». Validation annulée : « VALIDATION ANNULÉE, RÉESSAIE ». Un navigateur sans passkeys (pas de WebAuthn) voit, à la place des boutons, « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL. »
 - **Créer un compte** : nom affiché, la même ligne discrète, puis « CRÉER MON COMPTE » (Face ID, empreinte ou code du téléphone ; sur un ordinateur sans rien de tout ça, le navigateur propose un QR code à scanner avec son téléphone) ; ensuite « CRÉER TON PREMIER GROUPE » si on n'en a aucun.
 - **Invitation** (`/invitation/<jeton>`) : « TU ES INVITÉ·E DANS « … » » + REJOINDRE.
+  - Livré : connecté sans être membre, « REJOINDRE » (le groupe devient l'affiché) et « PAS MAINTENANT » (retour à l'accueil) ; déjà membre, « TU ES DÉJÀ DANS « … » » + « Y ALLER » (bascule sur ce groupe) ; sans compte, la connexion en variante invitation ; lien invalide, « CE LIEN N’EST PLUS VALABLE » + « ALLER À L’ACCUEIL ».
+- Livré (Groupe) : retirer un membre ou quitter passe par un ticket de confirmation dans la DA ; quitter en étant le dernier annonce la suppression du groupe et de sa liste. Après un renommage ou un retrait, le focus va sur le titre « MEMBRES ».
 - **Groupe** (« MEMBRES ET INVITATION ») : nom (modifiable), membres (nom, « toi », depuis quand), « COPIER LE LIEN D'INVITATION », « RÉGÉNÉRER LE LIEN », « RETIRER » à côté de chaque membre, « QUITTER LE GROUPE ».
 - **Mon compte** : nom affiché, passkeys (en ajouter / liste / supprimer), Google (lié ou non), **appareils connectés** (déconnecter un appareil), « SE DÉCONNECTER », « SUPPRIMER MON COMPTE » (confirmation forte).
 

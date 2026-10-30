@@ -39,10 +39,16 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 
 **👥 LES GROUPES** : une liste par groupe
 
-- La pastille « ● NOUS DEUX ▾ », en haut de TIRER, SWIPER et LISTE, dit quel groupe est affiché. Son panneau liste mes groupes (nombre de membres, ✓ sur celui affiché), propose « + CRÉER UN GROUPE » et « SE DÉCONNECTER ».
+- La pastille « ● NOUS DEUX ▾ », en haut de TIRER, SWIPER et LISTE, dit quel groupe est affiché. Son panneau liste mes groupes (nombre de membres, ✓ sur celui affiché), propose « + CRÉER UN GROUPE », « MEMBRES ET INVITATION » et « SE DÉCONNECTER ».
 - Chaque groupe a sa liste et sa soirée (la pile « PAS CE SOIR », les filtres). Le groupe choisi est retenu sur l'appareil.
 - **ON LE VEUT ♥** met le film dans la liste du groupe et ajoute mon nom à « voulu par ». **✕ BOF** ne vaut que pour moi : le film disparaît de ma pile de swipe, dans tous mes groupes, sans toucher la liste ni la pile des autres. Ajouter un film depuis la recherche efface mon BOF ; **✕** dans la liste l'écarte pour tout le groupe.
 - Un compte sans groupe arrive sur **CRÉER TON PREMIER GROUPE**.
+
+**✉️ MEMBRES ET INVITATION** : inviter, rejoindre, quitter
+
+- **Inviter** : chaque groupe a son lien d'invitation. « COPIER LE LIEN D’INVITATION » (« PARTAGER » sur un téléphone, qui ouvre son menu de partage) ; on l'envoie par message à qui l'on veut. « RÉGÉNÉRER LE LIEN » en donne un nouveau : l'ancien ne marche plus.
+- **Rejoindre** : qui ouvre le lien voit « TU ES INVITÉ·E DANS « NOM » ». Sans compte, il en crée un sur place (prénom, puis Face ID) et arrive directement dans le groupe ; avec un compte, « REJOINDRE ». Déjà membre, « Y ALLER » bascule sur ce groupe. Un lien régénéré ou d'un groupe disparu répond « CE LIEN N’EST PLUS VALABLE ».
+- **Les membres** : qui est là et depuis quand (« depuis le 23/10 »), le nom du groupe à « RENOMMER ». Chaque membre peut en retirer un autre (« RETIRER ») ou « QUITTER LE GROUPE », toujours après confirmation. Qui part perd ses « voulu » dans ce groupe ; ses ajouts restent. **Le dernier membre qui part supprime le groupe et sa liste** (l'écran le dit avant).
 
 <p align="center">
   <img src="docs/readme/desktop.webp" alt="Le ticket tiré sur un écran large" width="74%">
@@ -102,12 +108,14 @@ Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre a
 
 - **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis « CRÉER MON COMPTE » et le verrou de l'appareil. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
 - **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est dans le panneau de la pastille du groupe.
-- **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et seul le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) ouvre la création : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée.
-- **Le groupe « NOUS DEUX »** : la liste d'avant les comptes (1.x) y est gardée telle quelle, films, statuts et dates. Un compte créé avec le code propriétaire le rejoint aussitôt. En mode `open`, le lien « J’AI UN CODE PROPRIÉTAIRE » reste proposé, avec un code facultatif. Pour l'instant, c'est la seule façon de rejoindre un groupe existant.
+- **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et un compte ne se crée que de deux façons : depuis un **lien d'invitation** d'un groupe (le nouveau compte en devient membre), ou avec le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée. Un lien d'invitation marche aussi en mode `open`.
+- **Le groupe « NOUS DEUX »** : la liste d'avant les comptes (1.x) y est gardée telle quelle, films, statuts et dates. Un compte créé avec le code propriétaire le rejoint aussitôt ; ensuite, on y invite par son lien, comme dans tout groupe. En mode `open`, le lien « J’AI UN CODE PROPRIÉTAIRE » reste proposé, avec un code facultatif.
 - Un navigateur trop ancien pour les passkeys affiche « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS… » à la place des boutons.
 - Les passkeys sont liées à l'adresse de l'appli (`BETTER_AUTH_URL`) : changer d'adresse oblige à recréer les comptes.
 
-> À venir : les invitations dans un groupe (et la liste de ses membres, le renommer, le quitter), la connexion avec Google et une page « mon compte ».
+- **Le lien d'invitation est un secret** : qui l'a peut entrer dans le groupe. L'appli ne l'écrit jamais dans ses journaux et ne le transmet pas aux sites ouverts depuis la page (`Referrer-Policy: no-referrer`), mais l'hébergeur peut journaliser les adresses visitées : s'il a trop circulé, « RÉGÉNÉRER LE LIEN ».
+
+> À venir : la connexion avec Google et une page « mon compte ».
 
 ## L'installer comme une appli
 
@@ -131,11 +139,11 @@ C'est une PWA : une fois installée, elle s'ouvre en plein écran depuis son ic�
 ```
 src/
   domain/    règles métier pures : films, tirage, filtres « ce soir », transitions de statut, groupes, « voulu par »
-  db/        schéma Drizzle et dépôts : groupes, liste d'un groupe, swipes de chacun, données TMDB
+  db/        schéma Drizzle et dépôts : groupes, membres et liens d'invitation, liste d'un groupe, swipes de chacun, données TMDB
   tmdb/      client TMDB, validation, mapping, thèmes de swipe
   auth/      comptes Better Auth : passkeys, sessions
   access/    qui entre : décision du proxy, inscription ouverte ou sur invitation
-  server/    assemblage base + TMDB (un seul endroit), groupe affiché et appartenance
+  server/    assemblage base + TMDB (un seul endroit), groupe affiché, appartenance, lien d'invitation résolu
   features/  un dossier par écran : composants, actions serveur, logique testée
   ui/        composants partagés sans logique métier
   app/       routes Next, manifest et icônes générées

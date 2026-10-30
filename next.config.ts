@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
     // (server/revalidate.ts); a change on the other phone shows within 5 min.
     staleTimes: { dynamic: 300 },
   },
+  // The invite token is in the path: never sent to another site as Referer.
+  async headers() {
+    return [
+      {
+        source: "/invitation/:token*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+    ];
+  },
   images: {
     // TMDB already serves the sizes we need; skip Vercel Hobby's optimisation quota.
     unoptimized: true,

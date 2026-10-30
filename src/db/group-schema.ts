@@ -6,6 +6,7 @@ import {
   primaryKey,
   sqliteTable,
   text,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { MovieStatus } from "@/domain/movie";
 import { user } from "./auth-schema";
@@ -21,11 +22,19 @@ const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 export const movieSnapshot = sqliteTable("movie_snapshot", snapshotColumns());
 
 // `group` is an SQL keyword: the table is app_group.
-export const group = sqliteTable("app_group", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at").default(now).notNull(),
-});
+export const group = sqliteTable(
+  "app_group",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at").default(now).notNull(),
+    /** The invite link's secret: created on demand, replaced to revoke it. */
+    inviteToken: text("invite_token"),
+  },
+  (table) => [
+    uniqueIndex("app_group_invite_token_unique").on(table.inviteToken),
+  ],
+);
 
 const groupId = () =>
   text("group_id")

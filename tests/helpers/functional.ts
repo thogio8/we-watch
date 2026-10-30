@@ -1,6 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ne } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeAll, beforeEach, vi } from "vitest";
 import { user } from "@/db/auth-schema";
@@ -27,7 +28,8 @@ const LEA = { id: "user-1", name: "Léa", email: "user-1@test.invalid" };
  * TMDB client → zod → mapping) on a fresh database file, with TMDB answered
  * by the fake catalogue. Call once per test file, before any test runs.
  * Léa, the mocked session's user, has an account row (foreign keys hold);
- * `reset` empties the lists and groups, children first.
+ * `reset` empties the lists and groups, children first, and deletes every
+ * account but Léa's (their sessions and passkeys go with them).
  */
 export async function startServerStack(): Promise<{
   db: Database;
@@ -60,6 +62,7 @@ export async function startServerStack(): Promise<{
       ]) {
         await db.delete(table);
       }
+      await db.delete(user).where(ne(user.id, LEA.id));
     },
   };
 }

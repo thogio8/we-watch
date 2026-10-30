@@ -43,6 +43,14 @@ export async function rememberGroup(groupId: string): Promise<void> {
   });
 }
 
+/** Forgets the displayed group when it is `groupId` (left or removed). Server Actions only. */
+export async function forgetGroup(groupId: string): Promise<void> {
+  const jar = await cookies();
+  if (jar.get(GROUP_COOKIE)?.value === groupId) {
+    jar.delete(GROUP_COOKIE);
+  }
+}
+
 const isGroupId = (value: unknown): value is string =>
   typeof value === "string" &&
   value.length > 0 &&

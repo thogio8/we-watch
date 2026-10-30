@@ -2,8 +2,9 @@
 .group {
   position: relative;
   display: flex;
-  /* Full width even in a centring flex column: the panel spans it. */
+  /* Full width even in a centring flex column or grid: the panel spans it. */
   align-self: stretch;
+  justify-self: stretch;
   justify-content: center;
   min-height: var(--touch-min);
   margin-bottom: 14px;
