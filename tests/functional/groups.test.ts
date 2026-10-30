@@ -12,7 +12,8 @@ import {
 } from "@/features/groups/actions";
 import { decideSwipe } from "@/features/swipe/actions";
 import { getGroups } from "@/server/container";
-import { getActiveGroup } from "@/server/groups";
+import { getActiveGroup, rememberGroup } from "@/server/groups";
+import { assertSignedIn } from "@/server/session";
 import { startServerStack } from "../helpers/functional";
 import { aGroup, aUser } from "../helpers/groups";
 
@@ -108,10 +109,19 @@ describe("groupes (fonctionnel)", () => {
     const hugo = await aUser(db, "Hugo");
     const groupId = await aGroup(db, "NOUS DEUX", [LEA_ID, hugo]);
 
+    await rememberGroup(groupId);
+    // Hugo is the signed-in user for this one call (the mock is Léa by default).
+    vi.mocked(assertSignedIn).mockResolvedValueOnce({
+      userId: hugo,
+      name: "Hugo",
+    });
+
     await removeMember(groupId, LEA_ID);
 
     expect(await getGroups().isMember(groupId, LEA_ID)).toBe(false);
     expect(await getGroups().isMember(groupId, hugo)).toBe(true);
+    // Not self-removal: the cookie is left alone.
+    expect((await displayed())?.value).toBe(groupId);
     await expect(decideSwipe(groupId, 496243, "keep")).rejects.toThrow(
       "Server Action refused: not a member",
     );
