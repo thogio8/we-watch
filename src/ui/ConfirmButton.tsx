@@ -102,6 +102,7 @@ function ConfirmTicket({
         <Button
           ref={confirm}
           variant="primary"
+          className={styles.confirm}
           disabled={pending || !ready}
           onClick={run}
         >

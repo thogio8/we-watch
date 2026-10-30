@@ -73,3 +73,15 @@
   padding-top: 14px;
   border-top: var(--border-dashed);
 }
+
+/*
+ * Not yet (a name to type) or running: an empty paper slot on the pink stub,
+ * dashed ink, rather than the yellow faded into an off-palette orange.
+ */
+.buttons .confirm:disabled {
+  border: var(--border-dashed);
+  background: var(--paper);
+  box-shadow: none;
+  color: var(--ink);
+  opacity: 1;
+}

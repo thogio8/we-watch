@@ -3,6 +3,7 @@
 import { type FormEvent, useId, useRef, useState } from "react";
 import { Button } from "./Button";
 import styles from "./LabelForm.module.css";
+import { useFocusBack } from "./useFocusBack";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -42,6 +43,9 @@ export function LabelForm<R extends Result>({
   const input = useRef<HTMLInputElement>(null);
   const errorId = useId();
 
+  // onDone may move the focus on (a title), else it is given back here.
+  const { button: submitRef, sent } = useFocusBack(pending);
+
   const fail = (message: string) => {
     setError(message);
     input.current?.focus();
@@ -62,9 +66,7 @@ export function LabelForm<R extends Result>({
     setPending(false);
     if (result?.ok) {
       setError(null);
-      // The button was disabled meanwhile: the focus stays in the form,
-      // unless onDone moves it on.
-      input.current?.focus();
+      sent();
       onDone?.(result as Extract<R, { ok: true }>);
       return;
     }
@@ -91,6 +93,7 @@ export function LabelForm<R extends Result>({
         </p>
       )}
       <Button
+        ref={submitRef}
         type="submit"
         variant="primary"
         className={styles.submit}

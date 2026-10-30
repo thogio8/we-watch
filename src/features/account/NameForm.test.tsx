@@ -37,7 +37,7 @@ describe("NameForm", () => {
     expect(rename).not.toHaveBeenCalled();
   });
 
-  it("changé : le nouveau prénom est annoncé, le focus reste dans le formulaire", async () => {
+  it("changé : le nouveau prénom est annoncé, le focus revient sur le bouton", async () => {
     const { user, rename } = renderForm();
 
     await user.clear(field());
@@ -49,7 +49,7 @@ describe("NameForm", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "C’EST NOTÉ : TU T’APPELLES NINA",
     );
-    expect(field()).toHaveFocus();
+    expect(submit()).toHaveFocus();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
