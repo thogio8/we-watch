@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { sql } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
 import { isInviteToken } from "@/domain/group";
 import type { Database } from "./create-database";
@@ -67,4 +68,44 @@ describe("liens d’invitation", () => {
       "unknown group forgé",
     );
   });
+});
+
+describe("une panne de la base ne divulgue pas le jeton", () => {
+  // Drizzle's errors quote the query's parameters, and Next logs a thrown
+  // error: whoever reads the logs must not get a working link.
+  const ANY_TOKEN = /[A-Za-z0-9_-]{43}/;
+  let token: string;
+  let logged: ReturnType<typeof vi.spyOn>[];
+
+  beforeEach(async () => {
+    token = await groups.ensureInvite(groupA);
+    await db.run(sql`PRAGMA foreign_keys = OFF`);
+    await db.run(sql`DROP TABLE app_group`);
+    logged = (["log", "info", "warn", "error"] as const).map((level) =>
+      vi.spyOn(console, level).mockImplementation(() => {}),
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    ["findByInvite", () => groups.findByInvite(token)],
+    ["ensureInvite", () => groups.ensureInvite(groupB)],
+    ["regenerateInvite", () => groups.regenerateInvite(groupA)],
+  ])(
+    "%s en panne : une erreur sans jeton ni cause, rien d’écrit",
+    async (_, call) => {
+      const error = await call().then(
+        () => null,
+        (thrown: unknown) => thrown,
+      );
+
+      expect(error).toBeInstanceOf(Error);
+      expect(String((error as Error).message)).not.toMatch(ANY_TOKEN);
+      expect((error as Error).cause).toBeUndefined();
+      for (const spy of logged) expect(spy).not.toHaveBeenCalled();
+    },
+  );
 });
