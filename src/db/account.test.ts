@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { aDatabase, aUser } from "@tests/helpers/groups";
 import { createAccount, type Account } from "./account";
-import { passkey } from "./auth-schema";
+import { passkey, session } from "./auth-schema";
 import type { Database } from "./create-database";
 
 const T0 = new Date(2026, 9, 1);
@@ -92,5 +92,53 @@ describe("passkeys du compte", () => {
 
     expect(outcomes.sort()).toEqual(["deleted", "last"]);
     expect(await ids()).toHaveLength(1);
+  });
+});
+
+async function aSession(
+  userId: string,
+  id: string,
+  { updatedAt = T0, expiresAt = new Date(2026, 11, 1), userAgent = "UA" } = {},
+) {
+  await db.insert(session).values({
+    id,
+    token: `token-${id}`,
+    userId,
+    userAgent,
+    updatedAt,
+    expiresAt,
+  });
+}
+
+const sessionIds = async () =>
+  (await db.select({ id: session.id }).from(session)).map((row) => row.id);
+
+describe("sessions du compte", () => {
+  it("sessionsOf donne mes sessions en cours, la plus récente d’abord, sans jeton", async () => {
+    await aSession(lea, "s-1", { userAgent: "iPhone" });
+    await aSession(lea, "s-2", { updatedAt: T1 });
+    await aSession(lea, "s-old", { expiresAt: T1 });
+    await aSession(hugo, "s-3");
+
+    expect(await account.sessionsOf(lea, new Date(2026, 9, 3))).toEqual([
+      { id: "s-2", userAgent: "UA", updatedAt: T1 },
+      { id: "s-1", userAgent: "iPhone", updatedAt: T0 },
+    ]);
+  });
+
+  it("deleteSession supprime la mienne", async () => {
+    await aSession(lea, "s-1");
+    await aSession(lea, "s-2");
+
+    expect(await account.deleteSession(lea, "s-1")).toBe(true);
+    expect(await sessionIds()).toEqual(["s-2"]);
+  });
+
+  it("deleteSession ne touche pas à celle d’un autre, ni à une inconnue", async () => {
+    await aSession(hugo, "s-3");
+
+    expect(await account.deleteSession(lea, "s-3")).toBe(false);
+    expect(await account.deleteSession(lea, "inconnue")).toBe(false);
+    expect(await sessionIds()).toEqual(["s-3"]);
   });
 });

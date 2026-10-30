@@ -92,6 +92,9 @@ export const groupMovie = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.groupId, table.tmdbId] }),
     index("group_movie_group_status_idx").on(table.groupId, table.status),
+    // Account deletion finds the member's movies to hand to « un ancien membre ».
+    index("group_movie_added_by_idx").on(table.addedBy),
+    index("group_movie_watched_by_idx").on(table.watchedBy),
   ],
 );
 
@@ -110,6 +113,7 @@ export const movieWant = sqliteTable(
       columns: [table.groupId, table.tmdbId],
       foreignColumns: [groupMovie.groupId, groupMovie.tmdbId],
     }).onDelete("cascade"),
+    index("movie_want_user_id_idx").on(table.userId),
   ],
 );
 

@@ -47,6 +47,7 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/auth/passkey-registration.ts | 100% | 100% | 100% | 100% |
 | src/auth/passkey-signup.ts | 100% | 100% | 100% | 100% |
 | src/auth/signup-transaction.ts | 100% | 100% | 100% | 100% |
+| src/db/account-deletion.ts | 100% | 100% | 100% | 100% |
 | src/db/account.ts | 100% | 100% | 100% | 100% |
 | src/db/auth-schema.ts | 100% | 100% | 100% | 100% |
 | src/db/create-database.ts | 100% | 100% | 100% | 100% |
@@ -101,6 +102,7 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/server/invitations.ts | 100% | 100% | 100% | 100% |
 | src/server/revalidate.ts | 100% | 100% | 100% | 100% |
 | src/server/session.ts | 100% | 100% | 100% | 100% |
+| src/server/sign-out.ts | 100% | 100% | 100% | 100% |
 | src/server/validate.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/client.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/credits.ts | 100% | 100% | 100% | 100% |

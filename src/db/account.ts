@@ -1,5 +1,6 @@
-import { and, asc, eq, sql } from "drizzle-orm";
-import { passkey } from "./auth-schema";
+import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
+import { deleteUserIn } from "./account-deletion";
+import { passkey, session } from "./auth-schema";
 import type { Database } from "./create-database";
 
 interface PasskeyRow {
@@ -7,6 +8,13 @@ interface PasskeyRow {
   /** Set by the server at registration (deviceLabel); older ones have none. */
   name: string | null;
   createdAt: Date | null;
+}
+
+interface SessionRow {
+  id: string;
+  userAgent: string | null;
+  /** Last activity: set when Better Auth extends the session. */
+  updatedAt: Date;
 }
 
 type DeletePasskeyOutcome = "deleted" | "last" | "not_found";
@@ -20,6 +28,12 @@ export interface Account {
    * (no password, no Google yet), that would lock me out for good.
    */
   deletePasskey(userId: string, id: string): Promise<DeletePasskeyOutcome>;
+  /** My sessions not expired at `now`, last active first; never the token. */
+  sessionsOf(userId: string, now?: Date): Promise<SessionRow[]>;
+  /** Signs out my session `id`; false (nothing written) when not mine. */
+  deleteSession(userId: string, id: string): Promise<boolean>;
+  /** My account and everything mine alone: see deleteUserIn. */
+  deleteUser(userId: string): Promise<boolean>;
 }
 
 const mine = (userId: string, id: string) =>
@@ -58,5 +72,26 @@ export function createAccount(db: Database): Account {
         ? "last"
         : "not_found";
     },
+
+    sessionsOf(userId, now = new Date()) {
+      return db
+        .select({
+          id: session.id,
+          userAgent: session.userAgent,
+          updatedAt: session.updatedAt,
+        })
+        .from(session)
+        .where(and(eq(session.userId, userId), gt(session.expiresAt, now)))
+        .orderBy(desc(session.updatedAt), asc(session.id));
+    },
+
+    async deleteSession(userId, id) {
+      const deleted = await db
+        .delete(session)
+        .where(and(eq(session.id, id), eq(session.userId, userId)));
+      return deleted.rowsAffected > 0;
+    },
+
+    deleteUser: (userId) => deleteUserIn(db, userId),
   };
 }

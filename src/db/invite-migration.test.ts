@@ -1,35 +1,25 @@
-import { readFileSync } from "node:fs";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { aDatabase, aGroup } from "@tests/helpers/groups";
+import {
+  migrationTag,
+  migrationTags,
+  statementsOf,
+} from "@tests/helpers/migrations";
 import { group } from "./group-schema";
 
 // Migration 0008 (2.0, piece 3) runs before the new code, while 1.3.x or the
 // previous 2.0 build still serves: it may only add.
 
-type Journal = { entries: { tag: string }[] };
-const { entries } = JSON.parse(
-  readFileSync("drizzle/meta/_journal.json", "utf8"),
-) as Journal;
-const invites = entries.find(({ tag }) => /^0008_/.test(tag))?.tag ?? "";
-
-const statements = readFileSync(`drizzle/${invites}.sql`, "utf8")
-  .split("--> statement-breakpoint")
-  .map((statement) =>
-    statement
-      .split("\n")
-      .filter((line) => !line.startsWith("--"))
-      .join(" ")
-      .trim(),
-  )
-  .filter((statement) => statement !== "");
+const invites = migrationTag("0008");
+const statements = statementsOf(invites);
 
 describe("migration des liens d’invitation", () => {
   it("vient juste après celles des groupes", () => {
     // Later versions add theirs after it.
-    expect(entries.length).toBeGreaterThanOrEqual(9);
+    expect(migrationTags.length).toBeGreaterThanOrEqual(9);
     expect(invites).toMatch(/^0008_/);
-    expect(entries.map(({ tag }) => tag).indexOf(invites)).toBe(8);
+    expect(migrationTags.indexOf(invites)).toBe(8);
   });
 
   it("ne fait qu’ajouter : une colonne nullable et son index unique", () => {

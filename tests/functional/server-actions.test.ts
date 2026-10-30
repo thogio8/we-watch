@@ -1,13 +1,13 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { passkey } from "@/db/auth-schema";
+import { passkey, session } from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
 import { createGroups } from "@/db/groups";
 import { GROUP_COOKIE } from "@/domain/group";
 import { startServerStack } from "../helpers/functional";
+import { allRows } from "../helpers/rows";
 import {
   hasMisplacedDirective,
   isServerModule,
@@ -50,6 +50,14 @@ beforeAll(async () => {
       backedUp: false,
     })),
   );
+  // A session of Léa's: revoking it would be allowed with a session.
+  await db.insert(session).values({
+    id: "session-1",
+    token: "token-1",
+    userId: "user-1",
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    updatedAt: new Date(),
+  });
 });
 beforeEach(async () => {
   // A real group of Léa's, with its invite link: only the session is missing.
@@ -61,28 +69,18 @@ beforeEach(async () => {
   token = await groups.ensureInvite(groupId);
 });
 
-/** Every row of every table: a refused action leaves it unchanged. */
-async function snapshot(): Promise<Record<string, unknown[]>> {
-  const tables = await db.all<{ name: string }>(
-    sql`SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name`,
-  );
-  const rows: Record<string, unknown[]> = {};
-  for (const { name } of tables) {
-    rows[name] = await db.all(sql.raw(`SELECT * FROM "${name}"`));
-  }
-  return rows;
-}
-
 /** Plausible arguments: a group I belong to first, then a movie, a choice, a page. */
 function defaultArguments(): unknown[] {
   return [groupId, 550, "want", 1, aForm(), token];
 }
 
-function aForm(): FormData {
+function aName(name: string): FormData {
   const form = new FormData();
-  form.set("name", "LES AUTRES");
+  form.set("name", name);
   return form;
 }
+
+const aForm = () => aName("LES AUTRES");
 
 /** Each action's real arguments, where the default list does not fit. */
 const ARGUMENTS: Record<string, () => unknown[]> = {
@@ -94,6 +92,11 @@ const ARGUMENTS: Record<string, () => unknown[]> = {
   "features/swipe/actions.ts#loadMoreCards": () => [groupId, "popular", 2],
   "features/account/actions.ts#listMyPasskeys": () => [],
   "features/account/actions.ts#deletePasskey": () => ["passkey-1"],
+  "features/account/actions.ts#listMySessions": () => [],
+  "features/account/actions.ts#revokeSession": () => ["session-1"],
+  "features/account/actions.ts#renameMe": () => [aName("Zoé")],
+  // Léa's exact name: the deletion would go through with a session.
+  "features/account/actions.ts#deleteAccount": () => [aName("Léa")],
 };
 
 const argumentsFor = (action: string) =>
@@ -141,7 +144,7 @@ describe("Server Actions sans session (fonctionnel, méta-test)", () => {
       const guarded = Object.entries(actions).filter(
         ([name]) => !PUBLIC_ACTIONS.has(`${path}#${name}`),
       );
-      const before = await snapshot();
+      const before = await allRows(db);
 
       for (const [name, action] of guarded) {
         expect(action, name).toBeTypeOf("function");
@@ -152,7 +155,7 @@ describe("Server Actions sans session (fonctionnel, méta-test)", () => {
           "Server Action refused: not signed in",
         );
       }
-      expect(await snapshot()).toEqual(before);
+      expect(await allRows(db)).toEqual(before);
       expect((await cookies()).get(GROUP_COOKIE)).toBeUndefined();
     },
   );
