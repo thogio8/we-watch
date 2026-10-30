@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Database } from "@/db/create-database";
 import {
+  group,
   groupMovie,
   membership,
   movieRejection,
@@ -16,6 +17,13 @@ import {
   searchCatalog,
   unwatch,
 } from "@/features/list/actions";
+import {
+  inviteLink,
+  leaveGroup,
+  regenerateInviteLink,
+  removeMember,
+  renameGroup,
+} from "@/features/groups/actions";
 import { loadMoviePage } from "@/features/movie/load";
 import {
   decideSwipe,
@@ -114,11 +122,18 @@ const everything = async () => ({
   wants: await db.select().from(movieWant).orderBy(movieWant.tmdbId),
   rejections: await db.select().from(movieRejection),
   members: await db.select().from(membership).orderBy(membership.groupId),
+  groups: await db.select().from(group).orderBy(group.id),
   snapshots: await db
     .select()
     .from(movieSnapshot)
     .orderBy(movieSnapshot.tmdbId),
 });
+
+const renamed = (name: string) => {
+  const formData = new FormData();
+  formData.set("name", name);
+  return formData;
+};
 
 /** Every action on a group, called on `groupId`, each on the movie it would change in B. */
 const ACTIONS = [
@@ -133,6 +148,11 @@ const ACTIONS = [
   ["undoSwipe ♥", (g: string) => undoSwipe(g, PARASITE, "keep")],
   ["undoSwipe ✕", (g: string) => undoSwipe(g, AMELIE, "reject")],
   ["loadMoreCards", (g: string) => loadMoreCards(g, "top", 1)],
+  ["renameGroup", (g: string) => renameGroup(g, renamed("PIRATÉ"))],
+  ["inviteLink", (g: string) => inviteLink(g)],
+  ["regenerateInviteLink", (g: string) => regenerateInviteLink(g)],
+  ["removeMember", (g: string) => removeMember(g, LEA)],
+  ["leaveGroup", (g: string) => leaveGroup(g)],
 ] as const;
 
 async function refusedWithoutWriting(call: () => Promise<unknown>) {

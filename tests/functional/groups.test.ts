@@ -2,7 +2,15 @@ import { cookies } from "next/headers";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Database } from "@/db/create-database";
 import { GROUP_COOKIE } from "@/domain/group";
-import { chooseGroup, createGroup } from "@/features/groups/actions";
+import {
+  chooseGroup,
+  createGroup,
+  joinGroup,
+  leaveGroup,
+  removeMember,
+  renameGroup,
+} from "@/features/groups/actions";
+import { decideSwipe } from "@/features/swipe/actions";
 import { getGroups } from "@/server/container";
 import { getActiveGroup } from "@/server/groups";
 import { startServerStack } from "../helpers/functional";
@@ -82,5 +90,100 @@ describe("groupes (fonctionnel)", () => {
     await expect(getActiveGroup()).resolves.toMatchObject({
       group: { id: mine },
     });
+  });
+
+  it("renommer : groupsOf donne le nouveau nom", async () => {
+    const groupId = await created("La coloc");
+    const formData = new FormData();
+    formData.set("name", "Le club");
+
+    await expect(renameGroup(groupId, formData)).resolves.toEqual({ ok: true });
+
+    expect(await getGroups().groupsOf(LEA_ID)).toMatchObject([
+      { id: groupId, name: "Le club" },
+    ]);
+  });
+
+  it("Hugo retire Léa : elle n’est plus membre et ses swipes sont refusés", async () => {
+    const hugo = await aUser(db, "Hugo");
+    const groupId = await aGroup(db, "NOUS DEUX", [LEA_ID, hugo]);
+
+    await removeMember(groupId, LEA_ID);
+
+    expect(await getGroups().isMember(groupId, LEA_ID)).toBe(false);
+    expect(await getGroups().isMember(groupId, hugo)).toBe(true);
+    await expect(decideSwipe(groupId, 496243, "keep")).rejects.toThrow(
+      "Server Action refused: not a member",
+    );
+  });
+
+  it("retirer un non-membre est sans effet", async () => {
+    const hugo = await aUser(db, "Hugo");
+    const groupId = await aGroup(db, "NOUS DEUX", [LEA_ID]);
+
+    await removeMember(groupId, hugo);
+
+    expect(await getGroups().membersOf(groupId)).toHaveLength(1);
+  });
+
+  it("le dernier qui quitte supprime le groupe : plus de groupe affiché", async () => {
+    const groupId = await created("La coloc");
+
+    await leaveGroup(groupId);
+
+    expect(await displayed()).toBeUndefined();
+    expect(await getGroups().groupsOf(LEA_ID)).toEqual([]);
+    await expect(getActiveGroup()).resolves.toMatchObject({ group: null });
+  });
+
+  it("quitter un autre groupe que celui du cookie laisse ce cookie", async () => {
+    const hugo = await aUser(db, "Hugo");
+    const left = await aGroup(db, "CHEZ HUGO", [LEA_ID, hugo]);
+    const kept = await created("La coloc");
+
+    await leaveGroup(left);
+
+    expect((await displayed())?.value).toBe(kept);
+    expect(await getGroups().isMember(left, LEA_ID)).toBe(false);
+  });
+
+  it("joinGroup avec un lien valide : membre, groupe affiché", async () => {
+    const hugo = await aUser(db, "Hugo");
+    const groupId = await aGroup(db, "CHEZ HUGO", [hugo]);
+    const token = await getGroups().ensureInvite(groupId);
+
+    await expect(joinGroup(token)).resolves.toEqual({ ok: true, groupId });
+
+    expect(await getGroups().isMember(groupId, LEA_ID)).toBe(true);
+    expect((await displayed())?.value).toBe(groupId);
+  });
+
+  it("joinGroup avec un lien d’un groupe où je suis déjà : bascule sur lui", async () => {
+    const hugo = await aUser(db, "Hugo");
+    const groupId = await aGroup(db, "CHEZ HUGO", [hugo, LEA_ID]);
+    const token = await getGroups().ensureInvite(groupId);
+    await created("La coloc");
+
+    await joinGroup(token);
+
+    expect((await displayed())?.value).toBe(groupId);
+    const [first] = await getGroups().groupsOf(LEA_ID);
+    expect(first?.id).toBe(groupId);
+    expect(await getGroups().membersOf(groupId)).toHaveLength(2);
+  });
+
+  it("joinGroup avec un lien régénéré : refusé, sans écriture", async () => {
+    const hugo = await aUser(db, "Hugo");
+    const groupId = await aGroup(db, "CHEZ HUGO", [hugo]);
+    const old = await getGroups().ensureInvite(groupId);
+    await getGroups().regenerateInvite(groupId);
+
+    await expect(joinGroup(old)).resolves.toEqual({
+      ok: false,
+      error: "CE LIEN N’EST PLUS VALABLE",
+    });
+
+    expect(await getGroups().isMember(groupId, LEA_ID)).toBe(false);
+    expect(await displayed()).toBeUndefined();
   });
 });
