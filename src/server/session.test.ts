@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { signedOutRefusal } from "@/access/signed-out";
 import { assertSignedIn, getCurrentUser } from "./session";
 
 const getSession = vi.fn();
@@ -62,11 +63,15 @@ describe("assertSignedIn", () => {
     });
   });
 
-  it("sans session : refuse l'action", async () => {
+  it("sans session : refuse l'action, d'un refus que le client reconnaît (digest)", async () => {
     getSession.mockResolvedValue(null);
 
     await expect(assertSignedIn()).rejects.toThrow(
       "Server Action refused: not signed in",
+    );
+    await expect(assertSignedIn()).rejects.toHaveProperty(
+      "digest",
+      signedOutRefusal().digest,
     );
   });
 

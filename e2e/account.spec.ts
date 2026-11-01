@@ -33,6 +33,22 @@ async function signOut(page: Page) {
   await expect(page).toHaveURL("/connexion");
 }
 
+/** From « MON COMPTE » on `app`: « DÉCONNECTER » my other device, confirmed. */
+async function revokeMyOtherDevice(app: Page) {
+  await app.goto("/compte");
+  await expect(devices(app)).toHaveCount(2);
+  await devices(app)
+    .filter({ hasNotText: "CET APPAREIL" })
+    .getByRole("button", { name: "DÉCONNECTER" })
+    .click();
+  await app
+    .getByRole("group")
+    .getByRole("button", { name: "DÉCONNECTER" })
+    .click();
+  await expect(devices(app)).toHaveCount(1);
+  await expect(devices(app)).toContainText("CET APPAREIL");
+}
+
 const cookie = async (page: Page, name: string) =>
   (await page.context().cookies()).find((found) => found.name === name);
 
@@ -65,19 +81,8 @@ test.describe("mon compte", () => {
     await laptop.goto("/list");
     // The proxy's 5-minute session cache: it would still let the laptop in.
     expect(await cookie(laptop, "better-auth.session_data")).toBeDefined();
-    await app.goto("/compte");
-    await expect(devices(app)).toHaveCount(2);
 
-    await devices(app)
-      .filter({ hasNotText: "CET APPAREIL" })
-      .getByRole("button", { name: "DÉCONNECTER" })
-      .click();
-    await app
-      .getByRole("group")
-      .getByRole("button", { name: "DÉCONNECTER" })
-      .click();
-    await expect(devices(app)).toHaveCount(1);
-    await expect(devices(app)).toContainText("CET APPAREIL");
+    await revokeMyOtherDevice(app);
 
     // At once: its next page, even within the app, goes to the sign-in page.
     await laptop
@@ -87,6 +92,24 @@ test.describe("mon compte", () => {
     await expect(laptop).toHaveURL("/connexion");
     await app.goto("/list");
     await expect(app).toHaveURL("/list");
+  });
+
+  test("un appareil déconnecté ailleurs, sur une page déjà affichée : sa prochaine action mène à la connexion", async ({
+    app,
+    myOtherDevice,
+  }) => {
+    await swipe(app, ["keep"]);
+    const laptop = await myOtherDevice();
+    await laptop.goto("/list");
+    await expect(laptop.getByText("Whiplash")).toBeVisible();
+
+    await revokeMyOtherDevice(app);
+    // Still on the page it shows: only its next action finds out.
+    await laptop.getByRole("button", { name: "Retirer Whiplash" }).click();
+
+    await expect(laptop).toHaveURL("/connexion");
+    await app.goto("/list");
+    await expect(app.getByText("Whiplash")).toBeVisible();
   });
 
   test("supprimer son compte : ses films restent, attribués à un ancien membre", async ({

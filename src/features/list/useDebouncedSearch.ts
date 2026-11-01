@@ -1,3 +1,4 @@
+import { leaveIfSignedOut } from "@/access/signed-out";
 import { useEffect, useState } from "react";
 import type { SearchOutcome } from "./actions";
 import { type Answer, CRASHED } from "./searchAnswer";
@@ -19,7 +20,10 @@ export function useDebouncedSearch(
     let current = true;
     const timer = setTimeout(() => {
       search(query)
-        .catch(() => CRASHED)
+        .catch((error: unknown) => {
+          leaveIfSignedOut(error);
+          return CRASHED;
+        })
         .then((outcome) => {
           if (current) setAnswer({ query, outcome });
         });

@@ -1,5 +1,6 @@
 "use client";
 
+import { leaveIfSignedOut } from "@/access/signed-out";
 import {
   useCallback,
   useEffect,
@@ -39,7 +40,8 @@ export function useInviteLink({ load, regenerate }: InviteLinkActions) {
     setLoadFailed(false);
     return url;
   }, []);
-  const failed = useCallback(() => {
+  const failed = useCallback((error: unknown) => {
+    leaveIfSignedOut(error);
     setLoadFailed(true);
     return null;
   }, []);

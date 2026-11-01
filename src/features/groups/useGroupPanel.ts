@@ -1,5 +1,6 @@
 "use client";
 
+import { leaveIfSignedOut } from "@/access/signed-out";
 import {
   type FocusEvent,
   type RefObject,
@@ -100,7 +101,8 @@ export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
       // carries the page re-rendered for the chosen group.
       await choose(groupId);
       close(true);
-    } catch {
+    } catch (error) {
+      leaveIfSignedOut(error);
       setError(CHOOSE_FAILED);
     } finally {
       choosing.current = false;

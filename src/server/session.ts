@@ -1,6 +1,7 @@
 import "server-only";
 import { headers } from "next/headers";
 import { logSessionFailure } from "@/access/signed-in";
+import { signedOutRefusal } from "@/access/signed-out";
 import { AUTHORITATIVE_SESSION_READ } from "@/auth/create-auth";
 import { getAuth } from "./container";
 
@@ -42,7 +43,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 export async function assertSignedIn(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (user === null) {
-    throw new Error("Server Action refused: not signed in");
+    throw signedOutRefusal();
   }
   return user;
 }
