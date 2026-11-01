@@ -390,6 +390,7 @@ const MAC_CHROME =
  * an iPhone active on `date`, a Mac signed in too, and a passkey of each,
  * added before. Only `updatedAt` moves: Better Auth renews a session on its
  * `expiresAt`, left untouched, so the dates stay put.
+ * The captures rely on no session renewal during a run (`updateAge`: 1 day).
  */
 export async function leasAccountOn(date: Date) {
   const userId = await leasId();

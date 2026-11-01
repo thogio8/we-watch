@@ -54,7 +54,7 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 
 - **Mon prénom** : on le change d'un geste, il change partout (« voulu par… », la liste des membres).
 - **Mes clés d'accès** : une par appareil, nommée d'après lui (« iPhone · Safari », ajoutée le…). « AJOUTER UNE CLÉ D’ACCÈS » en crée une pour l'appareil en main : on ouvre ensuite WeWatch sur l'ordinateur sans le téléphone. On en supprime une après confirmation, **jamais la dernière** (« GARDE AU MOINS UNE CLÉ D’ACCÈS ») : sans elle, la porte serait fermée.
-- **Mes appareils** : où je suis connecté·e et quand, « CET APPAREIL » en rose. « DÉCONNECTER » un téléphone perdu le met dehors **tout de suite** : sa page suivante est l'écran de connexion.
+- **Mes appareils** : où je suis connecté·e et quand, « CET APPAREIL » en rose. « DÉCONNECTER » un téléphone perdu le met dehors **tout de suite** : ses actions sont refusées aussitôt et le renvoient sur l'écran de connexion, comme toute page qu'il n'a pas encore en mémoire (celles déjà vues peuvent encore s'afficher jusqu'à 5 minutes). Déconnecter un appareil ne retire pas sa clé d'accès : une clé synchronisée (iCloud, Google) est la même sur tous tes appareils, donc la supprimer la retire partout.
 - **Supprimer mon compte** : on tape son prénom, puis « SUPPRIMER DÉFINITIVEMENT ». Partent mes clés, mes appareils, mes BOF et les groupes où j'étais seul·e ; ailleurs, mes films restent aux autres, « ajouté par un ancien membre ».
 
 <p align="center">
