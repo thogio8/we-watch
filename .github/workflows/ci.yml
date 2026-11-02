@@ -116,12 +116,18 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Backup every app table
-        run: node scripts/backup-db.mjs backup/db.json
+      # Encrypted with BACKUP_KEY, set on this step only (npm ci and the
+      # other steps never see it). Missing or malformed key: this step fails,
+      # so nothing is migrated nor deployed.
+      - name: Backup every app table (encrypted)
+        env:
+          BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
+        run: node scripts/backup-db.mjs backup/db.json.enc
       - uses: actions/upload-artifact@v7
         with:
           name: db-backup-${{ github.sha }}
           path: backup/
+          if-no-files-found: error
           retention-days: 90
 
       - name: Migrate the database (before the code that needs it)
