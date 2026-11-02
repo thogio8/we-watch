@@ -1,24 +1,24 @@
 # Couverture et tests
 
-Date : 2026-10-23 · mise à jour : 2026-10-30 (V2.0, comptes, passkeys, groupes, invitations et « MON COMPTE »)
+Date : 2026-10-23 · mise à jour : 2026-11-02 (V2.0, comptes, passkeys, groupes, invitations, « MON COMPTE » et blindage)
 
 ## Les trois niveaux de tests
 
 | Niveau | Où | Ce qui est vrai | Ce qui est simulé | Commande |
 | --- | --- | --- | --- | --- |
 | Unitaires | `src/**/*.test.ts(x)` | une fonction, un composant (Testing Library) | ses dépendances | `npm test` |
-| Fonctionnels | `tests/functional/` | actions serveur → container → repository → SQLite, client TMDB → zod → mapping | TMDB (faux catalogue `tests/fake-tmdb/`), la session (`@/server/session`) | `npm test` |
-| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe, les passkeys (authentificateur virtuel, WebAuthn via CDP), plusieurs membres d'un groupe et plusieurs appareils d'un même compte (un contexte de navigateur chacun), les liens d'invitation (copiés par le presse-papiers), en mode `SIGNUP=open` (le mode `invite` est couvert par les fonctionnels) | TMDB (même faux catalogue, servi en HTTP) ; la session des parcours hors connexion (écrite en base) | `npm run test:e2e` |
+| Fonctionnels | `tests/functional/`, `tests/scripts/` | actions serveur → container → repository → SQLite, client TMDB → zod → mapping, Better Auth et ses limites de tentatives (`rate_limit` vidée par `reset`) ; les scripts de la CI (sauvegarde chiffrée, restauration, répétition, rattrapage, fumée, mise en ligne) lancés pour de vrai | TMDB (faux catalogue `tests/fake-tmdb/`), la session (`@/server/session`) ; la prod et l'API Vercel (faux serveurs HTTP) | `npm test` |
+| End-to-end | `e2e/` | le build de prod dans Chromium (iPhone + desktop), 6 formats, axe, les passkeys (authentificateur virtuel, WebAuthn via CDP), plusieurs membres d'un groupe et plusieurs appareils d'un même compte (un contexte de navigateur chacun), les liens d'invitation (copiés par le presse-papiers), en mode `SIGNUP=open` (le mode `invite` est couvert par les fonctionnels) ; chaque test échoue sur une violation CSP ou un 404 sous `/api/auth/*` (`e2e/csp.ts`) | TMDB (même faux catalogue, servi en HTTP) ; la session des parcours hors connexion (écrite en base) | `npm run test:e2e` |
 
 Tout tourne dans `npm run ci` (hook `pre-push`, et GitHub Actions en filet).
 
 ## Porte de couverture
 
-`npm run test:coverage` : 1450 tests, 129 fichiers, **100 %** partout.
+`npm run test:coverage` : 1532 tests, 140 fichiers, **100 %** partout.
 
 Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`, la route `/api/auth/*` et le client navigateur de Better Auth `features/signin/authClient.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
 
-Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys) ; 920 (+ 96 e2e, dont 44 captures visuelles) après la V2.0 (groupes) ; 1145 (+ 150 e2e, dont 60 captures visuelles) après la V2.0 (invitations) ; 1344 (+ 143 e2e exécutés, dont 68 captures visuelles) après la V2.0 (« MON COMPTE »).
+Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys) ; 920 (+ 96 e2e, dont 44 captures visuelles) après la V2.0 (groupes) ; 1145 (+ 150 e2e, dont 60 captures visuelles) après la V2.0 (invitations) ; 1344 (+ 143 e2e exécutés, dont 68 captures visuelles) après la V2.0 (« MON COMPTE ») ; 1532 (+ 157 e2e exécutés, dont 68 captures visuelles) après la V2.0 (blindage).
 
 ## Seuils
 
@@ -38,14 +38,17 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/access/decision.ts | 100% | 100% | 100% | 100% |
 | src/access/paths.ts | 100% | 100% | 100% | 100% |
 | src/access/signed-in.ts | 100% | 100% | 100% | 100% |
+| src/access/signed-out.ts | 100% | 100% | 100% | 100% |
 | src/access/signup-ticket.ts | 100% | 100% | 100% | 100% |
 | src/access/signup.ts | 100% | 100% | 100% | 100% |
 | src/access/token.ts | 100% | 100% | 100% | 100% |
 | src/app/api/cron/refresh-movies/route.ts | 100% | 100% | 100% | 100% |
+| src/auth/auth-paths.ts | 100% | 100% | 100% | 100% |
 | src/auth/create-auth.ts | 100% | 100% | 100% | 100% |
 | src/auth/group-join.ts | 100% | 100% | 100% | 100% |
 | src/auth/passkey-registration.ts | 100% | 100% | 100% | 100% |
 | src/auth/passkey-signup.ts | 100% | 100% | 100% | 100% |
+| src/auth/rate-limits.ts | 100% | 100% | 100% | 100% |
 | src/auth/signup-transaction.ts | 100% | 100% | 100% | 100% |
 | src/db/account-deletion.ts | 100% | 100% | 100% | 100% |
 | src/db/account.ts | 100% | 100% | 100% | 100% |
@@ -55,9 +58,12 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/db/group-list.ts | 100% | 100% | 100% | 100% |
 | src/db/group-schema.ts | 100% | 100% | 100% | 100% |
 | src/db/groups.ts | 100% | 100% | 100% | 100% |
+| src/db/housekeeping.ts | 100% | 100% | 100% | 100% |
 | src/db/invitations.ts | 100% | 100% | 100% | 100% |
 | src/db/list-queries.ts | 100% | 100% | 100% | 100% |
 | src/db/membership.ts | 100% | 100% | 100% | 100% |
+| src/db/rate-limit-schema.ts | 100% | 100% | 100% | 100% |
+| src/db/rate-limit.ts | 100% | 100% | 100% | 100% |
 | src/db/schema.ts | 100% | 100% | 100% | 100% |
 | src/db/snapshots.ts | 100% | 100% | 100% | 100% |
 | src/domain/attribution.ts | 100% | 100% | 100% | 100% |
@@ -68,10 +74,12 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/domain/group.ts | 100% | 100% | 100% | 100% |
 | src/domain/label.ts | 100% | 100% | 100% | 100% |
 | src/domain/movie.ts | 100% | 100% | 100% | 100% |
+| src/domain/rate-limit.ts | 100% | 100% | 100% | 100% |
 | src/domain/time.ts | 100% | 100% | 100% | 100% |
 | src/domain/tonight.ts | 100% | 100% | 100% | 100% |
 | src/domain/transitions.ts | 100% | 100% | 100% | 100% |
 | src/features/account/actions.ts | 100% | 100% | 100% | 100% |
+| src/features/account/load.ts | 100% | 100% | 100% | 100% |
 | src/features/account/messages.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/drawMotion.ts | 100% | 100% | 100% | 100% |
@@ -100,6 +108,7 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/features/swipe/deckState.ts | 100% | 100% | 100% | 100% |
 | src/server/groups.ts | 100% | 100% | 100% | 100% |
 | src/server/invitations.ts | 100% | 100% | 100% | 100% |
+| src/server/rate-limit.ts | 100% | 100% | 100% | 100% |
 | src/server/revalidate.ts | 100% | 100% | 100% | 100% |
 | src/server/session.ts | 100% | 100% | 100% | 100% |
 | src/server/sign-out.ts | 100% | 100% | 100% | 100% |
@@ -110,6 +119,7 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/tmdb/images.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/movies.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/schemas.ts | 100% | 100% | 100% | 100% |
+| src/tmdb/search-rank.ts | 100% | 100% | 100% | 100% |
 | src/ui/cx.ts | 100% | 100% | 100% | 100% |
 | src/ui/movieMeta.ts | 100% | 100% | 100% | 100% |
 | src/ui/quoted.ts | 100% | 100% | 100% | 100% |
