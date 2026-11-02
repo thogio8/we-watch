@@ -68,10 +68,6 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     outputs:
       url: ${{ steps.upload.outputs.url }}
     steps:
@@ -80,13 +76,23 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # Install scripts run here (the build needs them), without any secret:
+      # the Vercel token lives on the next step only.
       - run: npm ci
+      # The Vercel CLI is a devDependency at an exact version (package.json,
+      # lockfile integrity, Dependabot bumps it): npx --no never downloads.
+      # `vercel pull` writes production's variables on the runner and `vercel
+      # build` runs with them: no step may come after this one.
       - name: Build and upload, not online yet
         id: upload
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-          npx vercel@latest build --prod --token="$VERCEL_TOKEN"
-          url="$(npx vercel@latest deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")"
+          npx --no vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx --no vercel build --prod --token="$VERCEL_TOKEN"
+          url="$(npx --no vercel deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
   release:
@@ -100,27 +106,27 @@ jobs:
     environment:
       name: production
       url: ${{ vars.PROD_URL }}
+    # Each secret is set on the steps that use it, never on the job: npm ci
+    # (dependencies' code) sees none of them.
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       PROD_URL: ${{ vars.PROD_URL }}
-      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # No install script: the migration (drizzle-kit, its esbuild through
+      # the platform package) and the backup (@libsql/client, prebuilt
+      # binding) work without them.
+      - run: npm ci --ignore-scripts
 
-      # Encrypted with BACKUP_KEY, set on this step only (npm ci and the
-      # other steps never see it). Missing or malformed key: this step fails,
-      # so nothing is migrated nor deployed.
+      # Encrypted with BACKUP_KEY, set on this step only. Missing or malformed
+      # key: this step fails, so nothing is migrated nor deployed.
       - name: Backup every app table (encrypted)
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
           BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
         run: node scripts/backup-db.mjs backup/db.json.enc
       - uses: actions/upload-artifact@v7
@@ -131,20 +137,37 @@ jobs:
           retention-days: 90
 
       - name: Migrate the database (before the code that needs it)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
         run: npm run db:migrate
 
       - name: Remember the deployment in production
         id: previous
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: echo "id=$(bash scripts/vercel-prod.sh current)" >> "$GITHUB_OUTPUT"
 
       - name: Put the new deployment online
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: bash scripts/vercel-prod.sh promote "${{ needs.build.outputs.url }}"
 
       - name: Smoke test production
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: bash scripts/smoke-prod.sh
 
       - name: Roll back if production is broken
         if: failure() && steps.previous.outputs.id != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: bash scripts/vercel-prod.sh promote "${{ steps.previous.outputs.id }}"
 
   # fix → x.y.Z, feat → x.Y.0, feat! → X.0.0; refactor, test, ci, docs and
