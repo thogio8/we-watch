@@ -14,8 +14,8 @@ const OLD = "dpl_old";
 const NEW = "dpl_new";
 
 type AliasJob = { toDeploymentId: string; jobStatus: string } | null;
-/** The project as each poll sees it: the last state repeats. */
-let states: { production: string; job: AliasJob }[];
+/** The project as each poll sees it, the last one repeating; "blip": a 502. */
+let states: ({ production: string; job: AliasJob } | "blip")[];
 let promoteStatus: number;
 let promoteBody: unknown;
 let polls: number;
@@ -41,7 +41,11 @@ beforeEach(async () => {
       return send(promoteStatus, promoteBody);
     }
     if (path === "/v9/projects/prj_1") {
-      const { production, job } = states[Math.min(polls++, states.length - 1)]!;
+      const state = states[Math.min(polls++, states.length - 1)]!;
+      if (state === "blip") {
+        return void response.writeHead(502).end("<html>Bad Gateway</html>");
+      }
+      const { production, job } = state;
       return send(200, {
         targets: { production: { id: production } },
         lastAliasRequest: job,
@@ -124,6 +128,41 @@ describe("mise en ligne d'un déploiement (vercel-prod.sh promote)", () => {
     expect(code).toBe(1);
     expect(printed).toContain("received dpl_old (alias job failed)");
     expect(polls).toBe(1);
+  });
+
+  it("une bascule « skipped » (terminale pour Vercel) : vert", async () => {
+    states = [
+      { production: NEW, job: { toDeploymentId: NEW, jobStatus: "skipped" } },
+    ];
+
+    const { code, printed } = await promote();
+
+    expect(code).toBe(0);
+    expect(printed).toContain(`✓ ${NEW} in production`);
+  });
+
+  it("une réponse en panne de l'API (502, pas du JSON) puis la bascule : vert", async () => {
+    states = ["blip", pending, states[0]!];
+
+    const { code, printed } = await promote();
+
+    expect(code).toBe(0);
+    expect(printed).toContain(`✓ ${NEW} in production`);
+    expect(polls).toBe(3);
+  });
+
+  it("l'API en panne jusqu'à l'échéance : rouge, attendu et reçu, sans trace Node", async () => {
+    states = ["blip"];
+
+    const { code, printed } = await promote();
+
+    expect(code).toBe(1);
+    expect(printed).toContain(
+      `✕ production after 2 s: expected ${NEW} (alias job succeeded), received unreachable (alias job none)`,
+    );
+    expect(polls).toBeGreaterThan(1);
+    expect(printed).not.toMatch(/SyntaxError|at JSON\.parse|node:/);
+    expect(printed).not.toContain(TOKEN);
   });
 
   it("déjà en prod (Vercel refuse la promotion) : vert si le projet le confirme", async () => {

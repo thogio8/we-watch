@@ -21,23 +21,31 @@ project="$API/v9/projects/$VERCEL_PROJECT_ID?$team"
 json() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s)$1??''))"; }
 
 # "<production deployment id> <status of the alias job promoting $1, or none>"
-# (GET /v9/projects: targets.production.id, lastAliasRequest).
+# (GET /v9/projects: targets.production.id, lastAliasRequest), or
+# "unreachable none" on any failure (network, timeout, 4xx/5xx, not JSON):
+# the caller polls again until its deadline. Each request is bounded, so one
+# stalled call cannot outlive the deadline (a killed job skips the rollback).
 state() {
-  api "$project" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
-    const p=JSON.parse(s), job=p.lastAliasRequest;
-    const ours=job && job.toDeploymentId===process.argv[1];
-    console.log((p.targets?.production?.id??'none')+' '+(ours?job.jobStatus:'none'));
-  })" "$1"
+  local body
+  body="$(api -f --max-time 10 "$project")" || { echo "unreachable none"; return; }
+  node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
+    try {
+      const p=JSON.parse(s), job=p.lastAliasRequest;
+      const ours=job && job.toDeploymentId===process.argv[1];
+      console.log((p.targets?.production?.id??'none')+' '+(ours?job.jobStatus:'none'));
+    } catch { console.log('unreachable none'); }
+  })" "$1" <<<"$body"
 }
 
 # Production serves $1 once the project's production target is $1 and the
-# alias job promoting it, if it is the latest, has succeeded.
+# alias job promoting it, if it is the latest, is over: succeeded, or skipped
+# (terminal success for Vercel's own CLI, commands/promote/status.ts).
 wait_for() {
   local id="$1" deadline=$(($(date +%s%3N) + TIMEOUT * 1000)) production job
   while true; do
-    read -r production job < <(state "$id" || true)
+    read -r production job < <(state "$id") || true
     production="${production:-unreachable}" job="${job:-none}"
-    if [[ "$production" = "$id" && "$job" =~ ^(succeeded|none)$ ]]; then
+    if [[ "$production" = "$id" && "$job" =~ ^(succeeded|skipped|none)$ ]]; then
       echo "✓ $id in production"
       return
     fi
