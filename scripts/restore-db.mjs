@@ -11,14 +11,13 @@
 // Usage: BACKUP_KEY=… DATABASE_URL=… node scripts/restore-db.mjs <backup>
 import { createClient } from "@libsql/client";
 import { TABLES } from "./backup-tables.mjs";
+import { insertsInto, quote } from "./insert-rows.mjs";
 import { readBackup } from "./read-backup.mjs";
 
 const ORDER = Object.keys(TABLES);
 const MIGRATIONS = "__drizzle_migrations";
 const PRE_2_0 =
   "sauvegarde d'avant 2.0 : utiliser rehearse-migration --db <cible>";
-
-const quote = (name) => `"${name.replaceAll('"', '""')}"`;
 
 /** Refuses anything but a 2.0 backup of the tables a restore knows. */
 function checkBackup(backup) {
@@ -63,26 +62,6 @@ async function assertFresh(tx) {
   }
 }
 
-/** One insert per row, on the columns the backup and the schema share. */
-async function inserts(tx, table, rows) {
-  const { rows: schema } = await tx.execute({
-    sql: "select name from pragma_table_info(?)",
-    args: [table],
-  });
-  const known = new Set(schema.map(({ name }) => String(name)));
-  const saved = [...new Set(rows.flatMap((row) => Object.keys(row)))];
-  const ignored = saved.filter((name) => !known.has(name));
-  if (ignored.length > 0) {
-    console.error(`${table}: colonne ignorée ${ignored.join(", ")}`);
-  }
-  const kept = saved.filter((name) => known.has(name));
-  const sql = `insert into ${quote(table)} (${kept.map(quote).join(", ")}) values (${kept.map(() => "?").join(", ")})`;
-  return rows.map((row) => ({
-    sql,
-    args: kept.map((name) => row[name] ?? null),
-  }));
-}
-
 /** Writes the backup in one transaction; returns what to print. */
 async function restore(client, backup) {
   const tx = await client.transaction("write");
@@ -96,7 +75,7 @@ async function restore(client, backup) {
         report.push(`${table}: absente de la sauvegarde`);
         continue;
       }
-      statements.push(...(await inserts(tx, table, rows)));
+      statements.push(...(await insertsInto(tx, table, rows)));
       report.push(`${table}: ${rows.length} rows`);
     }
     if (statements.length > 0) await tx.batch(statements);

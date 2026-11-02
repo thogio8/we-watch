@@ -55,3 +55,6 @@ next-env.d.ts
 /e2e/.data/
 /test-results/
 /playwright-report/
+
+# migration rehearsal (a copy of production data: never committed)
+/.rehearsal/
