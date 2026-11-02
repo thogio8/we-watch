@@ -5,7 +5,7 @@ Le déroulé du jour où la prod passe aux comptes et aux groupes. À suivre dan
 Trois règles valent pour toute la page :
 
 - **La prod ne se migre et ne se déploie que par la CI** (push sur `main`). Jamais `vercel --prod`, jamais `npm run db:migrate` ni un SQL lancé à la main sur la base de prod.
-- **Aucun secret à l'écran ni dans un fichier suivi** : les commandes ci-dessous les demandent par une invite masquée (`read -rs`, `gh secret set`) ou les comparent sans les afficher.
+- **Aucun secret à l'écran ni dans un fichier suivi** : les commandes ci-dessous les lisent par une invite masquée (`read -rs`), les passent d'une commande à l'autre par un tube ou une variable (`openssl … |`, `"$(turso …)"`), ou les comparent sans les afficher. Jamais un secret en argument de commande (il resterait dans l'historique).
 - Les commandes se lancent depuis la racine du dépôt. Celles qui visent l'adresse de prod commencent par la lire :
 
   ```bash
@@ -46,10 +46,11 @@ node scripts/rehearse-migration.mjs .rehearsal/backup/movies.json
 - [ ] Facultatif : ouvrir la copie dans l'appli. `npm run build`, puis, avec un environnement **entièrement explicite** (jamais `.env.production.local`, que `next start` chargerait pour toute variable absente) :
 
   ```bash
+  read -rs TMDB_ACCESS_TOKEN && export TMDB_ACCESS_TOKEN   # ton jeton TMDB de dev, collé à l'invite masquée
   DATABASE_URL=file:.rehearsal/prod-copy.db DATABASE_AUTH_TOKEN= \
   BETTER_AUTH_URL=http://localhost:3000 BETTER_AUTH_SECRET="$(openssl rand -hex 32)" \
   SIGNUP=invite OWNER_CODE="code local de test" CRON_SECRET= \
-  TMDB_ACCESS_TOKEN=<ton jeton TMDB de dev> npx next start
+  npx next start
   ```
 
   Sur `http://localhost:3000` : « J’AI UN CODE PROPRIÉTAIRE », le code local, créer le compte ; « NOUS DEUX » montre les films, les écartés et les dates d'ajout.
@@ -87,8 +88,14 @@ node scripts/rehearse-migration.mjs .rehearsal/backup/movies.json
 Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploiements : les régler maintenant ne change rien à la 1.3.x en ligne, et le retour arrière (§5) la remet avec son ancien environnement.
 
 - [ ] **Secret GitHub `BACKUP_KEY`** : 64 caractères hexadécimaux. Sans lui, le job `release` s'arrête à la sauvegarde, avant toute migration.
-  1. `openssl rand -hex 32`, copié tout de suite dans le gestionnaire de mots de passe (« WeWatch BACKUP_KEY, créée le <date> »), hors du dépôt.
-  2. `gh secret set BACKUP_KEY`, puis coller la clé à l'invite (masquée).
+  1. Générer la clé dans un fichier hors du dépôt, sans l'afficher, et la donner à GitHub :
+
+     ```bash
+     (umask 077 && openssl rand -hex 32 > ~/wewatch-backup-key.txt)
+     gh secret set BACKUP_KEY < ~/wewatch-backup-key.txt
+     ```
+
+  2. Joindre `~/wewatch-backup-key.txt` à une entrée du gestionnaire de mots de passe (« WeWatch BACKUP_KEY, créée le <date> »), puis `shred -u ~/wewatch-backup-key.txt`.
   3. `gh secret list` : `BACKUP_KEY` y figure.
   - Une clé changée ne déchiffre plus les anciens artefacts : **garder chaque clé hors ligne 90 jours** après son remplacement (la durée de vie d'un artefact).
 - [ ] **Vercel, environnement Production**, depuis un dépôt lié (`npx vercel@latest link` si `.vercel/` manque) :
@@ -110,7 +117,12 @@ Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploieme
     printf invite | npx vercel@latest env add SIGNUP production
     ```
 
-  - `OWNER_CODE` : 12 caractères au moins, une phrase de plusieurs mots, gardée dans le gestionnaire de mots de passe (c'est elle qu'on tapera dans l'appli). `npx vercel@latest env add OWNER_CODE production`, puis la coller à l'invite.
+  - `OWNER_CODE` : 12 caractères au moins, une phrase de plusieurs mots, gardée dans le gestionnaire de mots de passe (c'est elle qu'on tapera dans l'appli). La coller à l'invite masquée :
+
+    ```bash
+    read -rs v && printf %s "$v" | npx vercel@latest env add OWNER_CODE production; unset v
+    ```
+
   - `CRON_SECRET`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `TMDB_ACCESS_TOKEN` : **inchangés**.
   - `ACCESS_CODE` : **gardé** jusqu'à la 2.1 (un retour vers la 1.3.x en a besoin ; la 2.0 l'ignore).
 - [ ] **Vérifier sans rien afficher** : le fichier tiré contient des secrets, il reste dans `.vercel/` (ignoré par git) et il est supprimé aussitôt.
@@ -141,11 +153,18 @@ Le proxy valide l'environnement à chaque requête : une variable absente ou inv
 
 Le mainteneur l'approuve et la lance lui-même.
 
+- [ ] **Personne n'utilise l'appli du push jusqu'à la fumée verte** : prévenir l'autre membre. Entre la copie de la liste (migration 0006) et la mise en ligne de la 2.0, la 1.3.x sert encore : un film ajouté, écarté ou marqué vu sur elle pendant ces minutes n'arriverait pas dans « NOUS DEUX » (pas de retour arrière, donc pas de rattrapage). Si cela arrive quand même : §6, dernier paragraphe.
+
 - [ ] Fusion de `release/2.0.0` dans `main` par un **commit de fusion** (jamais en squash : les commits `feat!` doivent rester visibles pour release-please) :
+
+  Depuis n'importe quel worktree : la commande va dans celui où `main` est extraite (le checkout principal), ou l'extrait ici si aucun ne l'a.
 
   ```bash
   git fetch origin
-  git checkout main && git pull --ff-only
+  main_dir="$(git worktree list --porcelain | awk '/^worktree /{w=substr($0,10)} $0=="branch refs/heads/main"{print w}')"
+  if [ -n "$main_dir" ]; then cd "$main_dir"; else git checkout main; fi
+  git status --short   # attendu : rien (arbre propre)
+  git pull --ff-only
   git merge --no-ff origin/release/2.0.0 -m "chore(release): merge 2.0.0"
   git log --oneline main~1..main | grep '!:'
   ```
@@ -192,8 +211,7 @@ Le mainteneur l'approuve et la lance lui-même.
 - [ ] Facultatif : la valeur de `PRAGMA foreign_keys` sur Turso, en lecture seule. Le code ne compte plus sur les cascades : 0 comme 1 conviennent, c'est pour la noter en §0.
 
   ```bash
-  turso db tokens create <base> --read-only --expiration 1h   # copier le jeton, puis :
-  read -rs DATABASE_AUTH_TOKEN && export DATABASE_AUTH_TOKEN
+  export DATABASE_AUTH_TOKEN="$(turso db tokens create <base> --read-only --expiration 1h)"
   DATABASE_URL="$(turso db show <base> --url)" node scripts/rehearse-migration.mjs --probe
   unset DATABASE_AUTH_TOKEN
   ```
@@ -242,7 +260,7 @@ Pendant le retour, la 1.3.x a écrit dans `movies` ; « NOUS DEUX » n'a pas bou
 - [ ] `npm run ci` : les tests des migrations (`src/db/legacy-migration.test.ts`, `tests/scripts/`) rejouent toute la chaîne, la nouvelle comprise, et le rattrapage a ses propres tests (`tests/scripts/replay-legacy-movies.test.ts`).
 - [ ] Un seul push sur `main` qui contient tout cela, puis §2 (« Ce que fait la CI ») et §3.
 
-**Ce que le rattrapage reporte** : les films ajoutés pendant le retour (copiés comme en 0006 : sans auteur, « vus avant les comptes » s'ils sont vus, écartés s'ils sont BOF ou retirés) ; un film déjà dans le groupe, marqué vu sur la 1.3.x pendant le retour, s'il n'était pas déjà vu ni marqué par un membre.
+**Ce que le rattrapage reporte** : les films ajoutés pendant le retour (copiés comme en 0006 : sans auteur, « vus avant les comptes » s'ils sont vus, écartés s'ils sont BOF ou retirés) ; un film déjà dans le groupe, marqué vu sur la 1.3.x pendant le retour, s'il n'est pas vu dans le groupe : jamais marqué en 2.0, ou démarqué en 2.0 (la marque de la 1.3.x, plus récente que la bascule, l'emporte alors).
 
 **Ce qu'il ne reporte pas** (à refaire à la main dans l'appli après la re-bascule, si besoin) : pour un film **déjà dans « NOUS DEUX »** :
 
@@ -250,10 +268,11 @@ Pendant le retour, la 1.3.x a écrit dans `movies` ; « NOUS DEUX » n'a pas bou
 - démarqué « vu » sur la 1.3.x : il reste vu ;
 - remarqué vu sur la 1.3.x alors qu'il l'était déjà dans le groupe : le groupe garde sa première date ;
 - marqué vu sur la 1.3.x alors qu'un membre l'avait marqué en 2.0 : la marque du membre et sa date restent ;
-- marqué vu sur la 1.3.x alors qu'un membre l'avait démarqué en 2.0 après la bascule : il reste démarqué (voulu) ;
 - tout changement de date de décision, et toute mise à jour d'un instantané TMDB existant.
 
 Et rien du tout si « NOUS DEUX » n'existe plus (son dernier membre l'a quitté).
+
+**Si quelqu'un a utilisé la 1.3.x pendant la bascule** (entre la migration et la fumée verte, §2) : ce SQL couvre aussi cette fenêtre, car sa limite (`watched_at` postérieur à la création du groupe) part de la copie de 0006. Le livrer en migration dans un push sur `main` (étapes ci-dessus, sans revert), avec les mêmes limites.
 
 ## 7. Restaurer une sauvegarde (base perdue ou abîmée)
 
@@ -267,26 +286,47 @@ La restauration n'a été testée que sur des fichiers SQLite locaux. **Conseill
    gh run download <run id> -n db-backup-<sha> -D .rehearsal/restore   # dossier ignoré par git
    ```
 
-2. [ ] Créer une base Turso **neuve** et la migrer (ce n'est pas la prod : elle est vide) :
+2. [ ] Créer une base Turso **neuve** (ce n'est pas la prod : elle est vide) et ouvrir ses accès sans les afficher :
 
    ```bash
    turso db create we-watch-<date> --location aws-eu-west-1
    export DATABASE_URL="$(turso db show we-watch-<date> --url)"
-   turso db tokens create we-watch-<date>   # copier le jeton, puis :
-   read -rs DATABASE_AUTH_TOKEN && export DATABASE_AUTH_TOKEN
-   npm run db:migrate
+   export DATABASE_AUTH_TOKEN="$(turso db tokens create we-watch-<date>)"
+   read -rs BACKUP_KEY && export BACKUP_KEY   # la clé en place le jour de l'artefact, depuis le gestionnaire de mots de passe
    ```
 
-3. [ ] Restaurer. La clé vient du gestionnaire de mots de passe : celle qui était en place **le jour de l'artefact**.
+   Puis, **selon la sauvegarde**, avant toute migration de la base neuve :
+   - **D'avant les groupes** : le `movies.json` de la 1.3.x, ou le `db.json.enc` **du jour de la bascule** (sauvegardé avant la migration, il n'a que `movies`). `restore-db` la refuserait (« sauvegarde d'avant 2.0 »). La répétition migre elle-même la base, **ne pas** lancer `npm run db:migrate` :
+
+     ```bash
+     node scripts/rehearse-migration.mjs .rehearsal/restore/<movies.json ou db.json.enc> --db "$DATABASE_URL"
+     ```
+
+     Attendu : les mêmes contrôles qu'en §0, conformes, code 0. Passer à l'étape 4.
+   - **D'après la bascule** (`db.json.enc` avec les groupes) : migrer la base neuve, puis étape 3.
+
+     ```bash
+     npm run db:migrate
+     ```
+
+3. [ ] Restaurer :
 
    ```bash
-   read -rs BACKUP_KEY && export BACKUP_KEY
    node scripts/restore-db.mjs .rehearsal/restore/db.json.enc
    ```
 
    Attendu : une ligne `<table>: <n> rows` par table, puis `restored`. Tout refus (`restauration refusée, rien n'est écrit : …`) laisse la base vide : base non migrée ou non vide, mauvaise clé, ou clé étrangère orpheline (essayer alors l'artefact précédent).
-   - Sauvegarde d'avant les groupes (`movies.json` de la 1.3.x, ou le `db.json.enc` du jour de la bascule, qui n'a que `movies`) : `restore-db` la refuse (« sauvegarde d'avant 2.0 »). La passer par la répétition, dans une base Turso neuve **non migrée** (sauter `npm run db:migrate` à l'étape 2) : `node scripts/rehearse-migration.mjs .rehearsal/restore/<fichier> --db "$DATABASE_URL"` (BACKUP_KEY exporté pour un `.enc`).
-4. [ ] Brancher l'appli sur la nouvelle base : `DATABASE_URL` et `DATABASE_AUTH_TOKEN` dans les secrets GitHub (`gh secret set DATABASE_URL`, `gh secret set DATABASE_AUTH_TOKEN`, valeurs collées à l'invite) **et** dans Vercel Production (`npx vercel@latest env rm <nom> production`, puis `env add`).
+
+4. [ ] Brancher l'appli sur la nouvelle base, dans les secrets GitHub **et** dans Vercel Production, sans rien afficher :
+
+   ```bash
+   for name in DATABASE_URL DATABASE_AUTH_TOKEN; do
+     printf %s "${!name}" | gh secret set "$name"
+     npx vercel@latest env rm "$name" production --yes
+     printf %s "${!name}" | npx vercel@latest env add "$name" production
+   done
+   ```
+
 5. [ ] Relancer la CI pour reconstruire et remettre en ligne avec ce nouvel environnement : `gh workflow run ci.yml --ref main`, puis la suivre (§2).
 6. [ ] Les sessions ne sont jamais sauvegardées : chacun se reconnecte avec sa passkey (elles sont restaurées). Les liens d'invitation restent valables.
 7. [ ] `rm -rf .rehearsal` et `unset BACKUP_KEY DATABASE_AUTH_TOKEN DATABASE_URL`.
