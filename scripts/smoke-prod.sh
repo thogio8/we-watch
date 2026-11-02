@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # After a deploy: the app answers, its environment is valid (the proxy checks
 # it on every request), sign-in is wired (redirect, security headers, passkey
-# options for this host, unused auth paths closed) and the whole stack works
-# (the daily cron purges and refreshes: database and TMDB). Needs PROD_URL and
-# CRON_SECRET. A failure prints what was expected and what was received, never
-# a secret nor a response body. One passkey options call per run: far below
-# its limit (30 per 10 min per IP).
+# options for this host, unused auth paths closed, other origins refused) and
+# the whole stack works (the daily cron purges and refreshes: database and
+# TMDB). Needs PROD_URL and CRON_SECRET. A failure prints what was expected
+# and what was received, never a secret nor a response body. One passkey
+# options call per run: far below its limit (30 per 10 min per IP).
 set -euo pipefail
 
 fail() {
@@ -51,6 +51,14 @@ echo "✓ passkey options 200, rpId $host"
 status="$(request -o /dev/null -w '%{http_code}' "$base/api/auth/ok")"
 [ "$status" = 404 ] || fail "/api/auth/ok (not an app auth path)" 404 "$status"
 echo "✓ /api/auth/ok 404"
+
+# A cross-site POST that looks signed in (a cookie): Better Auth's origin
+# check must refuse it whatever the environment (src/auth/create-auth.ts).
+status="$(request -o /dev/null -w '%{http_code}' -X POST \
+  -H 'Origin: https://evil.example' -H 'Content-Type: application/json' \
+  -H 'Cookie: x=1' --data '{}' "$base/api/auth/passkey/verify-authentication")"
+[ "$status" = 403 ] || fail "POST from another origin (origin check)" 403 "$status"
+echo "✓ POST from another origin 403"
 
 body="$(request -w '\n%{http_code}' \
   -H "Authorization: Bearer $CRON_SECRET" "$base/api/cron/refresh-movies")"

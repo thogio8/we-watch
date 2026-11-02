@@ -61,6 +61,17 @@ const forgetGroupOnSignOut = (baseURL: string) =>
     });
   });
 
+/**
+ * Better Auth skips its origin and CSRF checks when it believes it runs
+ * tests (NODE_ENV=test or any truthy TEST variable). In production they stay
+ * on whatever the environment says; elsewhere its default is kept, so unit
+ * and functional tests need no Origin header.
+ */
+const originCheckForcedOn = () =>
+  process.env.NODE_ENV === "production"
+    ? { disableOriginCheck: false, disableCSRFCheck: false }
+    : {};
+
 export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
   db,
   secret,
@@ -90,6 +101,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     },
     emailAndPassword: { enabled: false },
     rateLimit: authRateLimit(rateLimits),
+    advanced: originCheckForcedOn(),
     hooks: { after: forgetGroupOnSignOut(baseURL) },
     databaseHooks: {
       user: {

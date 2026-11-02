@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 // against a fake production that answers like a healthy 2.0.
 
 const SECRET = "smoke-test-cron-secret";
+const VERIFY = "/api/auth/passkey/verify-authentication";
 const CSP = "default-src 'self'; frame-ancestors 'none'; object-src 'none'";
 /** A response body the script must never print, on success or failure. */
 const BODY_MARKER = "never-printed-body";
@@ -32,6 +33,9 @@ const healthy = (host: string): Prod => ({
     body: `{"challenge":"${BODY_MARKER}","rpId":"${host}","userVerification":"preferred"}`,
   },
   "/api/auth/ok": { status: 404, body: BODY_MARKER },
+  // Answered to a POST from another origin only (the fake below): Better
+  // Auth's origin check refuses it.
+  [VERIFY]: { status: 403, body: BODY_MARKER },
   "/api/cron/refresh-movies": {
     status: 200,
     body: '{"total":0,"refreshed":0,"failed":[],"purged":{"sessions":0}}',
@@ -46,8 +50,12 @@ beforeEach(async () => {
   server = createServer((request, response: ServerResponse) => {
     const cron = request.url === "/api/cron/refresh-movies";
     const authorized = request.headers.authorization === `Bearer ${SECRET}`;
+    const crossSite =
+      request.method === "POST" && request.headers.origin !== url;
     const answer =
-      cron && !authorized ? { status: 401 } : prod[request.url ?? ""];
+      (cron && !authorized) || (request.url === VERIFY && !crossSite)
+        ? { status: 401 }
+        : prod[request.url ?? ""];
     if (!answer) return void response.writeHead(404).end();
     response.writeHead(answer.status, answer.headers).end(answer.body);
   });
@@ -77,11 +85,11 @@ function expectNothingSecret(printed: string) {
 }
 
 describe("test de fumée de la prod", () => {
-  it("une prod saine : 6 vérifications vertes, aucun secret affiché", async () => {
+  it("une prod saine : 7 vérifications vertes, aucun secret affiché", async () => {
     const { code, printed } = await smoke();
 
     expect(code).toBe(0);
-    expect(printed.match(/^✓ /gm)).toHaveLength(6);
+    expect(printed.match(/^✓ /gm)).toHaveLength(7);
     expect(printed).not.toContain("✕");
     expectNothingSecret(printed);
   });
@@ -161,6 +169,16 @@ describe("test de fumée de la prod", () => {
 
     expect(code).toBe(1);
     expect(printed).toContain("expected 404, received 200");
+    expectNothingSecret(printed);
+  });
+
+  it("le contrôle d'origine de Better Auth coupé (variable TEST) : rouge", async () => {
+    prod[VERIFY] = { status: 400, body: BODY_MARKER };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain("expected 403, received 400");
     expectNothingSecret(printed);
   });
 
