@@ -7,6 +7,7 @@ import type { Database } from "@/db/create-database";
 import type { RateLimits } from "@/db/rate-limit";
 import { parseDisplayName } from "@/domain/display-name";
 import { GROUP_COOKIE, groupCookieAttributes } from "@/domain/group";
+import { onlyAuthPaths } from "./auth-paths";
 import { passkeyRegistration } from "./passkey-registration";
 import { passkeySignup, signupTicketUses } from "./passkey-signup";
 import { authRateLimit } from "./rate-limits";
@@ -23,41 +24,6 @@ export type AuthConfig<Plugins extends BetterAuthPlugin[] = []> = {
 };
 
 const DAY_SECONDS = 24 * 60 * 60;
-
-// Sign-in is passkey only: these core endpoints (email/password, email
-// change and verification, social accounts, profile and session edits, user
-// deletion, passkey and session management: « MON COMPTE » does it with its
-// own Server Actions) are unused, so those exact paths answer 404 (/reset-password/:token,
-// /callback/:id, /ok and /error still answer; harmless, see piece 6).
-export const DISABLED_PATHS = [
-  "/sign-up/email",
-  "/sign-in/email",
-  "/sign-in/social",
-  "/verify-password",
-  "/change-password",
-  "/request-password-reset",
-  "/reset-password",
-  "/change-email",
-  "/send-verification-email",
-  "/verify-email",
-  "/update-user",
-  "/update-session",
-  "/list-sessions",
-  "/revoke-session",
-  "/revoke-sessions",
-  "/revoke-other-sessions",
-  "/delete-user",
-  "/delete-user/callback",
-  "/link-social",
-  "/unlink-account",
-  "/list-accounts",
-  "/account-info",
-  "/get-access-token",
-  "/refresh-token",
-  "/passkey/list-user-passkeys",
-  "/passkey/update-passkey",
-  "/passkey/delete-passkey",
-];
 
 /**
  * How pages and Server Actions read the session (server/session.ts): from
@@ -123,7 +89,6 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     },
     emailAndPassword: { enabled: false },
     rateLimit: authRateLimit(rateLimits),
-    disabledPaths: DISABLED_PATHS,
     hooks: { after: forgetGroupOnSignOut },
     databaseHooks: {
       user: {
@@ -139,6 +104,8 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
       },
     },
     plugins: [
+      // First: an unused path stops here, before any other plugin.
+      onlyAuthPaths,
       passkey({
         rpID: url.hostname,
         rpName: "WeWatch",

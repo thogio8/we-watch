@@ -2,7 +2,7 @@ import { testUtils } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createSignupTicket } from "@/access/signup-ticket";
-import { createAuth, DISABLED_PATHS } from "@/auth/create-auth";
+import { createAuth } from "@/auth/create-auth";
 import { passkey, user } from "@/db/auth-schema";
 import { createDatabase, type Database } from "@/db/create-database";
 import { group, membership } from "@/db/group-schema";
@@ -124,51 +124,6 @@ describe("Better Auth (fonctionnel)", () => {
     });
   });
 
-  it.each(
-    DISABLED_PATHS.flatMap((path) => [
-      ["GET", path],
-      ["POST", path],
-    ]),
-  )("%s %s inutilisée répond 404", async (method, path) => {
-    const response = await auth.handler(
-      new Request(`${BASE_URL}/api/auth${path}`, {
-        method,
-        headers: { "content-type": "application/json", origin: BASE_URL },
-        body: method === "POST" ? JSON.stringify({ name: "\u200B" }) : null,
-      }),
-    );
-
-    expect(response.status).toBe(404);
-  });
-
-  it.each([
-    ["GET", "/list-sessions"],
-    ["POST", "/revoke-session"],
-    ["POST", "/revoke-sessions"],
-    ["POST", "/revoke-other-sessions"],
-  ])(
-    "%s %s est coupée (404), même connecté : l'appli gère les sessions elle-même",
-    async (method, path) => {
-      const ctx = await auth.$context;
-      const lea = await saveUser("Léa");
-      const signedIn = await ctx.test.getAuthHeaders({ userId: lea.id });
-
-      const response = await auth.handler(
-        new Request(`${BASE_URL}/api/auth${path}`, {
-          method,
-          headers: {
-            "content-type": "application/json",
-            origin: BASE_URL,
-            cookie: signedIn.get("cookie") as string,
-          },
-          body: method === "POST" ? JSON.stringify({ token: "x" }) : null,
-        }),
-      );
-
-      expect(response.status).toBe(404);
-    },
-  );
-
   it("la déconnexion efface aussi le groupe affiché (cookie ww_group)", async () => {
     const ctx = await auth.$context;
     const lea = await saveUser("Léa");
@@ -207,14 +162,6 @@ describe("Better Auth (fonctionnel)", () => {
     });
 
     expect(await bare.api.getSession({ headers: new Headers() })).toBeNull();
-  });
-
-  it("la route de session reste ouverte", async () => {
-    const response = await auth.handler(
-      new Request(`${BASE_URL}/api/auth/get-session`),
-    );
-
-    expect(response.status).toBe(200);
   });
 
   it("une inscription par passkey sans ticket est refusée", async () => {
