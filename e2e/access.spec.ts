@@ -61,3 +61,48 @@ test.describe("connexion", () => {
     expect(names).toContain("better-auth.session_data");
   });
 });
+
+test.describe("en-têtes de sécurité", () => {
+  const expectSecurityHeaders = (headers: Record<string, string>) => {
+    expect(headers["content-security-policy"]).toContain(
+      "frame-ancestors 'none'",
+    );
+    expect(headers["content-security-policy"]).not.toContain("'unsafe-eval'");
+    expect(headers).toMatchObject({
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "cross-origin-opener-policy": "same-origin",
+      "strict-transport-security": "max-age=63072000",
+    });
+    expect(headers["permissions-policy"]).toContain("camera=()");
+  };
+
+  test("les en-têtes de sécurité sont servis sur la connexion", async ({
+    page,
+  }) => {
+    const response = await page.goto("/connexion");
+
+    expectSecurityHeaders(response!.headers());
+  });
+
+  test("les en-têtes de sécurité sont servis sur TIRER, connecté", async ({
+    app,
+  }) => {
+    const response = await app.goto("/");
+
+    await expect(app).not.toHaveURL(/\/connexion/);
+    expectSecurityHeaders(response!.headers());
+  });
+
+  test("une invitation garde son Referrer-Policy: no-referrer", async ({
+    page,
+  }) => {
+    const response = await page.goto(`/invitation/${"x".repeat(43)}`);
+
+    expect(response!.headers()).toMatchObject({
+      "referrer-policy": "no-referrer",
+      "x-frame-options": "DENY",
+    });
+  });
+});

@@ -30,6 +30,7 @@ import {
 } from "../src/db/group-schema";
 import { movies } from "../src/db/schema";
 import { GROUP_COOKIE } from "../src/domain/group";
+import { watchSecurity } from "./csp";
 import { appUrl, databaseOf, E2E_AUTH_SECRET } from "./env";
 
 const databases = new Map<number, ReturnType<typeof createDatabase>>();
@@ -201,15 +202,20 @@ async function secondDevices(
   ) => Promise<void>,
 ) {
   const devices: BrowserContext[] = [];
+  const checks: (() => void)[] = [];
   await use(async (setUp) => {
     const device = await browser.newContext();
     devices.push(device);
+    checks.push(await watchSecurity(device));
     const page = await device.newPage();
     await setUp(page);
     return page;
   });
   for (const device of devices) {
     await device.close();
+  }
+  for (const check of checks) {
+    check();
   }
 }
 
@@ -233,6 +239,12 @@ export const test = base.extend<{
 }>({
   baseURL: async ({}, use, testInfo) => {
     await use(appUrl(testInfo.parallelIndex));
+  },
+  // Every test fails on a CSP violation or an unknown auth path (e2e/csp.ts).
+  context: async ({ context }, use) => {
+    const check = await watchSecurity(context);
+    await use(context);
+    check();
   },
   app: async ({ page }, use) => {
     await wipe();
