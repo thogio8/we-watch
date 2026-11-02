@@ -2,6 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CLOSED_ERROR } from "./messages";
 import { SigninScreen } from "./SigninScreen";
 import { SignupForm } from "./SignupForm";
 
@@ -100,9 +101,8 @@ describe("SigninScreen, accueil", () => {
   it("sur invitation : le message d'invitation, pas de CRÉER UN COMPTE", () => {
     renderScreen("invite");
 
-    expect(
-      screen.getByText("WEWATCH SE REJOINT SUR INVITATION"),
-    ).toBeInTheDocument();
+    // The text the production smoke test looks for (scripts/smoke-prod.sh).
+    expect(screen.getByText(CLOSED_ERROR)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "CRÉER UN COMPTE" }),
     ).not.toBeInTheDocument();

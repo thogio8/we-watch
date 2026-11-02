@@ -45,8 +45,9 @@ csp="$(request -o /dev/null -D - "$base/connexion" |
     "${csp:-(no content-security-policy)}"
 echo "✓ /connexion content-security-policy with frame-ancestors 'none'"
 
-# The text of src/features/signin/messages.ts (CLOSED_ERROR), its spaces
-# possibly non-breaking (U+00A0, &nbsp;, &#160;, &#xa0;).
+# CLOSED_ERROR in src/features/signin/messages.ts, the note /connexion shows
+# when signup is by invitation (SigninHome): a test keeps the two equal. Its
+# spaces may be non-breaking (U+00A0, &nbsp;, &#160;, &#xa0;).
 invite_only="WEWATCH SE REJOINT SUR INVITATION"
 if [ "$expect_signup" = invite ]; then
   page="$(request "$base/connexion" |

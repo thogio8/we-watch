@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { CLOSED_ERROR } from "@/features/signin/messages";
 
 // The CI's release job runs this script on production right after putting
 // it online, and rolls back when it fails (.github/workflows/ci.yml): here,
@@ -14,7 +16,7 @@ const CSP = "default-src 'self'; frame-ancestors 'none'; object-src 'none'";
 /** A response body the script must never print, on success or failure. */
 const BODY_MARKER = "never-printed-body";
 /** What /connexion shows when signup is by invitation only (SIGNUP=invite). */
-const INVITE_ONLY = "WEWATCH SE REJOINT SUR INVITATION";
+const INVITE_ONLY = CLOSED_ERROR;
 const INVITE_PAGE = `<main>${BODY_MARKER}<p class="note">${INVITE_ONLY}</p></main>`;
 
 type Answer = {
@@ -102,6 +104,12 @@ describe("test de fumée de la prod", () => {
     expect(printed.match(/^✓ /gm)).toHaveLength(8);
     expect(printed).not.toContain("✕");
     expectNothingSecret(printed);
+  });
+
+  it("la fumée attend le texte exact que l'écran de connexion affiche sur invitation", () => {
+    const script = readFileSync("scripts/smoke-prod.sh", "utf8");
+
+    expect(script).toContain(`invite_only="${CLOSED_ERROR}"`);
   });
 
   it("SIGNUP ouvert alors que le dépôt attend l'invitation : rouge", async () => {
