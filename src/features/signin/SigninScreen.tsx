@@ -60,7 +60,7 @@ export function SigninScreen({
 /** While the session is checked: the title alone, nothing to tap yet. */
 export function SigninScreenFallback() {
   return (
-    <main className={styles.screen} aria-busy="true">
+    <main className={styles.screen} aria-busy="true" data-public-screen>
       <Headline lines={BRAND_LINES} className={styles.brand} />
     </main>
   );

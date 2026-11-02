@@ -18,7 +18,7 @@ interface TicketPageProps {
  */
 export function TicketPage({ title, error, children }: TicketPageProps) {
   return (
-    <main className={styles.screen}>
+    <main className={styles.screen} data-public-screen>
       <Headline lines={BRAND_LINES} className={styles.brand} />
       <div className={styles.form}>
         <SigninTicket title={title} error={error} />

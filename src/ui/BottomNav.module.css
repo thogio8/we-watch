@@ -46,3 +46,9 @@
     padding: 8px 0;
   }
 }
+
+/* A public screen (sign-in, invitation) marks itself: the tabs never show
+   there, not even in the static shell, before any script has run. */
+:global(body:has([data-public-screen])) .nav {
+  display: none;
+}
