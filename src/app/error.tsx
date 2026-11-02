@@ -1,5 +1,7 @@
 "use client";
 
+import { leaveIfSignedOut } from "@/access/signed-out";
+import { useEffect } from "react";
 import { Button } from "@/ui/Button";
 import { Poster } from "@/ui/Poster";
 import { Stamp } from "@/ui/Stamp";
@@ -7,10 +9,13 @@ import { Ticket } from "@/ui/Ticket";
 import styles from "./error.module.css";
 
 interface ErrorPageProps {
+  error: Error & { digest?: string };
   retry: () => void;
 }
 
-export default function ErrorPage({ retry }: ErrorPageProps) {
+export default function ErrorPage({ error, retry }: ErrorPageProps) {
+  // An action refused for want of a session that nothing caught.
+  useEffect(() => leaveIfSignedOut(error), [error]);
   return (
     <main className={styles.page}>
       <Ticket

@@ -1,4 +1,4 @@
-/* « NOM DU GROUPE » and its button: creating (panel, first group screen) or renaming. */
+/* A name field and its button: a group (create, rename) or my own name. */
 .form {
   display: flex;
   flex-direction: column;
@@ -30,13 +30,18 @@
   text-transform: uppercase;
 }
 
+/* A person's name: shown as typed, the case is theirs. */
+.input.asTyped {
+  text-transform: none;
+}
+
 .input:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
 
 .error {
-  composes: alert from "../../ui/Alert.module.css";
+  composes: alert from "./Alert.module.css";
   margin: 0;
 }
 

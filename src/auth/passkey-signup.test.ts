@@ -1,5 +1,5 @@
 import type * as betterAuthApi from "better-auth/api";
-import { getSessionFromCtx } from "better-auth/api";
+import { getAuthoritativeSessionFromCtx } from "better-auth/api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSignupTicket, readSignupTicket } from "@/access/signup-ticket";
 import { LEGACY_GROUP_ID } from "@/domain/group";
@@ -9,7 +9,7 @@ import { passkeySignup } from "./passkey-signup";
 
 vi.mock("better-auth/api", async (importOriginal) => ({
   ...(await importOriginal<typeof betterAuthApi>()),
-  getSessionFromCtx: vi.fn(),
+  getAuthoritativeSessionFromCtx: vi.fn(),
 }));
 // The conditional insert runs on the real transaction: tested in group-join.
 vi.mock("./group-join", async (importOriginal) => ({
@@ -18,7 +18,7 @@ vi.mock("./group-join", async (importOriginal) => ({
 }));
 
 beforeEach(() => {
-  vi.mocked(getSessionFromCtx).mockResolvedValue(null);
+  vi.mocked(getAuthoritativeSessionFromCtx).mockResolvedValue(null);
   vi.mocked(joinGroupInSignup).mockReset();
 });
 
@@ -46,9 +46,16 @@ function fakeCtx({ used = false } = {}) {
   };
 }
 
-/** The verification arguments the plugin passes, reduced to what we read. */
-function afterVerificationArgs(ctx: unknown, context: string | null) {
-  return { ctx, context } as unknown as Parameters<
+/**
+ * The verification arguments the plugin passes, reduced to what we read:
+ * `user` is who the options were generated for (the session's user, if any).
+ */
+function afterVerificationArgs(
+  ctx: unknown,
+  context: string | null,
+  userId = "already-here",
+) {
+  return { ctx, context, user: { id: userId } } as unknown as Parameters<
     ReturnType<typeof passkeySignup>["afterVerification"]
   >[0];
 }
@@ -193,23 +200,55 @@ describe("passkeySignup", () => {
     expect(createUser).not.toHaveBeenCalled();
   });
 
-  it("afterVerification : connecté, on ne crée pas de second compte", async () => {
+  const signedIn = () =>
+    vi.mocked(getAuthoritativeSessionFromCtx).mockResolvedValue({
+      session: {},
+      user: { id: "already-here" },
+    } as never);
+
+  it("afterVerification : connecté, avec un ticket, on ne crée pas de second compte", async () => {
     const ticket = await createSignupTicket(
       { name: "Léa", owner: false, invite: null },
       SECRET,
     );
-    vi.mocked(getSessionFromCtx).mockResolvedValue({
-      session: {},
-      user: { id: "already-here" },
-    } as never);
-    const { createUser, ctx } = fakeCtx();
+    signedIn();
+    const { createUser, create, ctx } = fakeCtx();
 
     await expect(
       passkeySignup(SECRET).afterVerification(
         afterVerificationArgs(ctx, ticket),
       ),
-    ).rejects.toMatchObject({ statusCode: 400 });
-    expect(getSessionFromCtx).toHaveBeenCalledWith(ctx);
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      body: { message: "Already signed in" },
+    });
+    expect(getAuthoritativeSessionFromCtx).toHaveBeenCalledWith(ctx);
+    expect(createUser).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("afterVerification : connecté, sans ticket, la passkey va à l’utilisateur de la session", async () => {
+    signedIn();
+    const { createUser, create, ctx } = fakeCtx();
+
+    const result = await passkeySignup(SECRET).afterVerification(
+      afterVerificationArgs(ctx, null),
+    );
+
+    expect(result).toBeUndefined();
+    expect(createUser).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("afterVerification : connecté, des options faites pour un autre utilisateur sont refusées", async () => {
+    signedIn();
+    const { createUser, ctx } = fakeCtx();
+
+    await expect(
+      passkeySignup(SECRET).afterVerification(
+        afterVerificationArgs(ctx, null, "someone-else"),
+      ),
+    ).rejects.toMatchObject({ statusCode: 401 });
     expect(createUser).not.toHaveBeenCalled();
   });
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assertSwipeDecision, assertTmdbId, isPositiveInt } from "./validate";
+import {
+  assertId,
+  assertSwipeDecision,
+  assertTmdbId,
+  isPositiveInt,
+} from "./validate";
 
 describe("validate", () => {
   it("isPositiveInt : entiers sûrs strictement positifs seulement", () => {
@@ -21,5 +26,15 @@ describe("validate", () => {
     expect(() => assertSwipeDecision("decideSwipe", "KEEP")).toThrow(
       "decideSwipe: invalid decision KEEP",
     );
+  });
+
+  it("assertId : une chaîne de 1 à 64 caractères, sinon nomme l'action", () => {
+    expect(() => assertId("deletePasskey", "p-1")).not.toThrow();
+    expect(() => assertId("deletePasskey", "x".repeat(64))).not.toThrow();
+    for (const value of ["", "x".repeat(65), 42, null, undefined]) {
+      expect(() => assertId("deletePasskey", value)).toThrow(
+        "deletePasskey: invalid id",
+      );
+    }
   });
 });

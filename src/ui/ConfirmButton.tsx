@@ -1,6 +1,13 @@
 "use client";
 
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "./Button";
 import styles from "./ConfirmButton.module.css";
 import { useConfirm } from "./useConfirm";
@@ -10,8 +17,13 @@ interface ConfirmTicketProps {
   /** Under the question, e.g. what will be lost. */
   warning?: string;
   confirmLabel: string;
-  action: () => Promise<void>;
+  /** Resolves to a refusal to show (expected, e.g. the last passkey), or nothing once done. */
+  action: () => Promise<string | void>;
   failure: string;
+  /** Between the question and the answer, e.g. a field to fill in first. */
+  children?: ReactNode;
+  /** False: the confirm button stays disabled (e.g. until the name is typed). */
+  ready?: boolean;
   /** The page is leaving once done: the ticket stays, pending. */
   leaves: boolean;
   onDone: () => void;
@@ -25,6 +37,8 @@ function ConfirmTicket({
   confirmLabel,
   action,
   failure,
+  children,
+  ready = true,
   leaves,
   onDone,
   onCancel,
@@ -35,10 +49,7 @@ function ConfirmTicket({
   const cancel = useRef<HTMLButtonElement>(null);
   const confirm = useRef<HTMLButtonElement>(null);
   const { pending, error, run } = useConfirm(
-    async () => {
-      await action();
-      return null;
-    },
+    async () => (await action()) ?? null,
     { failure, done: onDone, leaves },
   );
   useEffect(() => {
@@ -73,6 +84,7 @@ function ConfirmTicket({
           {warning}
         </p>
       )}
+      {children}
       {error !== null && (
         <p className={styles.error} role="alert">
           {error}
@@ -90,7 +102,8 @@ function ConfirmTicket({
         <Button
           ref={confirm}
           variant="primary"
-          disabled={pending}
+          className={styles.confirm}
+          disabled={pending || !ready}
           onClick={run}
         >
           {confirmLabel}
@@ -114,6 +127,8 @@ interface ConfirmButtonProps extends Omit<
    * this callback instead of coming back to the button.
    */
   onDone?: () => void;
+  /** Cancelled (« ANNULER », Escape): e.g. forget what was typed. */
+  onCancel?: () => void;
 }
 
 /**
@@ -125,6 +140,7 @@ export function ConfirmButton({
   small = false,
   leaves = false,
   onDone,
+  onCancel,
   ...ticket
 }: ConfirmButtonProps) {
   const [asking, setAsking] = useState(false);
@@ -139,6 +155,7 @@ export function ConfirmButton({
     const close = () => {
       answered.current = true;
       setAsking(false);
+      onCancel?.();
     };
     const done = () => {
       answered.current = onDone === undefined;

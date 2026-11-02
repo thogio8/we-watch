@@ -9,6 +9,17 @@ export const LEGACY_GROUP_NAME = "NOUS DEUX";
 /** Cookie remembering the displayed group. */
 export const GROUP_COOKIE = "ww_group";
 
+/**
+ * Attributes of GROUP_COOKIE, the same to set and to delete it (`secure`
+ * in production only: development and tests run over http).
+ */
+export const groupCookieAttributes = (secure: boolean) => ({
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure,
+  path: "/",
+});
+
 export type GroupSummary = { id: string; name: string; memberCount: number };
 
 /** A group name: a label of 1 to 30 characters (see parseLabel). */

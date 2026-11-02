@@ -17,7 +17,7 @@ import { getActiveGroup } from "@/server/groups";
 async function ListData() {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
+  if (!active.group) return <FirstGroupScreen create={createGroup} />;
   const groupId = active.group.id;
   const list = getGroupList();
   const [toWatch, watched] = await Promise.all([

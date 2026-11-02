@@ -1,3 +1,4 @@
+import { leaveIfSignedOut } from "@/access/signed-out";
 import { useState } from "react";
 
 export type ListAction = (tmdbId: number) => Promise<void>;
@@ -10,7 +11,8 @@ export function useListAction() {
     setFailed(false);
     try {
       await action(tmdbId);
-    } catch {
+    } catch (error) {
+      leaveIfSignedOut(error);
       setFailed(true);
     }
   };

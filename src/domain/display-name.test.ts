@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDisplayName } from "./display-name";
+import { confirmsName, parseDisplayName } from "./display-name";
 
 describe("parseDisplayName", () => {
   it("retire les espaces autour du nom", () => {
@@ -63,5 +63,32 @@ describe("parseDisplayName", () => {
     expect(parseDisplayName(null)).toBeNull();
     expect(parseDisplayName(undefined)).toBeNull();
     expect(parseDisplayName(new File([""], "x.txt"))).toBeNull();
+  });
+});
+
+describe("confirmsName", () => {
+  it("accepte le prénom tapé tel quel, espaces autour ou doublés", () => {
+    expect(confirmsName("Léa", "Léa")).toBe(true);
+    expect(confirmsName("  Jean  Pierre ", "Jean Pierre")).toBe(true);
+    expect(confirmsName("Le\u0301a", "Léa")).toBe(true);
+  });
+
+  it("confond les apostrophes typographiques et droites, des deux côtés", () => {
+    expect(confirmsName("D\u2019Artagnan", "D'Artagnan")).toBe(true);
+    expect(confirmsName("D'Artagnan", "D\u2019Artagnan")).toBe(true);
+    expect(confirmsName("D\u2018Artagnan", "D\u02BCArtagnan")).toBe(true);
+  });
+
+  it("refuse un autre prénom, une autre casse, du vide ou autre chose qu’une chaîne", () => {
+    expect(confirmsName("Hugo", "Léa")).toBe(false);
+    expect(confirmsName("léa", "Léa")).toBe(false);
+    expect(confirmsName("", "Léa")).toBe(false);
+    expect(confirmsName(null, "Léa")).toBe(false);
+  });
+
+  it("confirme un ancien prénom qu’on ne pourrait plus écrire aujourd’hui", () => {
+    const legacy = "Léa\u200B\u2800";
+    expect(parseDisplayName(legacy)).toBeNull();
+    expect(confirmsName(legacy, legacy)).toBe(true);
   });
 });

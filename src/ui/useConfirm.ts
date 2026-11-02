@@ -1,5 +1,6 @@
 "use client";
 
+import { leaveIfSignedOut } from "@/access/signed-out";
 import { useRef, useState } from "react";
 
 /** Resolves to the error to show, or null once done. */
@@ -31,7 +32,10 @@ export function useConfirm(
     running.current = true;
     setPending(true);
     setError(null);
-    const outcome = await confirm().catch(() => failure);
+    const outcome = await confirm().catch((error: unknown) => {
+      leaveIfSignedOut(error);
+      return failure;
+    });
     if (outcome === null) {
       done();
       if (leaves) return;

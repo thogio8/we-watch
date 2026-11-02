@@ -1,6 +1,7 @@
 import "server-only";
 import { nextCookies } from "better-auth/next-js";
 import { createAuth } from "@/auth/create-auth";
+import { createAccount, type Account } from "@/db/account";
 import { createDatabase, type Database } from "@/db/create-database";
 import { createDecisions, type Decisions } from "@/db/decisions";
 import { createGroupList, type GroupList } from "@/db/group-list";
@@ -14,6 +15,7 @@ import type { DeckId } from "@/tmdb/decks";
 import { discoverDeck, getMovieSnapshot } from "@/tmdb/movies";
 
 let database: Database | undefined;
+let account: Account | undefined;
 let decisions: Decisions | undefined;
 let groupList: GroupList | undefined;
 let groups: Groups | undefined;
@@ -25,6 +27,11 @@ function getDatabase(): Database {
   const env = getServerEnv();
   database ??= createDatabase(env.DATABASE_URL, env.DATABASE_AUTH_TOKEN);
   return database;
+}
+
+export function getAccount(): Account {
+  account ??= createAccount(getDatabase());
+  return account;
 }
 
 export function getDecisions(): Decisions {

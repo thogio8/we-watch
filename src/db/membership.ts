@@ -4,6 +4,7 @@ import type { Database, Executor } from "./create-database";
 import { group, groupMovie, membership, movieWant } from "./group-schema";
 
 type Member = { userId: string; name: string; joinedAt: Date };
+type LeaveOutcome = "left" | "group_deleted" | "not_member";
 
 export interface Memberships {
   /** Joins an existing group, just used; "gone" when it no longer exists. */
@@ -18,10 +19,7 @@ export interface Memberships {
    * The member leaves and their « voulu » in the group go; the last member
    * takes the group and its list along.
    */
-  leave(
-    groupId: string,
-    userId: string,
-  ): Promise<"left" | "group_deleted" | "not_member">;
+  leave(groupId: string, userId: string): Promise<LeaveOutcome>;
 }
 
 export const membershipOf = (groupId: string, userId: string) =>
@@ -70,6 +68,24 @@ async function deleteIfEmpty(tx: Executor, groupId: string) {
   return deleted.rowsAffected > 0;
 }
 
+/**
+ * `leave`, inside the caller's transaction (also used by account deletion):
+ * the membership and the member's « voulu » in the group go, then the group
+ * and its list if nobody is left.
+ */
+export async function leaveIn(
+  tx: Executor,
+  groupId: string,
+  userId: string,
+): Promise<LeaveOutcome> {
+  const left = await tx.delete(membership).where(membershipOf(groupId, userId));
+  if (left.rowsAffected === 0) return "not_member";
+  await tx
+    .delete(movieWant)
+    .where(and(eq(movieWant.groupId, groupId), eq(movieWant.userId, userId)));
+  return (await deleteIfEmpty(tx, groupId)) ? "group_deleted" : "left";
+}
+
 export function createMemberships(db: Database): Memberships {
   return {
     async join(groupId, userId, now = new Date()) {
@@ -93,18 +109,7 @@ export function createMemberships(db: Database): Memberships {
     },
 
     leave(groupId, userId) {
-      return db.transaction(async (tx) => {
-        const left = await tx
-          .delete(membership)
-          .where(membershipOf(groupId, userId));
-        if (left.rowsAffected === 0) return "not_member";
-        await tx
-          .delete(movieWant)
-          .where(
-            and(eq(movieWant.groupId, groupId), eq(movieWant.userId, userId)),
-          );
-        return (await deleteIfEmpty(tx, groupId)) ? "group_deleted" : "left";
-      });
+      return db.transaction((tx) => leaveIn(tx, groupId, userId));
     },
   };
 }

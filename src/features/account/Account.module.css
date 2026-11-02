@@ -1,0 +1,63 @@
+/* « MON COMPTE »: the shared slips and rows come from ui/Sheet.module.css. */
+
+/* « TON PRÉNOM » changed: said aloud, and shown under the form. */
+.status {
+  margin: 10px 0 0;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Empty, it takes no room, but stays in the page: a live region must exist before it speaks. */
+.status:empty {
+  margin: 0;
+}
+
+/* Why the last passkey has no « SUPPRIMER ». */
+.last {
+  margin: 12px 0 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+.alert {
+  composes: alert from "../../ui/Alert.module.css";
+  width: 100%;
+  margin: 0;
+}
+
+/* What became of a key or a device the list no longer shows, under the title. */
+.notice {
+  composes: alert;
+  margin: 8px 0 4px;
+}
+
+/* Signing out, then deleting the account: below the slips, centred. */
+.end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+/* The name typed on the pink ticket, before « SUPPRIMER DÉFINITIVEMENT ». */
+.field {
+  composes: label from "../../ui/LabelForm.module.css";
+  margin-top: 12px;
+  text-align: left;
+  /* My name in it, up to 30 of the widest glyph. */
+  overflow-wrap: anywhere;
+}
+
+.input {
+  composes: input from "../../ui/LabelForm.module.css";
+}
+
+/* Typed as stored: the case counts (over the composed uppercase). */
+.field .input {
+  text-transform: none;
+}

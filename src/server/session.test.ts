@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { signedOutRefusal } from "@/access/signed-out";
 import { assertSignedIn, getCurrentUser } from "./session";
 
 const getSession = vi.fn();
@@ -19,14 +20,18 @@ beforeEach(() => {
 });
 
 describe("getCurrentUser", () => {
-  it("lit la session à partir des en-têtes de la requête", async () => {
+  it("relit la session en base à partir des en-têtes, sans le cache du cookie (révocation immédiate) ni écrire de cookie", async () => {
     getSession.mockResolvedValue(SESSION);
 
     await expect(getCurrentUser()).resolves.toEqual({
       userId: "user-1",
       name: "Léa",
+      sessionId: "session-1",
     });
-    expect(getSession).toHaveBeenCalledWith({ headers: requestHeaders });
+    expect(getSession).toHaveBeenCalledWith({
+      headers: requestHeaders,
+      query: { disableCookieCache: true, disableRefresh: true },
+    });
   });
 
   it("si getSession lève (base injoignable, session supprimée) : null, journalisé sans détail sensible", async () => {
@@ -54,14 +59,19 @@ describe("assertSignedIn", () => {
     await expect(assertSignedIn()).resolves.toEqual({
       userId: "user-1",
       name: "Léa",
+      sessionId: "session-1",
     });
   });
 
-  it("sans session : refuse l'action", async () => {
+  it("sans session : refuse l'action, d'un refus que le client reconnaît (digest)", async () => {
     getSession.mockResolvedValue(null);
 
     await expect(assertSignedIn()).rejects.toThrow(
       "Server Action refused: not signed in",
+    );
+    await expect(assertSignedIn()).rejects.toHaveProperty(
+      "digest",
+      signedOutRefusal().digest,
     );
   });
 

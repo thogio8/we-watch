@@ -16,7 +16,7 @@ import { DEFAULT_DECK, type DeckId, isDeckId } from "@/tmdb/decks";
 async function SwipeData({ deck }: { deck: DeckId }) {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
+  if (!active.group) return <FirstGroupScreen create={createGroup} />;
   const groupId = active.group.id;
   // Same path as the client's later loads: a TMDB error gives { ok: false }.
   const initial = await loadMoreCards(groupId, deck, 1);

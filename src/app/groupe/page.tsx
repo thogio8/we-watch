@@ -29,7 +29,7 @@ export const metadata: Metadata = { title: `Membres · ${APP_NAME}` };
 async function GroupData() {
   await connection();
   const active = await getActiveGroup();
-  if (!active?.group) return <FirstGroupScreen create={createGroup} />;
+  if (!active.group) return <FirstGroupScreen create={createGroup} />;
   const { group, groups, user } = active;
   const members = await getGroups().membersOf(group.id);
   return (

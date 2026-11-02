@@ -1,5 +1,6 @@
 "use client";
 
+import { leaveIfSignedOut } from "@/access/signed-out";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { MovieStatus } from "@/domain/movie";
@@ -35,7 +36,8 @@ export function MovieActions({
       try {
         await action(tmdbId);
         router.push("/list");
-      } catch {
+      } catch (error) {
+        leaveIfSignedOut(error);
         setFailed(true);
       }
     });
