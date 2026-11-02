@@ -88,10 +88,12 @@ node scripts/rehearse-migration.mjs .rehearsal/backup/movies.json
 Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploiements : les régler maintenant ne change rien à la 1.3.x en ligne, et le retour arrière (§5) la remet avec son ancien environnement.
 
 - [ ] **Secret GitHub `BACKUP_KEY`** : 64 caractères hexadécimaux. Sans lui, le job `release` s'arrête à la sauvegarde, avant toute migration.
-  1. Générer la clé dans un fichier hors du dépôt, sans l'afficher, et la donner à GitHub :
+  1. Générer la clé dans un fichier hors du dépôt, sans l'afficher ni fin de ligne (`scripts/backup-crypto.mjs` refuse tout ce qui n'est pas exactement 64 caractères hexadécimaux : la bascule s'arrêterait à la sauvegarde), la vérifier, et la donner à GitHub :
 
      ```bash
-     (umask 077 && openssl rand -hex 32 > ~/wewatch-backup-key.txt)
+     (umask 077 && openssl rand -hex 32 | tr -d '\n' > ~/wewatch-backup-key.txt)
+     grep -Eqx '[0-9a-f]{64}' ~/wewatch-backup-key.txt && [ "$(wc -c < ~/wewatch-backup-key.txt)" -eq 64 ] \
+       && echo "✓ 64 caractères hexadécimaux, sans fin de ligne" || echo "✕ clé mal formée : recommencer"
      gh secret set BACKUP_KEY < ~/wewatch-backup-key.txt
      ```
 
@@ -170,7 +172,13 @@ Le mainteneur l'approuve et la lance lui-même.
   ```
 
   Attendu : les deux `feat…!:` de §1.1. `main~1` est l'ancienne `main` (premier parent).
-- [ ] `git push origin main` (le hook pre-push relance `npm run ci`), puis suivre le run :
+- [ ] Installer les dépendances de la 2.0 dans ce checkout (son `node_modules` est celui de la 1.3.x : sans Better Auth, le hook pre-push échouerait) :
+
+  ```bash
+  npm ci
+  ```
+
+- [ ] `git push origin main`. Le hook pre-push relance `npm run ci` (vérifications, tests, build et e2e dans Docker : **Docker doit tourner**, compter quelques minutes). Puis suivre le run :
 
   ```bash
   sleep 15   # le temps que GitHub enregistre le run
@@ -240,7 +248,7 @@ La CI remet le déploiement 1.3.x d'avant. La migration, elle, est passée : la 
 
 ### 5.2 Manuel, plus tard (un défaut trouvé après coup)
 
-- [ ] `git revert -m 1 <sha du commit de fusion>` sur `main`, puis `git push origin main`. La CI redéploie la 1.3.x. La base reste lisible par elle : la migration est additive.
+- [ ] `git revert -m 1 <sha du commit de fusion>` sur `main`, `npm ci` (le hook pre-push teste la 1.3.x avec ses propres dépendances), puis `git push origin main`. La CI redéploie la 1.3.x. La base reste lisible par elle : la migration est additive.
 - [ ] Jamais `vercel --prod`, jamais un retour de schéma à la main.
 - [ ] Bon à savoir : sur ce push, la sauvegarde redevient celle de la 1.3.x (`movies.json`, en clair, `movies` seule). Comptes et groupes restent en base, mais leur dernière sauvegarde complète est l'artefact chiffré du dernier déploiement 2.0.
 
@@ -258,7 +266,7 @@ Pendant le retour, la 1.3.x a écrit dans `movies` ; « NOUS DEUX » n'a pas bou
 
 - [ ] Le correctif lui-même, s'il y en a un (§5.1).
 - [ ] `npm run ci` : les tests des migrations (`src/db/legacy-migration.test.ts`, `tests/scripts/`) rejouent toute la chaîne, la nouvelle comprise, et le rattrapage a ses propres tests (`tests/scripts/replay-legacy-movies.test.ts`).
-- [ ] Un seul push sur `main` qui contient tout cela, puis §2 (« Ce que fait la CI ») et §3.
+- [ ] `npm ci` si le revert a été annulé (retour aux dépendances de la 2.0), puis un seul push sur `main` qui contient tout cela, puis §2 (« Ce que fait la CI ») et §3.
 
 **Ce que le rattrapage reporte** : les films ajoutés pendant le retour (copiés comme en 0006 : sans auteur, « vus avant les comptes » s'ils sont vus, écartés s'ils sont BOF ou retirés) ; un film déjà dans le groupe, marqué vu sur la 1.3.x pendant le retour, s'il n'est pas vu dans le groupe : jamais marqué en 2.0, ou démarqué en 2.0 (la marque de la 1.3.x, plus récente que la bascule, l'emporte alors).
 
