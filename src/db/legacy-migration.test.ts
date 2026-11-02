@@ -284,7 +284,7 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     expect(await db.$count(group)).toBe(0);
   });
 
-  describe("comme en production : 0000 à 0004 déjà passées, puis le migrateur de Drizzle", () => {
+  describe("avec le migrateur de Drizzle, depuis une base arrêtée à 0004 (juste avant les groupes)", () => {
     let dir: string;
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
