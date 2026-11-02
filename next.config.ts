@@ -46,6 +46,8 @@ const securityHeaders = () => [
 ];
 
 const nextConfig: NextConfig = {
+  // No X-Powered-By: Next.js on every response (security audit, I1).
+  poweredByHeader: false,
   cacheComponents: true,
   partialPrefetching: true,
   experimental: {

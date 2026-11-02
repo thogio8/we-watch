@@ -41,6 +41,10 @@ describe("next.config", () => {
     expect(sources.indexOf("/invitation/:token*")).toBeGreaterThan(0);
   });
 
+  it("aucune réponse n’annonce Next.js (pas d’en-tête X-Powered-By)", () => {
+    expect(nextConfig.poweredByHeader).toBe(false);
+  });
+
   it("toute réponse porte les en-têtes de sécurité", async () => {
     vi.stubEnv("NODE_ENV", "production");
 
