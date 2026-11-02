@@ -154,6 +154,20 @@ describe("rattrapage de la liste 1.3.x après un retour arrière", () => {
     ]);
   });
 
+  it("remarque vu un film démarqué sur la 2.0 puis marqué vu par la 1.3.x pendant le retour : la marque de la 1.3.x l'emporte", async () => {
+    await run([watchedOn13(13)]);
+    await replay();
+
+    expect(await listed(13)).toEqual([
+      expect.objectContaining({
+        status: "watched",
+        watched_at: ON_1_3,
+        watched_by: "NULL",
+        watched_legacy: 1,
+      }),
+    ]);
+  });
+
   it("ne rattrape pas un film du groupe retiré pendant le retour (à faire à la main)", async () => {
     await replay();
 

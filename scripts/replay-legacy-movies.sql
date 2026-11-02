@@ -23,8 +23,9 @@ INSERT INTO `group_movie` (`group_id`, `tmdb_id`, `status`, `decided_at`, `watch
   WHERE EXISTS (SELECT 1 FROM `app_group` WHERE `id` = 'nous-deux')
   ON CONFLICT DO NOTHING;
 --> statement-breakpoint
--- 3. Movies of the group watched on 1.3.x during the return, that no one
--- marked or unmarked watched on 2.0 (watched_by and watched_at NULL).
+-- 3. Movies of the group watched on 1.3.x during the return, not watched
+-- in the group (watched_by and watched_at NULL): never marked on 2.0, or
+-- unmarked there. A 1.3.x mark after the cutover wins over that unmark.
 UPDATE `group_movie` SET `status` = `m`.`status`, `watched_at` = `m`.`watched_at`, `watched_legacy` = 1
   FROM `movies` AS `m`, `app_group` AS `g`
   WHERE `g`.`id` = 'nous-deux' AND `group_movie`.`group_id` = `g`.`id`
