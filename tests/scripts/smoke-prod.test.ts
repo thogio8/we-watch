@@ -1,0 +1,188 @@
+import { execFile } from "node:child_process";
+import { createServer, type Server, type ServerResponse } from "node:http";
+import type { AddressInfo } from "node:net";
+import { promisify } from "node:util";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+// The CI's release job runs this script on production right after putting
+// it online, and rolls back when it fails (.github/workflows/ci.yml): here,
+// against a fake production that answers like a healthy 2.0.
+
+const SECRET = "smoke-test-cron-secret";
+const CSP = "default-src 'self'; frame-ancestors 'none'; object-src 'none'";
+/** A response body the script must never print, on success or failure. */
+const BODY_MARKER = "never-printed-body";
+
+type Answer = {
+  status: number;
+  headers?: Record<string, string>;
+  body?: string;
+};
+type Prod = Record<string, Answer>;
+
+const healthy = (host: string): Prod => ({
+  "/connexion": {
+    status: 200,
+    headers: { "content-security-policy": CSP },
+    body: BODY_MARKER,
+  },
+  "/": { status: 307, headers: { location: "/connexion" } },
+  "/api/auth/passkey/generate-authenticate-options": {
+    status: 200,
+    body: `{"challenge":"${BODY_MARKER}","rpId":"${host}","userVerification":"preferred"}`,
+  },
+  "/api/auth/ok": { status: 404, body: BODY_MARKER },
+  "/api/cron/refresh-movies": {
+    status: 200,
+    body: '{"total":0,"refreshed":0,"failed":[],"purged":{"sessions":0}}',
+  },
+});
+
+let prod: Prod;
+let server: Server;
+let url: string;
+beforeEach(async () => {
+  prod = healthy("127.0.0.1");
+  server = createServer((request, response: ServerResponse) => {
+    const cron = request.url === "/api/cron/refresh-movies";
+    const authorized = request.headers.authorization === `Bearer ${SECRET}`;
+    const answer =
+      cron && !authorized ? { status: 401 } : prod[request.url ?? ""];
+    if (!answer) return void response.writeHead(404).end();
+    response.writeHead(answer.status, answer.headers).end(answer.body);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+});
+afterEach(() => new Promise((resolve) => server.close(resolve)));
+
+/** Runs the script (async: the fake server lives in this process). */
+async function smoke(prodUrl = url) {
+  try {
+    const { stdout } = await promisify(execFile)(
+      "bash",
+      ["scripts/smoke-prod.sh"],
+      { env: { ...process.env, PROD_URL: prodUrl, CRON_SECRET: SECRET } },
+    );
+    return { code: 0, printed: stdout };
+  } catch (error) {
+    const { code, stdout } = error as { code: number; stdout: string };
+    return { code, printed: stdout };
+  }
+}
+
+function expectNothingSecret(printed: string) {
+  expect(printed).not.toContain(SECRET);
+  expect(printed).not.toContain(BODY_MARKER);
+}
+
+describe("test de fumée de la prod", () => {
+  it("une prod saine : 6 vérifications vertes, aucun secret affiché", async () => {
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(0);
+    expect(printed.match(/^✓ /gm)).toHaveLength(6);
+    expect(printed).not.toContain("✕");
+    expectNothingSecret(printed);
+  });
+
+  it("l'hôte du rpId se tire de PROD_URL, sans schéma, port ni chemin", async () => {
+    const { code } = await smoke(`${url}/`);
+
+    expect(code).toBe(0);
+  });
+
+  it("une prod injoignable : rouge, avec un message", async () => {
+    const { code, printed } = await smoke("http://127.0.0.1:1");
+
+    expect(code).toBe(1);
+    expect(printed).toContain("✕ /connexion: expected 200, received 000");
+  });
+
+  it("un rpId d'un autre hôte : rouge, attendu et reçu affichés", async () => {
+    prod = healthy("wewatch.example");
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain('expected "rpId":"127.0.0.1"');
+    expect(printed).toContain('received "rpId":"wewatch.example"');
+    expectNothingSecret(printed);
+  });
+
+  it("la route des options de connexion en panne : rouge, avec son statut", async () => {
+    prod["/api/auth/passkey/generate-authenticate-options"] = {
+      status: 500,
+      body: BODY_MARKER,
+    };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toMatch(/expected 200 .*, received 500/);
+    expectNothingSecret(printed);
+  });
+
+  it("/ ne renvoie plus vers /connexion : rouge", async () => {
+    prod["/"] = { status: 200, body: BODY_MARKER };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain("expected 307 …/connexion, received 200 (none)");
+    expectNothingSecret(printed);
+  });
+
+  it("une CSP perdue (next.config) : rouge", async () => {
+    prod["/connexion"] = { status: 200, body: BODY_MARKER };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain("received (no content-security-policy)");
+  });
+
+  it("une CSP sans frame-ancestors 'none' : rouge, la CSP reçue affichée", async () => {
+    prod["/connexion"] = {
+      status: 200,
+      headers: { "content-security-policy": "default-src 'self'" },
+    };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain("received default-src 'self'");
+  });
+
+  it("un chemin d'auth inutilisé qui répond encore : rouge", async () => {
+    prod["/api/auth/ok"] = { status: 200, body: BODY_MARKER };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain("expected 404, received 200");
+    expectNothingSecret(printed);
+  });
+
+  it("un rafraîchissement en 500 (ménage ou base cassés) : rouge", async () => {
+    prod["/api/cron/refresh-movies"] = { status: 500, body: BODY_MARKER };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain("expected 200, received 500");
+    expectNothingSecret(printed);
+  });
+
+  it("des films en échec au rafraîchissement : rouge", async () => {
+    prod["/api/cron/refresh-movies"] = {
+      status: 200,
+      body: '{"total":2,"refreshed":1,"failed":[550]}',
+    };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain('expected "failed":[], received "failed":[550]');
+  });
+});
