@@ -11,37 +11,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { createClient } from "@libsql/client";
 import { encryptBackup, parseBackupKey } from "./backup-crypto.mjs";
-
-/**
- * What a restore needs, in restore order, with the columns read (`*`: all).
- * Never saved: `session`, `verification` (live credentials, worthless after
- * a restore: everyone signs in again with a passkey), `signup_ticket_use`
- * and `rate_limit` (minutes-long bookkeeping). `account` is read without
- * its secrets (access_token, refresh_token, id_token, password): they never
- * leave the database. `passkey` holds public keys only.
- */
-const TABLES = {
-  user: "*",
-  passkey: "*",
-  account: [
-    "id",
-    "account_id",
-    "provider_id",
-    "user_id",
-    "access_token_expires_at",
-    "refresh_token_expires_at",
-    "scope",
-    "created_at",
-    "updated_at",
-  ],
-  movie_snapshot: "*",
-  app_group: "*",
-  membership: "*",
-  group_movie: "*",
-  movie_want: "*",
-  movie_rejection: "*",
-  movies: "*",
-};
+import { TABLES } from "./backup-tables.mjs";
 
 const columns = (list) =>
   list === "*" ? "*" : list.map((name) => `"${name}"`).join(", ");
