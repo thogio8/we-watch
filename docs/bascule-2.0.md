@@ -92,9 +92,11 @@ Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploieme
 
      ```bash
      (umask 077 && openssl rand -hex 32 | tr -d '\n' > ~/wewatch-backup-key.txt)
-     grep -Eqx '[0-9a-f]{64}' ~/wewatch-backup-key.txt && [ "$(wc -c < ~/wewatch-backup-key.txt)" -eq 64 ] \
-       && echo "✓ 64 caractères hexadécimaux, sans fin de ligne" || echo "✕ clé mal formée : recommencer"
-     gh secret set BACKUP_KEY < ~/wewatch-backup-key.txt
+     if grep -Eqx '[0-9a-f]{64}' ~/wewatch-backup-key.txt && [ "$(wc -c < ~/wewatch-backup-key.txt)" -eq 64 ]; then
+       echo "✓ 64 caractères hexadécimaux, sans fin de ligne" && gh secret set BACKUP_KEY < ~/wewatch-backup-key.txt
+     else
+       echo "✕ clé mal formée, rien n'est envoyé : recommencer"
+     fi
      ```
 
   2. Joindre `~/wewatch-backup-key.txt` à une entrée du gestionnaire de mots de passe (« WeWatch BACKUP_KEY, créée le <date> »), puis `shred -u ~/wewatch-backup-key.txt`.
@@ -256,7 +258,7 @@ La CI remet le déploiement 1.3.x d'avant. La migration, elle, est passée : la 
 
 Pendant le retour, la 1.3.x a écrit dans `movies` ; « NOUS DEUX » n'a pas bougé. `scripts/replay-legacy-movies.sql` y reporte ces changements, comme 0006 + 0007 l'avaient fait. Il est idempotent et ne fait rien sans « NOUS DEUX ». Il part **en migration**, dans le push qui remet la 2.0 : la CI l'applique, jamais la prod à la main.
 
-- [ ] Après un revert manuel (§5.2) seulement : annuler le revert, `git revert <sha du revert>`.
+- [ ] Après un revert manuel (§5.2) seulement : annuler le revert, `git revert <sha du revert>`, puis `npm ci` (retour aux dépendances de la 2.0, avant toute commande qui suit).
 - [ ] Ajouter la migration :
 
   ```bash
@@ -266,7 +268,7 @@ Pendant le retour, la 1.3.x a écrit dans `movies` ; « NOUS DEUX » n'a pas bou
 
 - [ ] Le correctif lui-même, s'il y en a un (§5.1).
 - [ ] `npm run ci` : les tests des migrations (`src/db/legacy-migration.test.ts`, `tests/scripts/`) rejouent toute la chaîne, la nouvelle comprise, et le rattrapage a ses propres tests (`tests/scripts/replay-legacy-movies.test.ts`).
-- [ ] `npm ci` si le revert a été annulé (retour aux dépendances de la 2.0), puis un seul push sur `main` qui contient tout cela, puis §2 (« Ce que fait la CI ») et §3.
+- [ ] Un seul push sur `main` qui contient tout cela, puis §2 (« Ce que fait la CI ») et §3.
 
 **Ce que le rattrapage reporte** : les films ajoutés pendant le retour (copiés comme en 0006 : sans auteur, « vus avant les comptes » s'ils sont vus, écartés s'ils sont BOF ou retirés) ; un film déjà dans le groupe, marqué vu sur la 1.3.x pendant le retour, s'il n'est pas vu dans le groupe : jamais marqué en 2.0, ou démarqué en 2.0 (la marque de la 1.3.x, plus récente que la bascule, l'emporte alors).
 
