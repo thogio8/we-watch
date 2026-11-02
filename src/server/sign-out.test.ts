@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuth } from "@/auth/create-auth";
 import { createDatabase } from "@/db/create-database";
+import { createRateLimits } from "@/db/rate-limit";
 import { signOutThisDevice } from "./sign-out";
 
 vi.mock("next/headers");
@@ -12,10 +13,12 @@ let auth: ReturnType<typeof createAuth>;
 vi.mock("./container", () => ({ getAuth: () => auth }));
 
 const useBaseURL = (baseURL: string) => {
+  const db = createDatabase(":memory:");
   auth = createAuth({
-    db: createDatabase(":memory:"),
+    db,
     secret: "sign-out-test-secret-0123456789abcdef",
     baseURL,
+    rateLimits: createRateLimits(db),
   });
 };
 

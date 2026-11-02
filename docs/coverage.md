@@ -14,7 +14,7 @@ Tout tourne dans `npm run ci` (hook `pre-push`, et GitHub Actions en filet).
 
 ## Porte de couverture
 
-`npm run test:coverage` : 1344 tests, 118 fichiers, **100 %** partout.
+`npm run test:coverage` : 1411 tests, 125 fichiers, **100 %** partout.
 
 Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`, la route `/api/auth/*` et le client navigateur de Better Auth `features/signin/authClient.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
 

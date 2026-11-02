@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import {
   CANCELLED_ERROR,
   CLOSED_ERROR,
@@ -16,8 +17,14 @@ describe("signinFailure", () => {
     expect(signinFailure({ code: "PASSKEY_NOT_FOUND" })).toBe(NO_ACCOUNT_ERROR);
   });
 
+  it("trop d'essais (429) : TROP D’ESSAIS", () => {
+    expect(signinFailure({ status: 429, code: "X" })).toBe(TOO_MANY_ATTEMPTS);
+    expect(TOO_MANY_ATTEMPTS).toBe("TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.");
+  });
+
   it.each([
     { code: "AUTH_CANCELLED" },
+    { status: 400 },
     { code: "ERROR_CEREMONY_ABORTED" },
     {},
     null,

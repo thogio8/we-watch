@@ -4,16 +4,20 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
+import type { RateLimits } from "@/db/rate-limit";
 import { parseDisplayName } from "@/domain/display-name";
 import { GROUP_COOKIE, groupCookieAttributes } from "@/domain/group";
 import { passkeyRegistration } from "./passkey-registration";
 import { passkeySignup, signupTicketUses } from "./passkey-signup";
+import { authRateLimit } from "./rate-limits";
 import { trackTransactions } from "./signup-transaction";
 
 export type AuthConfig<Plugins extends BetterAuthPlugin[] = []> = {
   db: Database;
   secret: string;
   baseURL: string;
+  /** Where attempts are counted (rate-limits.ts). */
+  rateLimits: RateLimits;
   /** Extra plugins, appended last (server/container.ts adds nextCookies()). */
   plugins?: Plugins;
 };
@@ -94,6 +98,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
   db,
   secret,
   baseURL,
+  rateLimits,
   plugins,
 }: AuthConfig<Plugins>) {
   const url = new URL(baseURL);
@@ -117,6 +122,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
     emailAndPassword: { enabled: false },
+    rateLimit: authRateLimit(rateLimits),
     disabledPaths: DISABLED_PATHS,
     hooks: { after: forgetGroupOnSignOut },
     databaseHooks: {

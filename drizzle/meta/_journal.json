@@ -71,6 +71,13 @@
       "when": 1793367077394,
       "tag": "0009_author_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793630528777,
+      "tag": "0010_rate_limit",
+      "breakpoints": true
     }
   ]
 }

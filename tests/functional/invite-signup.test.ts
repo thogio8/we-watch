@@ -5,6 +5,7 @@ import { user } from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
 import { group, membership } from "@/db/group-schema";
 import { createGroups, type Groups } from "@/db/groups";
+import { createRateLimits } from "@/db/rate-limit";
 import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
 import { joinGroup } from "@/features/groups/actions";
 import { prepareSignup } from "@/features/signin/actions";
@@ -29,7 +30,12 @@ beforeAll(async () => {
   vi.stubEnv("SIGNUP", "invite");
   vi.stubEnv("OWNER_CODE", OWNER_CODE);
   groups = createGroups(db);
-  auth = createAuth({ db, secret: SECRET, baseURL: BASE_URL });
+  auth = createAuth({
+    db,
+    secret: SECRET,
+    baseURL: BASE_URL,
+    rateLimits: createRateLimits(db),
+  });
 });
 beforeEach(() => reset());
 

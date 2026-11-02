@@ -1,5 +1,6 @@
 import { formatLongDate } from "@/domain/time";
-import { CANCELLED_ERROR } from "@/features/signin/messages";
+import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
+import { CANCELLED_ERROR, isTooManyAttempts } from "@/features/signin/messages";
 import { quoted } from "@/ui/quoted";
 
 /** Texts of « MON COMPTE ». */
@@ -58,11 +59,15 @@ export function alreadyRevoked(device: string): string {
 }
 
 /**
- * A failed « AJOUTER UNE CLÉ D’ACCÈS »: this device holds one of my keys
- * already (WebAuthn's InvalidStateError), else a cancelled ceremony. Only
- * the code of a Better Auth client error is read.
+ * A failed « AJOUTER UNE CLÉ D’ACCÈS »: refused by an attempt limit (429),
+ * this device holds one of my keys already (WebAuthn's InvalidStateError),
+ * else a cancelled ceremony. Only the status and code of a Better Auth
+ * client error are read.
  */
 export function addPasskeyFailure(error: object | null): string {
+  if (isTooManyAttempts(error)) {
+    return TOO_MANY_ATTEMPTS;
+  }
   return error !== null &&
     "code" in error &&
     error.code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED"

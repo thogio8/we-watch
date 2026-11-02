@@ -7,6 +7,7 @@ export default defineConfig({
     "src/db/schema.ts",
     "src/db/auth-schema.ts",
     "src/db/group-schema.ts",
+    "src/db/rate-limit-schema.ts",
   ],
   out: "drizzle",
   dbCredentials: {

@@ -18,6 +18,8 @@ import {
   verification,
 } from "../src/db/auth-schema";
 import { createDatabase } from "../src/db/create-database";
+import { createRateLimits } from "../src/db/rate-limit";
+import { rateLimit } from "../src/db/rate-limit-schema";
 import {
   group,
   groupMovie,
@@ -42,8 +44,9 @@ function db() {
 }
 
 /**
- * Empties the worker's database (lists, groups, movies and every Better Auth
- * table), the children before the rows they point to.
+ * Empties the worker's database (lists, groups, movies, every Better Auth
+ * table and the attempt counters), the children before the rows they point
+ * to.
  */
 async function wipe() {
   for (const table of [
@@ -60,6 +63,7 @@ async function wipe() {
     verification,
     signupTicketUse,
     user,
+    rateLimit,
   ]) {
     await db().delete(table);
   }
@@ -80,6 +84,7 @@ async function authHelpers() {
     db: db(),
     secret: E2E_AUTH_SECRET,
     baseURL: appUrl(worker),
+    rateLimits: createRateLimits(db()),
     plugins: [testUtils()],
   });
   return (await auth.$context).test;
