@@ -2,7 +2,7 @@
 
 Le déroulé du jour où la prod passe aux comptes et aux groupes. À suivre dans l'ordre, case par case. Spec : `docs/superpowers/specs/2026-10-28-wewatch-v2-design.md`, §11.
 
-Trois règles valent pour toute la page :
+Ces règles valent pour toute la page :
 
 - **La prod ne se migre et ne se déploie que par la CI** (push sur `main`). Jamais `vercel --prod`, jamais `npm run db:migrate` ni un SQL lancé à la main sur la base de prod.
 - **Aucun secret à l'écran ni dans un fichier suivi** : les commandes ci-dessous les lisent par une invite masquée (`read -rs`), les passent d'une commande à l'autre par un tube ou une variable (`openssl … |`, `"$(turso …)"`), ou les comparent sans les afficher. Jamais un secret en argument de commande (il resterait dans l'historique).
@@ -11,6 +11,8 @@ Trois règles valent pour toute la page :
   ```bash
   PROD_URL="$(gh variable get PROD_URL)"
   ```
+
+- Le CLI Vercel est celui du dépôt (`devDependencies`, version épinglée), lancé par `npx --no -- vercel` : `--no` refuse d'en télécharger un autre. Il faut donc un checkout de la 2.0 aux dépendances installées (`npm ci`) ; sinon `npx` s'arrête sur « npx canceled due to missing packages », sans rien changer.
 
 ## 0. Répétition de la migration
 
@@ -102,29 +104,29 @@ Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploieme
   2. Joindre `~/wewatch-backup-key.txt` à une entrée du gestionnaire de mots de passe (« WeWatch BACKUP_KEY, créée le <date> »), puis `shred -u ~/wewatch-backup-key.txt`.
   3. `gh secret list` : `BACKUP_KEY` y figure.
   - Une clé changée ne déchiffre plus les anciens artefacts : **garder chaque clé hors ligne 90 jours** après son remplacement (la durée de vie d'un artefact).
-- [ ] **Vercel, environnement Production**, depuis un dépôt lié (`npx vercel@latest link` si `.vercel/` manque) :
+- [ ] **Vercel, environnement Production**, depuis un dépôt lié (`npx --no -- vercel link` si `.vercel/` manque) :
   - `BETTER_AUTH_SECRET` (32 caractères au moins) :
 
     ```bash
-    openssl rand -hex 32 | npx vercel@latest env add BETTER_AUTH_SECRET production
+    openssl rand -hex 32 | npx --no -- vercel env add BETTER_AUTH_SECRET production
     ```
 
   - `BETTER_AUTH_URL` = `PROD_URL` **au caractère près**, sans `/` final. Les passkeys sont liées à son nom d'hôte, et la fumée compare le `rpId` à l'hôte de `PROD_URL` : une différence fait échouer la fumée, donc revenir la prod en arrière. Le plus sûr est de le recopier :
 
     ```bash
-    printf %s "$PROD_URL" | npx vercel@latest env add BETTER_AUTH_URL production
+    printf %s "$PROD_URL" | npx --no -- vercel env add BETTER_AUTH_URL production
     ```
 
   - `SIGNUP=invite` :
 
     ```bash
-    printf invite | npx vercel@latest env add SIGNUP production
+    printf invite | npx --no -- vercel env add SIGNUP production
     ```
 
   - `OWNER_CODE` : 12 caractères au moins, une phrase de plusieurs mots, gardée dans le gestionnaire de mots de passe (c'est elle qu'on tapera dans l'appli). La coller à l'invite masquée :
 
     ```bash
-    read -rs v && printf %s "$v" | npx vercel@latest env add OWNER_CODE production; unset v
+    read -rs v && printf %s "$v" | npx --no -- vercel env add OWNER_CODE production; unset v
     ```
 
   - `CRON_SECRET`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `TMDB_ACCESS_TOKEN` : **inchangés**.
@@ -132,7 +134,7 @@ Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploieme
 - [ ] **Vérifier sans rien afficher** : le fichier tiré contient des secrets, il reste dans `.vercel/` (ignoré par git) et il est supprimé aussitôt.
 
   ```bash
-  npx vercel@latest env pull --yes --environment=production .vercel/.env.check
+  npx --no -- vercel env pull --yes --environment=production .vercel/.env.check
   node -e '
     const env = Object.fromEntries(require("fs").readFileSync(".vercel/.env.check", "utf8")
       .split("\n").map((l) => l.match(/^([A-Z_]+)="?(.*?)"?$/)).filter(Boolean).map((m) => [m[1], m[2]]));
@@ -147,7 +149,7 @@ Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploieme
   rm .vercel/.env.check
   ```
 
-  Attendu : six `✓`. Une variable marquée « Sensitive » dans Vercel se tire vide (donc `✕`) : vérifier alors sa présence avec `npx vercel@latest env ls production` et sa valeur dans le gestionnaire de mots de passe.
+  Attendu : six `✓`. Une variable marquée « Sensitive » dans Vercel se tire vide (donc `✕`) : vérifier alors sa présence avec `npx --no -- vercel env ls production` et sa valeur dans le gestionnaire de mots de passe.
 
 ### 1.3 Si une variable manque quand même
 
@@ -220,7 +222,7 @@ Le mainteneur l'approuve et la lance lui-même.
 - [ ] Les deux comptes du couple sont dans « NOUS DEUX » (« MEMBRES ET INVITATION » les montre tous les deux) : **retirer `OWNER_CODE` de Vercel**, puis relancer la CI pour que la prod serve sans lui (une variable Vercel ne vaut que pour les déploiements suivants) :
 
   ```bash
-  npx vercel@latest env rm OWNER_CODE production --yes
+  npx --no -- vercel env rm OWNER_CODE production --yes
   gh workflow run ci.yml --ref main   # puis la suivre (§2)
   ```
 
@@ -340,8 +342,8 @@ La restauration n'a été testée que sur des fichiers SQLite locaux. **Conseill
    ```bash
    for name in DATABASE_URL DATABASE_AUTH_TOKEN; do
      printf %s "${!name}" | gh secret set "$name"
-     npx vercel@latest env rm "$name" production --yes
-     printf %s "${!name}" | npx vercel@latest env add "$name" production
+     npx --no -- vercel env rm "$name" production --yes
+     printf %s "${!name}" | npx --no -- vercel env add "$name" production
    done
    ```
 
