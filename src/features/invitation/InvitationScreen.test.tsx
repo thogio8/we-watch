@@ -56,6 +56,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+const TOO_MANY = "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.";
 const heading = (name: string) => screen.getByRole("heading", { name });
 
 describe("InvitationScreen", () => {
@@ -128,6 +129,11 @@ describe("InvitationScreen", () => {
           error: "CE LIEN N’EST PLUS VALABLE",
         }),
       "CE LIEN N’EST PLUS VALABLE",
+    ],
+    [
+      "refusé pour trop d’essais",
+      () => Promise.resolve({ ok: false as const, error: TOO_MANY }),
+      TOO_MANY,
     ],
     [
       "en panne",

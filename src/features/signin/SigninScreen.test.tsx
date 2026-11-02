@@ -223,6 +223,18 @@ describe("SigninScreen, création de compte", () => {
     expect(replace).toHaveBeenCalledWith("/");
   });
 
+  it("trop d’essais : TROP D’ESSAIS, sans cérémonie", async () => {
+    prepareSignup.mockResolvedValue({ ok: false, error: TOO_MANY });
+    const user = renderScreen("open");
+    await openForm(user);
+
+    await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
+    await user.click(screen.getByRole("button", { name: CREATE }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(TOO_MANY);
+    expect(addPasskey).not.toHaveBeenCalled();
+  });
+
   it("inscriptions ouvertes : un mauvais code donne MAUVAIS CODE", async () => {
     prepareSignup.mockResolvedValue({ ok: false, error: "MAUVAIS CODE" });
     const user = renderScreen("open");

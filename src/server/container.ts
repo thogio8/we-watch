@@ -51,8 +51,8 @@ export function getGroups(): Groups {
   return groups;
 }
 
-/** Attempt counters, shared by Better Auth and (task 2) the Server Actions. */
-function getRateLimits(): RateLimits {
+/** Attempt counters, shared by Better Auth and the Server Actions. */
+export function getRateLimits(): RateLimits {
   rateLimits ??= createRateLimits(getDatabase());
   return rateLimits;
 }

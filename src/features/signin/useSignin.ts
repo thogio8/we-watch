@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
+import { isTooManyAttempts, TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import type { PrepareSignupResult } from "./actions";
 import { authClient } from "./authClient";
-import { CANCELLED_ERROR, isTooManyAttempts, signinFailure } from "./messages";
+import { CANCELLED_ERROR, signinFailure } from "./messages";
 
 export type PrepareSignup = (
   formData: FormData,

@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { confirmsName, parseDisplayName } from "@/domain/display-name";
+import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import { NAME_ERROR } from "@/features/signin/messages";
 import { getAccount, getAuth } from "@/server/container";
+import { withinLimit } from "@/server/rate-limit";
 import { revalidateListPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
 import { signOutThisDevice } from "@/server/sign-out";
@@ -14,16 +16,22 @@ import { WRONG_NAME } from "./messages";
 export type AccountResult = { ok: true } | { ok: false; error: string };
 
 export type DeletePasskeyResult =
-  { ok: true } | { ok: false; reason: "last" | "not_found" };
+  { ok: true } | { ok: false; reason: "last" | "not_found" | "too_many" };
+
+const TOO_MANY: AccountResult = { ok: false, error: TOO_MANY_ATTEMPTS };
 
 /**
  * « SUPPRIMER » a passkey of mine. Both refusals are expected and told apart
  * by the client: the last one is kept; someone else's, an unknown one or one
- * already deleted (another tab) is "not_found". No write either way; only an
- * unexpected failure (network, database) throws.
+ * already deleted (another tab) is "not_found", past the attempt limit
+ * "too_many". No write either way; only an unexpected failure (network,
+ * database) throws.
  */
 export async function deletePasskey(id: string): Promise<DeletePasskeyResult> {
   const { userId } = await assertSignedIn();
+  if (!(await withinLimit("delete-passkey", userId))) {
+    return { ok: false, reason: "too_many" };
+  }
   assertId("deletePasskey", id);
   const outcome = await getAccount().deletePasskey(userId, id);
   if (outcome !== "deleted") {
@@ -59,7 +67,8 @@ const field = (formData: unknown, name: string) =>
  * session cache cookie is refreshed); /update-user is closed over HTTP only.
  */
 export async function renameMe(formData: FormData): Promise<AccountResult> {
-  await assertSignedIn();
+  const { userId } = await assertSignedIn();
+  if (!(await withinLimit("rename-me", userId))) return TOO_MANY;
   const name = parseDisplayName(field(formData, "name"));
   if (name === null) {
     return { ok: false, error: NAME_ERROR };
@@ -79,6 +88,7 @@ export async function deleteAccount(
   formData: FormData,
 ): Promise<AccountResult> {
   const { userId, name } = await assertSignedIn();
+  if (!(await withinLimit("delete-account", userId))) return TOO_MANY;
   if (!confirmsName(field(formData, "name"), name)) {
     return { ok: false, error: WRONG_NAME };
   }

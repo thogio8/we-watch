@@ -1,6 +1,6 @@
 import { formatLongDate } from "@/domain/time";
-import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
-import { CANCELLED_ERROR, isTooManyAttempts } from "@/features/signin/messages";
+import { isTooManyAttempts, TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
+import { CANCELLED_ERROR } from "@/features/signin/messages";
 import { quoted } from "@/ui/quoted";
 
 /** Texts of « MON COMPTE ». */

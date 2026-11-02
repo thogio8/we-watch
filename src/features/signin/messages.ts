@@ -1,5 +1,5 @@
 import type { SignupRight } from "@/access/signup";
-import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
+import { isTooManyAttempts, TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import { quoted } from "@/ui/quoted";
 
 /** Error texts of the sign-in screen (spec §9). Raw error text is never shown. */
@@ -8,11 +8,6 @@ export const CLOSED_ERROR = "WEWATCH SE REJOINT SUR INVITATION";
 export const WRONG_CODE_ERROR = "MAUVAIS CODE";
 export const CANCELLED_ERROR = "VALIDATION ANNULÉE, RÉESSAIE";
 export const NO_ACCOUNT_ERROR = "AUCUN COMPTE SUR CET APPAREIL";
-
-/** A Better Auth client error refused by an attempt limit (HTTP 429). */
-export function isTooManyAttempts(error: object | null | undefined): boolean {
-  return Boolean(error && "status" in error && error.status === 429);
-}
 
 /**
  * A failed passkey sign-in. The server only answers PASSKEY_NOT_FOUND when

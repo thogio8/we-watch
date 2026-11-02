@@ -58,21 +58,23 @@ describe("CreateGroupForm", () => {
     expect(submit()).toBeDisabled();
   });
 
-  it("affiche le refus du serveur et laisse réessayer", async () => {
-    const create = vi.fn<Create>(() =>
-      Promise.resolve({ ok: false, error: "UN NOM DE 1 À 30 CARACTÈRES" }),
-    );
-    const { user, onCreated } = renderForm(create);
+  it.each([
+    ["un nom refusé", "UN NOM DE 1 À 30 CARACTÈRES"],
+    ["trop d’essais", "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT."],
+  ])(
+    "affiche le refus du serveur (%s) et laisse réessayer",
+    async (_, error) => {
+      const create = vi.fn<Create>(() => Promise.resolve({ ok: false, error }));
+      const { user, onCreated } = renderForm(create);
 
-    await user.type(field(), "LA COLOC");
-    await user.click(submit());
+      await user.type(field(), "LA COLOC");
+      await user.click(submit());
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "UN NOM DE 1 À 30 CARACTÈRES",
-    );
-    expect(submit()).toBeEnabled();
-    expect(onCreated).not.toHaveBeenCalled();
-  });
+      expect(await screen.findByRole("alert")).toHaveTextContent(error);
+      expect(submit()).toBeEnabled();
+      expect(onCreated).not.toHaveBeenCalled();
+    },
+  );
 
   it("une panne affiche un message, sans texte brut, et laisse réessayer", async () => {
     const create = vi

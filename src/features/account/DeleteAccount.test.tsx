@@ -91,20 +91,21 @@ describe("DeleteAccount", () => {
     expect(confirm()).toBeDisabled();
   });
 
-  it("un refus du serveur s’affiche, sans quitter la page", async () => {
-    const { user } = await openTicket(async () => ({
-      ok: false,
-      error: "TAPE TON PRÉNOM EXACT",
-    }));
+  it.each([
+    ["un prénom refusé", "TAPE TON PRÉNOM EXACT"],
+    ["trop d’essais", "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT."],
+  ])(
+    "un refus du serveur (%s) s’affiche, sans quitter la page",
+    async (_, error) => {
+      const { user } = await openTicket(async () => ({ ok: false, error }));
 
-    await user.type(typed(), "Léa");
-    await user.click(confirm());
+      await user.type(typed(), "Léa");
+      await user.click(confirm());
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "TAPE TON PRÉNOM EXACT",
-    );
-    expect(replace).not.toHaveBeenCalled();
-  });
+      expect(screen.getByRole("alert")).toHaveTextContent(error);
+      expect(replace).not.toHaveBeenCalled();
+    },
+  );
 
   it("une panne affiche un message de la DA", async () => {
     const { user } = await openTicket(() => Promise.reject(new Error("raw")));

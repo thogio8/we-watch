@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useId } from "react";
+import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import sheet from "@/ui/Sheet.module.css";
 import styles from "./Account.module.css";
@@ -19,7 +20,11 @@ import {
 } from "./messages";
 import { useListNotice } from "./useListNotice";
 
-const REFUSALS = { last: LAST_PASSKEY, not_found: GONE_PASSKEY } as const;
+const REFUSALS = {
+  last: LAST_PASSKEY,
+  not_found: GONE_PASSKEY,
+  too_many: TOO_MANY_ATTEMPTS,
+} as const;
 
 interface PasskeyRowProps {
   passkey: MyPasskey;
@@ -47,10 +52,11 @@ function PasskeyRow({
       onSettled(null);
       return;
     }
+    onSettled(REFUSALS[result.reason]);
     // Refused (the last one, another tab) or gone already: the list is
     // stale, and reloading it may take this row along with the ticket.
-    onSettled(REFUSALS[result.reason]);
-    router.refresh();
+    // Past the attempt limit, nothing changed.
+    if (result.reason !== "too_many") router.refresh();
   };
   return (
     <li className={sheet.row} aria-labelledby={nameId}>

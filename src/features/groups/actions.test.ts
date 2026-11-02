@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { revalidatePath } from "next/cache";
 import { assertMember, forgetGroup, rememberGroup } from "@/server/groups";
 import { revalidateGroupPages, revalidateListPages } from "@/server/revalidate";
+import { withinLimit } from "@/server/rate-limit";
 import { assertSignedIn } from "@/server/session";
+import { expectLimitedFirst } from "../../../tests/helpers/limited";
 import { expectRefusedFirst } from "../../../tests/helpers/refused";
 import {
   chooseGroup,
@@ -28,6 +30,7 @@ const TOKEN = "A".repeat(43);
 
 vi.mock("@/server/session");
 vi.mock("@/server/groups");
+vi.mock("@/server/rate-limit");
 vi.mock("@/server/revalidate");
 vi.mock("next/cache");
 vi.mock("@/env", () => ({
@@ -55,8 +58,14 @@ const named = (name?: unknown) => {
   return formData;
 };
 
+const TOO_MANY = {
+  ok: false,
+  error: "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.",
+};
+
 beforeEach(() => {
   vi.mocked(assertSignedIn).mockReset().mockResolvedValue(LEA);
+  vi.mocked(withinLimit).mockClear();
   vi.mocked(assertMember)
     .mockReset()
     .mockImplementation(async (groupId) => ({
@@ -131,6 +140,27 @@ describe("createGroup", () => {
       "not signed in",
     );
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("trop d’essais : refusé après la session, avant de lire le nom, sans rien créer", () =>
+    expectLimitedFirst(() => createGroup(named("")), {
+      limit: "create-group",
+      subject: "user-1",
+      refusal: TOO_MANY,
+      untouched: [
+        create,
+        vi.mocked(rememberGroup),
+        vi.mocked(revalidateGroupPages),
+      ],
+    }));
+
+  it("chaque création compte une tentative de Léa", async () => {
+    await createGroup(named("La coloc"));
+
+    expect(withinLimit).toHaveBeenCalledExactlyOnceWith(
+      "create-group",
+      "user-1",
+    );
   });
 });
 
@@ -315,5 +345,19 @@ describe("joinGroup", () => {
 
     await expect(joinGroup(TOKEN)).rejects.toThrow("not signed in");
     expect(findByInvite).not.toHaveBeenCalled();
+  });
+
+  it("trop d’essais : refusé après la session, avant de lire le jeton, sans rien écrire", () =>
+    expectLimitedFirst(() => joinGroup("court"), {
+      limit: "join-group",
+      subject: "user-1",
+      refusal: TOO_MANY,
+      untouched: [findByInvite, join, vi.mocked(rememberGroup)],
+    }));
+
+  it("chaque lien ouvert compte une tentative de Léa", async () => {
+    await joinGroup(TOKEN);
+
+    expect(withinLimit).toHaveBeenCalledExactlyOnceWith("join-group", "user-1");
   });
 });

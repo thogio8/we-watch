@@ -2,9 +2,11 @@
 
 import { getServerEnv } from "@/env";
 import { parseGroupName } from "@/domain/group";
+import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import { getGroups } from "@/server/container";
 import { assertMember, forgetGroup, rememberGroup } from "@/server/groups";
 import { findInvitedGroup } from "@/server/invitations";
+import { withinLimit } from "@/server/rate-limit";
 import { revalidatePath } from "next/cache";
 import { revalidateGroupPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
@@ -18,6 +20,9 @@ export async function createGroup(
   formData: FormData,
 ): Promise<CreateGroupResult> {
   const { userId } = await assertSignedIn();
+  if (!(await withinLimit("create-group", userId))) {
+    return { ok: false, error: TOO_MANY_ATTEMPTS };
+  }
   // A public endpoint: anything may come in place of the form.
   const name =
     formData instanceof FormData ? parseGroupName(formData.get("name")) : null;
@@ -108,6 +113,9 @@ export type JoinGroupResult =
 /** Opening an invite link: I join the group, which is displayed. */
 export async function joinGroup(token: string): Promise<JoinGroupResult> {
   const { userId } = await assertSignedIn();
+  if (!(await withinLimit("join-group", userId))) {
+    return { ok: false, error: TOO_MANY_ATTEMPTS };
+  }
   const found = await findInvitedGroup(token);
   if (found === null) {
     return { ok: false, error: INVITE_INVALID };

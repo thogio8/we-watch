@@ -1,9 +1,11 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { withinLimit } from "@/server/rate-limit";
 import { revalidateListPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
 import { signOutThisDevice } from "@/server/sign-out";
+import { expectLimitedFirst } from "../../../tests/helpers/limited";
 import {
   deleteAccount,
   deletePasskey,
@@ -18,6 +20,7 @@ const updateUser = vi.fn();
 
 vi.mock("@/server/session");
 vi.mock("@/server/revalidate");
+vi.mock("@/server/rate-limit");
 vi.mock("@/server/sign-out", () => ({ signOutThisDevice: vi.fn() }));
 vi.mock("next/cache");
 vi.mock("next/headers");
@@ -31,6 +34,10 @@ vi.mock("@/server/container", () => ({
 }));
 
 const LEA = { userId: "user-1", name: "Léa", sessionId: "session-1" };
+const TOO_MANY = {
+  ok: false,
+  error: "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.",
+};
 
 beforeEach(() => {
   vi.mocked(assertSignedIn).mockReset().mockResolvedValue(LEA);
@@ -41,6 +48,7 @@ beforeEach(() => {
   updateUser.mockReset().mockResolvedValue({ status: true });
   vi.mocked(revalidateListPages).mockReset();
   vi.mocked(signOutThisDevice).mockReset();
+  vi.mocked(withinLimit).mockClear();
 });
 
 const aForm = (name: unknown) => {
@@ -98,6 +106,14 @@ describe("deletePasskey", () => {
     await expect(deletePasskey("p-1")).rejects.toThrow("not signed in");
     expect(remove).not.toHaveBeenCalled();
   });
+
+  it("trop d’essais : « too_many » après la session, avant de valider l’id, sans rien supprimer", () =>
+    expectLimitedFirst(() => deletePasskey(""), {
+      limit: "delete-passkey",
+      subject: "user-1",
+      refusal: { ok: false, reason: "too_many" },
+      untouched: [remove, vi.mocked(revalidatePath)],
+    }));
 });
 
 describe("revokeSession", () => {
@@ -181,6 +197,14 @@ describe("renameMe", () => {
     await expect(renameMe(aForm("Zoé"))).rejects.toThrow("not signed in");
     expect(updateUser).not.toHaveBeenCalled();
   });
+
+  it("trop d’essais : refusé après la session, avant de lire le prénom, sans rien écrire", () =>
+    expectLimitedFirst(() => renameMe(aForm("")), {
+      limit: "rename-me",
+      subject: "user-1",
+      refusal: TOO_MANY,
+      untouched: [updateUser, vi.mocked(revalidateListPages)],
+    }));
 });
 
 describe("deleteAccount", () => {
@@ -223,5 +247,22 @@ describe("deleteAccount", () => {
 
     await expect(deleteAccount(aForm("Léa"))).rejects.toThrow("not signed in");
     expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("trop d’essais : refusé après la session, même avec le bon prénom, sans rien supprimer", () =>
+    expectLimitedFirst(() => deleteAccount(aForm("Léa")), {
+      limit: "delete-account",
+      subject: "user-1",
+      refusal: TOO_MANY,
+      untouched: [deleteUser, vi.mocked(signOutThisDevice)],
+    }));
+
+  it("un prénom faux compte aussi une tentative", async () => {
+    await deleteAccount(aForm("Hugo"));
+
+    expect(withinLimit).toHaveBeenCalledExactlyOnceWith(
+      "delete-account",
+      "user-1",
+    );
   });
 });
