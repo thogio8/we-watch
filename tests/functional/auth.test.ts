@@ -19,11 +19,11 @@ import { BASE_URL, cookiesOf, signUpWith } from "../helpers/signup-ceremony";
 
 const SECRET = "functional-auth-secret-0123456789abcdef";
 
-function buildAuth() {
+function buildAuth(baseURL = BASE_URL) {
   return createAuth({
     db,
     secret: SECRET,
-    baseURL: BASE_URL,
+    baseURL,
     rateLimits: createRateLimits(db),
     plugins: [testUtils()],
   });
@@ -124,34 +124,42 @@ describe("Better Auth (fonctionnel)", () => {
     });
   });
 
-  it("la déconnexion efface aussi le groupe affiché (cookie ww_group)", async () => {
-    const ctx = await auth.$context;
-    const lea = await saveUser("Léa");
-    const signedIn = await ctx.test.getAuthHeaders({ userId: lea.id });
+  it.each([
+    [BASE_URL, false],
+    ["https://wewatch.example", true],
+  ])(
+    "sur %s, la déconnexion efface aussi le groupe affiché (cookie ww_group, secure: %s)",
+    async (baseURL, secure) => {
+      const instance = buildAuth(baseURL);
+      const ctx = await instance.$context;
+      const lea = await ctx.test.saveUser(ctx.test.createUser({ name: "Léa" }));
+      const signedIn = await ctx.test.getAuthHeaders({ userId: lea.id });
 
-    const response = await auth.handler(
-      new Request(`${BASE_URL}/api/auth/sign-out`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          origin: BASE_URL,
-          cookie: `${signedIn.get("cookie")}; ${GROUP_COOKIE}=groupe-1`,
-        },
-        body: "{}",
-      }),
-    );
+      const response = await instance.handler(
+        new Request(`${baseURL}/api/auth/sign-out`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: baseURL,
+            cookie: `${signedIn.get("cookie")}; ${GROUP_COOKIE}=groupe-1`,
+          },
+          body: "{}",
+        }),
+      );
 
-    expect(response.status).toBe(200);
-    const cleared = response.headers
-      .getSetCookie()
-      .find((line) => line.startsWith(`${GROUP_COOKIE}=`));
-    expect(cleared).toBeDefined();
-    expect(cleared).toMatch(new RegExp(`^${GROUP_COOKIE}=;`));
-    expect(cleared).toMatch(/Max-Age=0/);
-    expect(cleared).toMatch(/Path=\//);
-    expect(cleared).toMatch(/HttpOnly/);
-    expect(cleared).toMatch(/SameSite=Lax/i);
-  });
+      expect(response.status).toBe(200);
+      const cleared = response.headers
+        .getSetCookie()
+        .find((line) => line.startsWith(`${GROUP_COOKIE}=`));
+      expect(cleared).toBeDefined();
+      expect(cleared).toMatch(new RegExp(`^${GROUP_COOKIE}=;`));
+      expect(cleared).toMatch(/Max-Age=0/);
+      expect(cleared).toMatch(/Path=\//);
+      expect(cleared).toMatch(/HttpOnly/);
+      expect(cleared).toMatch(/SameSite=Lax/i);
+      expect(/; Secure/i.test(cleared ?? "")).toBe(secure);
+    },
+  );
 
   it("sans plugin supplémentaire, l'instance répond aussi", async () => {
     const bare = createAuth({

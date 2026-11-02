@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   GROUP_COOKIE,
+  groupCookieAttributes,
   type GroupSummary,
   isInviteToken,
   LEGACY_GROUP_ID,
@@ -48,6 +49,25 @@ describe("parseGroupName", () => {
     };
     expect(LEGACY_GROUP_ID).toBe("nous-deux");
     expect(parseGroupName(legacy.name)).toBe("NOUS DEUX");
+  });
+});
+
+describe("groupCookieAttributes", () => {
+  it("httpOnly, lax, sur tout le site", () => {
+    expect(groupCookieAttributes("http://localhost:3000")).toEqual({
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+    });
+  });
+
+  it("secure dès que l’adresse publique est en https", () => {
+    expect(groupCookieAttributes("https://wewatch.example").secure).toBe(true);
+  });
+
+  it("pas secure sur une adresse en http (développement, e2e)", () => {
+    expect(groupCookieAttributes("http://127.0.0.1:3218").secure).toBe(false);
   });
 });
 

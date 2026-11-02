@@ -50,15 +50,16 @@ function normalisedName(name: unknown): { name: string } {
  * Signing out also forgets the displayed group: another account signing in
  * on this device must not open on it.
  */
-const forgetGroupOnSignOut = createAuthMiddleware(async (ctx) => {
-  if (ctx.path !== "/sign-out") {
-    return;
-  }
-  ctx.setCookie(GROUP_COOKIE, "", {
-    ...groupCookieAttributes(process.env.NODE_ENV === "production"),
-    maxAge: 0,
+const forgetGroupOnSignOut = (baseURL: string) =>
+  createAuthMiddleware(async (ctx) => {
+    if (ctx.path !== "/sign-out") {
+      return;
+    }
+    ctx.setCookie(GROUP_COOKIE, "", {
+      ...groupCookieAttributes(baseURL),
+      maxAge: 0,
+    });
   });
-});
 
 export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
   db,
@@ -89,7 +90,7 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
     },
     emailAndPassword: { enabled: false },
     rateLimit: authRateLimit(rateLimits),
-    hooks: { after: forgetGroupOnSignOut },
+    hooks: { after: forgetGroupOnSignOut(baseURL) },
     databaseHooks: {
       user: {
         create: {

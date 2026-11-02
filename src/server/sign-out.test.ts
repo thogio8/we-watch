@@ -11,8 +11,14 @@ vi.mock("next/headers");
 // The real Better Auth configuration: only its options are read.
 let auth: ReturnType<typeof createAuth>;
 vi.mock("./container", () => ({ getAuth: () => auth }));
+// The same public address for Better Auth and for the group cookie.
+let publicURL: string;
+vi.mock("@/env", () => ({
+  getServerEnv: () => ({ BETTER_AUTH_URL: publicURL }),
+}));
 
 const useBaseURL = (baseURL: string) => {
+  publicURL = baseURL;
   const db = createDatabase(":memory:");
   auth = createAuth({
     db,
@@ -72,19 +78,25 @@ describe("signOutThisDevice", () => {
     },
   );
 
-  it("oublie aussi le groupe affiché", async () => {
-    useBaseURL("http://localhost:3000");
+  it.each([
+    ["http://localhost:3000", false],
+    ["https://wewatch.example", true],
+  ])(
+    "sur %s, oublie aussi le groupe affiché (secure: %s)",
+    async (baseURL, secure) => {
+      useBaseURL(baseURL);
 
-    await signOutThisDevice();
+      await signOutThisDevice();
 
-    expect((await cookies()).get("ww_group")).toMatchObject({
-      name: "ww_group",
-      value: "",
-      maxAge: 0,
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-    });
-  });
+      expect((await cookies()).get("ww_group")).toEqual({
+        name: "ww_group",
+        value: "",
+        maxAge: 0,
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure,
+      });
+    },
+  );
 });

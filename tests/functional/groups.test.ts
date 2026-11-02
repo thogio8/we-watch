@@ -142,7 +142,7 @@ describe("groupes (fonctionnel)", () => {
 
     await leaveGroup(groupId);
 
-    expect(await displayed()).toBeUndefined();
+    expect(await displayed()).toMatchObject({ value: "", maxAge: 0 });
     expect(await getGroups().groupsOf(LEA_ID)).toEqual([]);
     await expect(getActiveGroup()).resolves.toMatchObject({ group: null });
   });
