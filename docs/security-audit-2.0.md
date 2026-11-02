@@ -25,7 +25,7 @@ Les numéros de ligne cités renvoient au commit audité (`8f1c1e6`) ; les corre
 
 | # | Gravité | Statut |
 | --- | --- | --- |
-| M1 | moyenne | corrigé (commit `14f20ef`) |
+| M1 | moyenne | corrigé (commit `14f20ef`) ; risque résiduel accepté : le build de prod exécute le code des dépendances avec les variables de prod (inévitable) |
 | L1 | faible | corrigé (commit `77dd98d`, déroulé de bascule et README) |
 | L2 | faible | corrigé (commit `6016bc4`) |
 | L3 | faible | corrigé (commit `5e04e04`) |
@@ -62,6 +62,7 @@ Les numéros de ligne cités renvoient au commit audité (`8f1c1e6`) ; les corre
 
 - **Gravité** : moyenne.
 - **Statut** : corrigé (commit `14f20ef`). Chaque secret est dans l'`env` des seules étapes qui s'en servent : `build` → l'étape `vercel pull/build/deploy` ; `release` → sauvegarde (`DATABASE_*`, `BACKUP_KEY`), migration (`DATABASE_*`), lecture, promotion et retour arrière (`VERCEL_*`), fumée (`CRON_SECRET`). Aucun secret dans l'`env` d'un job ni d'un `npm ci`. `release` installe avec `npm ci --ignore-scripts` (vérifié hors du dépôt : `drizzle-kit migrate` et `backup-db.mjs` marchent sans scripts d'installation, esbuild par son paquet de plateforme, `@libsql/client` par son binaire précompilé) ; `build` garde les scripts, sans secret. La CLI Vercel est une devDependency à version exacte (`vercel` 65.9.0, intégrité dans le lockfile, montée par Dependabot), appelée par `npx --no vercel` (jamais téléchargée au run). En-tête du workflow : `permissions: contents: read` (L4).
+- **Risque résiduel accepté** : l'étape `vercel pull/build/deploy` du job `build` exécute le code des dépendances (le build Next et tout ce qu'il importe) avec les variables de prod que `vercel pull` vient d'écrire (`BETTER_AUTH_SECRET`, jeton Turso…) et le jeton Vercel. C'est inévitable : le build de prod a besoin de son environnement, et Vercel le fournirait de même s'il construisait lui-même. Ce qui est corrigé, c'est l'exposition aux scripts d'installation (`npm ci`) et aux étapes qui n'en ont pas besoin. La parade restante est en amont : le lockfile et ses empreintes d'intégrité (`npm ci`), et chaque mise à jour par une PR Dependabot passée par la CI.
 - **Preuve** :
   - Job `release` : `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `VERCEL_TOKEN`, `CRON_SECRET` sont dans l'`env` **du job** (`.github/workflows/ci.yml:103-110`), donc visibles de `npm ci` (`ci.yml:117`).
   - Job `build` : `VERCEL_TOKEN` au niveau du job (`ci.yml:71-74`) pendant `npm ci` (`ci.yml:83`) ; puis `vercel pull --environment=production` écrit toutes les variables de prod (dont `BETTER_AUTH_SECRET` et le jeton Turso) sur le runner, et `vercel build` exécute le build avec elles (`ci.yml:87-88`).
