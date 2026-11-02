@@ -6,12 +6,19 @@
 # TMDB). Needs PROD_URL and CRON_SECRET. A failure prints what was expected
 # and what was received, never a secret nor a response body. One passkey
 # options call per run: far below its limit (30 per 10 min per IP).
+# EXPECT_SIGNUP (invite by default, or open) is the signup mode production
+# must show: with invite, /connexion must say so (SIGNUP lost or mistyped in
+# Vercel opens signup to anyone who knows the address).
 set -euo pipefail
 
 fail() {
   echo "✕ $1: expected $2, received $3"
   exit 1
 }
+
+expect_signup="${EXPECT_SIGNUP:-invite}"
+[[ "$expect_signup" =~ ^(invite|open)$ ]] ||
+  fail EXPECT_SIGNUP "invite or open" "$expect_signup"
 
 # The passkeys' rpID is the host of BETTER_AUTH_URL, which must equal PROD_URL.
 host="${PROD_URL#*://}"
@@ -37,6 +44,19 @@ csp="$(request -o /dev/null -D - "$base/connexion" |
   fail "/connexion CSP" "frame-ancestors 'none'" \
     "${csp:-(no content-security-policy)}"
 echo "✓ /connexion content-security-policy with frame-ancestors 'none'"
+
+# The text of src/features/signin/messages.ts (CLOSED_ERROR), its spaces
+# possibly non-breaking (U+00A0, &nbsp;, &#160;, &#xa0;).
+invite_only="WEWATCH SE REJOINT SUR INVITATION"
+if [ "$expect_signup" = invite ]; then
+  page="$(request "$base/connexion" |
+    LC_ALL=C sed -E $'s/&nbsp;|&#160;|&#[xX][aA]0;|\xc2\xa0/ /g')"
+  [[ "$page" == *"$invite_only"* ]] ||
+    fail "/connexion signup" "$invite_only" "signup open"
+  echo "✓ /connexion signup by invitation only"
+else
+  echo "– signup mode not checked (EXPECT_SIGNUP=open)"
+fi
 
 # Writes one verification row: the auth tables answer, rpID is this host.
 options="$base/api/auth/passkey/generate-authenticate-options"

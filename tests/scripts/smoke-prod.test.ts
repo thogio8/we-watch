@@ -13,6 +13,9 @@ const VERIFY = "/api/auth/passkey/verify-authentication";
 const CSP = "default-src 'self'; frame-ancestors 'none'; object-src 'none'";
 /** A response body the script must never print, on success or failure. */
 const BODY_MARKER = "never-printed-body";
+/** What /connexion shows when signup is by invitation only (SIGNUP=invite). */
+const INVITE_ONLY = "WEWATCH SE REJOINT SUR INVITATION";
+const INVITE_PAGE = `<main>${BODY_MARKER}<p class="note">${INVITE_ONLY}</p></main>`;
 
 type Answer = {
   status: number;
@@ -25,7 +28,7 @@ const healthy = (host: string): Prod => ({
   "/connexion": {
     status: 200,
     headers: { "content-security-policy": CSP },
-    body: BODY_MARKER,
+    body: INVITE_PAGE,
   },
   "/": { status: 307, headers: { location: "/connexion" } },
   "/api/auth/passkey/generate-authenticate-options": {
@@ -65,12 +68,19 @@ beforeEach(async () => {
 afterEach(() => new Promise((resolve) => server.close(resolve)));
 
 /** Runs the script (async: the fake server lives in this process). */
-async function smoke(prodUrl = url) {
+async function smoke(prodUrl = url, expectSignup = "invite") {
   try {
     const { stdout } = await promisify(execFile)(
       "bash",
       ["scripts/smoke-prod.sh"],
-      { env: { ...process.env, PROD_URL: prodUrl, CRON_SECRET: SECRET } },
+      {
+        env: {
+          ...process.env,
+          PROD_URL: prodUrl,
+          CRON_SECRET: SECRET,
+          EXPECT_SIGNUP: expectSignup,
+        },
+      },
     );
     return { code: 0, printed: stdout };
   } catch (error) {
@@ -85,13 +95,54 @@ function expectNothingSecret(printed: string) {
 }
 
 describe("test de fumée de la prod", () => {
-  it("une prod saine : 7 vérifications vertes, aucun secret affiché", async () => {
+  it("une prod saine : 8 vérifications vertes, aucun secret affiché", async () => {
     const { code, printed } = await smoke();
 
     expect(code).toBe(0);
-    expect(printed.match(/^✓ /gm)).toHaveLength(7);
+    expect(printed.match(/^✓ /gm)).toHaveLength(8);
     expect(printed).not.toContain("✕");
     expectNothingSecret(printed);
+  });
+
+  it("SIGNUP ouvert alors que le dépôt attend l'invitation : rouge", async () => {
+    prod["/connexion"] = { ...prod["/connexion"]!, body: BODY_MARKER };
+
+    const { code, printed } = await smoke();
+
+    expect(code).toBe(1);
+    expect(printed).toContain(
+      `✕ /connexion signup: expected ${INVITE_ONLY}, received signup open`,
+    );
+    expectNothingSecret(printed);
+  });
+
+  it("le texte d'invitation se reconnaît malgré des espaces insécables ou des entités", async () => {
+    prod["/connexion"] = {
+      ...prod["/connexion"]!,
+      body: "<p>WEWATCH&nbsp;SE\u00a0REJOINT&#160;SUR&#xA0;INVITATION</p>",
+    };
+
+    expect((await smoke()).code).toBe(0);
+  });
+
+  it("EXPECT_SIGNUP=open : le mode d'inscription n'est pas vérifié", async () => {
+    prod["/connexion"] = { ...prod["/connexion"]!, body: BODY_MARKER };
+
+    const { code, printed } = await smoke(url, "open");
+
+    expect(code).toBe(0);
+    expect(printed.match(/^✓ /gm)).toHaveLength(7);
+    expect(printed).toContain("signup mode not checked (EXPECT_SIGNUP=open)");
+  });
+
+  it("EXPECT_SIGNUP mal saisie : rouge, avant toute requête", async () => {
+    const { code, printed } = await smoke(url, "invte");
+
+    expect(code).toBe(1);
+    expect(printed).toContain(
+      "✕ EXPECT_SIGNUP: expected invite or open, received invte",
+    );
+    expect(printed).not.toContain("✓");
   });
 
   it("l'hôte du rpId se tire de PROD_URL, sans schéma, port ni chemin", async () => {

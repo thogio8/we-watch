@@ -163,9 +163,12 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: bash scripts/vercel-prod.sh promote "${{ needs.build.outputs.url }}"
 
+      # EXPECT_SIGNUP: repository variable, optional (invite unless set to
+      # open): the signup mode /connexion must show.
       - name: Smoke test production
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          EXPECT_SIGNUP: ${{ vars.EXPECT_SIGNUP || 'invite' }}
         run: bash scripts/smoke-prod.sh
 
       - name: Roll back if production is broken
