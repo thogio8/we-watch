@@ -9,7 +9,10 @@ export const tmdbDiscoverSchema = z.object({
 });
 
 export const tmdbSearchSchema = z.object({
-  results: z.array(z.object({ id: z.number() })),
+  results: z.array(
+    z.object({ id: z.number(), vote_count: z.number().default(0) }),
+  ),
+  total_pages: z.number().default(1),
 });
 
 const tmdbProviderSchema = z.object({
