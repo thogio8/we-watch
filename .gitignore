@@ -58,3 +58,6 @@ next-env.d.ts
 
 # migration rehearsal (a copy of production data: never committed)
 /.rehearsal/
+
+# backup-db.mjs output (production data, even encrypted: never committed)
+/backup/
