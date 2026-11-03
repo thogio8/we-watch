@@ -117,7 +117,8 @@ jobs:
       name: production
       url: ${{ vars.PROD_URL }}
     # Each secret is set on the steps that use it, never on the job: npm ci
-    # (dependencies' code) sees none of them.
+    # (dependencies' code) sees none of them. Step outputs reach a script
+    # through env, never spliced into its text.
     env:
       PROD_URL: ${{ vars.PROD_URL }}
     steps:
@@ -171,7 +172,8 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: bash scripts/vercel-prod.sh promote "${{ needs.build.outputs.url }}"
+          DEPLOYMENT: ${{ needs.build.outputs.url }}
+        run: bash scripts/vercel-prod.sh promote "$DEPLOYMENT"
 
       # EXPECT_SIGNUP: repository variable, optional (invite unless set to
       # open): the signup mode /connexion must show.
@@ -189,7 +191,8 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: bash scripts/vercel-prod.sh promote "${{ steps.previous.outputs.id }}"
+          DEPLOYMENT: ${{ steps.previous.outputs.id }}
+        run: bash scripts/vercel-prod.sh promote "$DEPLOYMENT"
 
   # fix → x.y.Z, feat → x.Y.0, feat! → X.0.0; refactor, test, ci, docs and
   # chore publish nothing. release-please opens its PR (CHANGELOG.md,
