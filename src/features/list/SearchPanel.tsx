@@ -1,6 +1,6 @@
 "use client";
 
-import { leaveIfSignedOut } from "@/access/signed-out";
+import { leaveIfRefused } from "@/access/refusals";
 import { type ReactNode, useState } from "react";
 import type { SearchOutcome } from "./actions";
 import { ListAlert } from "./MovieRow";
@@ -42,7 +42,7 @@ export function SearchPanel({ search, add, children }: SearchPanelProps) {
     try {
       await add(tmdbId);
     } catch (error) {
-      leaveIfSignedOut(error);
+      leaveIfRefused(error);
       setAddFailed(true);
       return;
     }

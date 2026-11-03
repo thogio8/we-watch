@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { signedOutRefusal } from "@/access/signed-out";
+import { signedOutRefusal } from "@/access/refusals";
 import { assertSignedIn, getCurrentUser } from "./session";
 
 const getSession = vi.fn();

@@ -1,7 +1,7 @@
 import "server-only";
 import { headers } from "next/headers";
 import { logSessionFailure } from "@/access/signed-in";
-import { signedOutRefusal } from "@/access/signed-out";
+import { signedOutRefusal } from "@/access/refusals";
 import { AUTHORITATIVE_SESSION_READ } from "@/auth/create-auth";
 import { getAuth } from "./container";
 

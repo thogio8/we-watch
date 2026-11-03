@@ -1,4 +1,4 @@
-import { leaveIfSignedOut } from "@/access/signed-out";
+import { leaveIfRefused } from "@/access/refusals";
 import { useEffect, useState } from "react";
 import type { SearchOutcome } from "./actions";
 import { type Answer, CRASHED } from "./searchAnswer";
@@ -21,7 +21,7 @@ export function useDebouncedSearch(
     const timer = setTimeout(() => {
       search(query)
         .catch((error: unknown) => {
-          leaveIfSignedOut(error);
+          leaveIfRefused(error);
           return CRASHED;
         })
         .then((outcome) => {

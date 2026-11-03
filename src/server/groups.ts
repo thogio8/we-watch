@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SIGNIN_PATH } from "@/access/paths";
+import { notMemberRefusal } from "@/access/refusals";
 import {
   GROUP_COOKIE,
   groupCookieAttributes,
@@ -94,7 +95,7 @@ export async function assertMember(
     !isGroupId(groupId) ||
     !(await getGroups().isMember(groupId, user.userId))
   ) {
-    throw new Error("Server Action refused: not a member");
+    throw notMemberRefusal();
   }
   return { user, groupId };
 }

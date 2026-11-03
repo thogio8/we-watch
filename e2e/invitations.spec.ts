@@ -14,6 +14,15 @@ import {
 const heading = (page: Page, name: RegExp) =>
   page.getByRole("heading", { name });
 
+/** Léa removes Hugo from her group, confirmed. */
+async function removeHugo(app: Page) {
+  await app.goto("/groupe");
+  await memberRow(app, "Hugo").getByRole("button", { name: "RETIRER" }).click();
+  await ticket(app, /RETIRER HUGO DU GROUPE/)
+    .getByRole("button", { name: "RETIRER" })
+    .click();
+}
+
 // Display titles break into lines; « » hold non-breaking spaces.
 const INVITED = /TU ES INVITÉ·E\s+DANS «\s*NOUS DEUX\s*»/;
 const ALREADY = /TU ES DÉJÀ\s+DANS «\s*NOUS DEUX\s*»/;
@@ -99,18 +108,29 @@ test.describe("invitations", () => {
     await hugo.goto("/list");
     await expect(pill(hugo, "NOUS DEUX")).toBeVisible();
 
-    await app.goto("/groupe");
-    await memberRow(app, "Hugo")
-      .getByRole("button", { name: "RETIRER" })
-      .click();
-    await ticket(app, /RETIRER HUGO DU GROUPE/)
-      .getByRole("button", { name: "RETIRER" })
-      .click();
+    await removeHugo(app);
 
     await expect(memberRow(app, "Hugo")).toHaveCount(0);
     await expect(memberRow(app, "Léa")).toBeVisible();
     await hugo.goto("/list");
     await expect(heading(hugo, FIRST_GROUP)).toBeVisible();
+  });
+
+  test("Hugo retiré, sur une page déjà affichée : sa prochaine action le ramène à l’accueil", async ({
+    app,
+    member,
+  }) => {
+    const hugo = await member("Hugo");
+    await hugo.goto("/swipe");
+    await expect(pill(hugo, "NOUS DEUX")).toBeVisible();
+
+    await removeHugo(app);
+    await expect(memberRow(app, "Hugo")).toHaveCount(0);
+    // Still on the deck it shows: only its next swipe finds out.
+    await hugo.getByRole("button", { name: /ON LE VEUT/ }).click();
+
+    await expect(heading(hugo, FIRST_GROUP)).toBeVisible();
+    await expect(hugo).toHaveURL("/");
   });
 
   test("le dernier membre quitte : le groupe disparaît, on arrive sur CRÉER TON PREMIER GROUPE", async ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { leaveIfSignedOut } from "@/access/signed-out";
+import { leaveIfRefused } from "@/access/refusals";
 import { type FormEvent, useId, useRef, useState } from "react";
 import { Button } from "./Button";
 import { cx } from "./cx";
@@ -67,7 +67,7 @@ export function LabelForm<R extends Result>({
     sending.current = true;
     setPending(true);
     const result = await send(formData).catch((error: unknown) => {
-      leaveIfSignedOut(error);
+      leaveIfRefused(error);
       return null;
     });
     sending.current = false;

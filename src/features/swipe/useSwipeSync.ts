@@ -1,4 +1,4 @@
-import { leaveIfSignedOut } from "@/access/signed-out";
+import { leaveIfRefused } from "@/access/refusals";
 import { type Dispatch, useRef } from "react";
 import type { ApplyResult } from "@/domain/transitions";
 import type { MovieSnapshot } from "@/domain/movie";
@@ -26,7 +26,7 @@ export function useSwipeSync(
     // A failed operation was reported already: the next one starts afresh.
     const op = previous.catch((): ApplyResult => "noop").then(next);
     ops.current.set(tmdbId, op);
-    op.catch(leaveIfSignedOut);
+    op.catch(leaveIfRefused);
     return op;
   };
 

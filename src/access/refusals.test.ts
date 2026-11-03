@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { leaveIfSignedOut, signedOutRefusal } from "./signed-out";
+import { leaveIfRefused, notMemberRefusal, signedOutRefusal } from "./refusals";
 
 const replace = vi.fn();
 
@@ -30,20 +30,40 @@ describe("signedOutRefusal", () => {
   });
 });
 
-describe("leaveIfSignedOut", () => {
+describe("notMemberRefusal", () => {
+  it("dit pourquoi l’action est refusée, avec un autre digest", () => {
+    const refusal = notMemberRefusal();
+
+    expect(refusal.message).toBe("Server Action refused: not a member");
+    expect(refusal.digest).not.toBe(signedOutRefusal().digest);
+  });
+});
+
+describe("leaveIfRefused", () => {
   it("une action refusée faute de session : la page de connexion, à la place de celle-ci", () => {
-    leaveIfSignedOut(asSentToTheClient(signedOutRefusal()));
+    leaveIfRefused(asSentToTheClient(signedOutRefusal()));
 
     expect(replace).toHaveBeenCalledWith("/connexion");
+  });
+
+  it("une action refusée parce que je ne suis plus membre : l’accueil, rechargé en entier", () => {
+    leaveIfRefused(asSentToTheClient(notMemberRefusal()));
+
+    expect(replace).toHaveBeenCalledWith("/");
   });
 
   it.each([
     ["une autre erreur", new Error("network")],
     ["un digest quelconque", Object.assign(new Error("x"), { digest: "42" })],
+    [
+      "un digest hérité d’Object",
+      Object.assign(new Error("x"), { digest: "toString" }),
+    ],
+    ["un digest qui n’est pas un texte", { digest: 42 }],
     ["une valeur qui n’est pas une erreur", "oops"],
     ["null", null],
   ])("%s : on reste ici", (_, error) => {
-    leaveIfSignedOut(error);
+    leaveIfRefused(error);
 
     expect(replace).not.toHaveBeenCalled();
   });

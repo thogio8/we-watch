@@ -1,4 +1,4 @@
-import { leaveIfSignedOut } from "@/access/signed-out";
+import { leaveIfRefused } from "@/access/refusals";
 import { type Dispatch, useEffect, useRef } from "react";
 import type { DeckId } from "@/tmdb/decks";
 import type { LoadCards } from "./actions";
@@ -32,7 +32,7 @@ export function useDeckLoader(
         );
       },
       (error: unknown) => {
-        leaveIfSignedOut(error);
+        leaveIfRefused(error);
         loading.current = false;
         dispatch({ type: "load_failed" });
       },

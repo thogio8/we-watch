@@ -1,6 +1,6 @@
 "use client";
 
-import { leaveIfSignedOut } from "@/access/signed-out";
+import { leaveIfRefused } from "@/access/refusals";
 import {
   type FocusEvent,
   type RefObject,
@@ -102,7 +102,7 @@ export function useGroupPanel({ activeId, choose }: GroupPanelOptions) {
       await choose(groupId);
       close(true);
     } catch (error) {
-      leaveIfSignedOut(error);
+      leaveIfRefused(error);
       setError(CHOOSE_FAILED);
     } finally {
       choosing.current = false;
