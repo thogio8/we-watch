@@ -34,8 +34,20 @@ describe("le budget du job release (.github/workflows/ci.yml)", () => {
     // The promote looks the deployment up, posts, then waits.
     const promote = 2 * request + wait + LAST_POLL;
 
+    // The smoke test first waits for the domain to serve the new deployment:
+    // its bound, then one last request.
+    const ready =
+      number(smoke, /SMOKE_READY_TIMEOUT:-(\d+)/) +
+      number(smoke, /SMOKE_READY_INTERVAL:-(\d+)/) +
+      smokeRequest;
+
     const worst =
-      SETUP + request + promote + smokeRequests * smokeRequest + promote;
+      SETUP +
+      request +
+      promote +
+      ready +
+      smokeRequests * smokeRequest +
+      promote;
 
     expect(smokeRequests).toBe(8);
     expect(timeout * 60).toBeGreaterThanOrEqual(worst);

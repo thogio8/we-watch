@@ -28,8 +28,19 @@ base="${PROD_URL%/}"
 # curl prints 000 when it gets no answer: reported like any other status.
 request() { curl -s --max-time 60 "$@" || true; }
 
-status="$(request -o /dev/null -w '%{http_code}' "$base/connexion")"
-[ "$status" = 200 ] || fail /connexion 200 "$status"
+# Vercel may report the promote done before the domain serves the new
+# deployment (2026-11-03: one second after the promote, /connexion was still
+# the 1.3.x's 307). Wait, bounded, for /connexion to answer 200; a broken
+# deployment never does, and fails once the wait is over.
+ready_timeout="${SMOKE_READY_TIMEOUT:-120}"
+ready_interval="${SMOKE_READY_INTERVAL:-5}"
+deadline=$((SECONDS + ready_timeout))
+while true; do
+  status="$(request -o /dev/null -w '%{http_code}' "$base/connexion")"
+  [ "$status" = 200 ] && break
+  [ "$SECONDS" -lt "$deadline" ] || fail /connexion 200 "$status"
+  sleep "$ready_interval"
+done
 echo "✓ /connexion 200"
 
 read -r status location < <(request -o /dev/null \

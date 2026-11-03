@@ -69,8 +69,15 @@ beforeEach(async () => {
 });
 afterEach(() => new Promise((resolve) => server.close(resolve)));
 
-/** Runs the script (async: the fake server lives in this process). */
-async function smoke(prodUrl = url, expectSignup = "invite") {
+/**
+ * Runs the script (async: the fake server lives in this process). No wait
+ * for production to switch unless a test asks for one.
+ */
+async function smoke(
+  prodUrl = url,
+  expectSignup = "invite",
+  wait: Record<string, string> = { SMOKE_READY_TIMEOUT: "0" },
+) {
   try {
     const { stdout } = await promisify(execFile)(
       "bash",
@@ -81,6 +88,7 @@ async function smoke(prodUrl = url, expectSignup = "invite") {
           PROD_URL: prodUrl,
           CRON_SECRET: SECRET,
           EXPECT_SIGNUP: expectSignup,
+          ...wait,
         },
       },
     );
@@ -157,6 +165,32 @@ describe("test de fumée de la prod", () => {
     const { code } = await smoke(`${url}/`);
 
     expect(code).toBe(0);
+  });
+
+  it("le domaine sert encore l'ancienne version juste après la mise en ligne : la fumée l'attend, puis vérifie la nouvelle", async () => {
+    const fresh = prod["/connexion"]!;
+    prod["/connexion"] = { status: 307, headers: { location: "/unlock" } };
+    setTimeout(() => (prod["/connexion"] = fresh), 1500);
+
+    const { code, printed } = await smoke(url, "invite", {
+      SMOKE_READY_TIMEOUT: "20",
+      SMOKE_READY_INTERVAL: "1",
+    });
+
+    expect(code).toBe(0);
+    expect(printed.match(/^✓ /gm)).toHaveLength(8);
+  });
+
+  it("une version qui ne répond jamais 200 : rouge une fois l'attente finie", async () => {
+    prod["/connexion"] = { status: 307, headers: { location: "/unlock" } };
+
+    const { code, printed } = await smoke(url, "invite", {
+      SMOKE_READY_TIMEOUT: "2",
+      SMOKE_READY_INTERVAL: "1",
+    });
+
+    expect(code).toBe(1);
+    expect(printed).toContain("✕ /connexion: expected 200, received 307");
   });
 
   it("une prod injoignable : rouge, avec un message", async () => {
