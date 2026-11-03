@@ -156,6 +156,63 @@ Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploieme
 
 Le proxy valide l'environnement à chaque requête : une variable absente ou invalide met **tout** en 500, `/connexion` comprise. La fumée échoue dès sa première vérification et la CI remet la 1.3.x (§5.1). Rien n'est perdu, mais la migration est passée : c'est le cas « retour automatique » de §5 et §6.
 
+### 1.4 La veille : vérifications en lecture seule (facultatif)
+
+Rien n'y change la prod : elles prouvent que les accès dont la CI aura besoin marchent, la veille plutôt que pendant la bascule. Chaque bloc se colle **en entier**, puis on répond à l'invite masquée.
+
+- [ ] **Vercel, avec le jeton d'équipe de la CI** (celui du secret `VERCEL_TOKEN`, gardé dans le gestionnaire de mots de passe : GitHub ne le relit jamais). Depuis un dépôt lié (`npx --no -- vercel link` si `.vercel/` manque), qui fournit les identifiants d'équipe et de projet (ceux des secrets `VERCEL_ORG_ID` et `VERCEL_PROJECT_ID`) :
+
+  ```bash
+  (
+    set -euo pipefail
+    trap 'echo "✕ arrêt : la commande ci-dessus a échoué" >&2' ERR
+    read -rsp "Jeton d'équipe Vercel de la CI : " VERCEL_TOKEN || true; echo
+    [ -n "$VERCEL_TOKEN" ] || { echo "✕ jeton vide"; exit 1; }
+    export VERCEL_TOKEN
+    VERCEL_ORG_ID="$(node -p 'require("./.vercel/project.json").orgId')"
+    VERCEL_PROJECT_ID="$(node -p 'require("./.vercel/project.json").projectId')"
+    export VERCEL_ORG_ID VERCEL_PROJECT_ID
+    id="$(bash scripts/vercel-prod.sh current)"
+    echo "✓ en prod : $id"
+    printf 'Authorization: Bearer %s' "$VERCEL_TOKEN" |
+      curl -sSf --max-time 30 -H @- "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" |
+      node -e 'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
+        const job = JSON.parse(s).lastAliasRequest;
+        const ok = typeof job === "object" && job !== null;
+        console.log(ok ? `✓ lastAliasRequest : un objet (jobStatus ${job.jobStatus})` : "✕ lastAliasRequest absent");
+        process.exit(ok ? 0 : 1);
+      })'
+  )
+  ```
+
+  Attendu : `✓ en prod : dpl_…` (la 1.3.x, celle que le retour arrière remettrait), puis `✓ lastAliasRequest : un objet (jobStatus succeeded)`. Le jeton passe par l'en-tête lu sur l'entrée standard (`-H @-`), jamais en argument. Un `✕ current production: unknown …` ou une erreur `curl: (22) … 403` : jeton invalide ou sans accès à l'équipe, à régler (nouveau jeton, `gh secret set VERCEL_TOKEN`) avant la bascule, sinon la CI s'arrêterait avant la mise en ligne. `lastAliasRequest` absent n'empêche pas la mise en ligne (le script attend alors seulement que la prod désigne le nouveau déploiement), mais il n'est pas normal ici : le noter.
+
+- [ ] **Une sauvegarde de la prod, en lecture seule, chiffrée puis relue** : prouve que `scripts/backup-db.mjs` lit la base de prod et que la copie hors ligne de `BACKUP_KEY` chiffre et déchiffre. Le jeton Turso est en lecture seule et expire seul au bout d'une heure ; la sauvegarde va dans un dossier temporaire détruit à la fin du bloc, même en cas d'échec. La clé vient de `~/wewatch-backup-key.txt` s'il existe encore (§1.2), sinon de l'invite masquée (la coller depuis le gestionnaire de mots de passe). Remplacer `<base>` par le nom de la base de prod (`turso db list`) :
+
+  ```bash
+  (
+    set -euo pipefail
+    trap 'echo "✕ arrêt : la commande ci-dessus a échoué" >&2' ERR
+    base=<base>
+    url="$(turso db show "$base" --url)"
+    tok="$(turso db tokens create "$base" --read-only --expiration 1h)"
+    [ -n "$url" ] && [ -n "$tok" ] || { echo "✕ accès Turso non obtenus"; exit 1; }
+    if [ -f ~/wewatch-backup-key.txt ]; then key="$(< ~/wewatch-backup-key.txt)"; else read -rsp "BACKUP_KEY : " key || true; echo; fi
+    [ -n "$key" ] || { echo "✕ clé vide"; exit 1; }
+    tmp="$(mktemp -d)"
+    trap 'shred -u "$tmp"/* 2>/dev/null || true; rm -rf "$tmp"' EXIT
+    DATABASE_URL="$url" DATABASE_AUTH_TOKEN="$tok" BACKUP_KEY="$key" node scripts/backup-db.mjs "$tmp/db.json.enc"
+    BACKUP_KEY="$key" node --input-type=module -e '
+      import { readBackup } from "./scripts/read-backup.mjs";
+      const tables = readBackup(process.argv[1], process.env.BACKUP_KEY);
+      for (const [name, rows] of Object.entries(tables)) console.log(`${name}: ${rows.length} rows`);
+      console.log("✓ sauvegarde déchiffrée, dossier temporaire détruit");
+    ' "$tmp/db.json.enc"
+  )
+  ```
+
+  Attendu : d'abord la sauvegarde, `movies: <n> rows`, chaque table 2.0 `absent`, `saved to /tmp/…/db.json.enc (encrypted)` ; puis la relecture, `movies: <n> rows` (le même `<n>`) et `✓ sauvegarde déchiffrée, dossier temporaire détruit`. Seuls des noms de tables et des comptes de lignes s'affichent. Un refus de la clé (`BACKUP_KEY …`) : la copie hors ligne est mal formée, à refaire (§1.2) avant la bascule. Limite : ce contrôle ne prouve pas que la copie **égale** le secret GitHub (illisible) ; la preuve viendra de l'artefact du jour J (§3).
+
 ## 2. La bascule
 
 Le mainteneur l'approuve et la lance lui-même.
@@ -212,6 +269,29 @@ Le mainteneur l'approuve et la lance lui-même.
 ## 3. Après la bascule
 
 - [ ] Run vert de bout en bout, puis `gh release view v2.0.0` : la release existe.
+- [ ] La copie hors ligne de `BACKUP_KEY` déchiffre l'artefact du jour (la seule preuve qu'elle égale le secret GitHub) :
+
+  ```bash
+  (
+    set -euo pipefail
+    trap 'echo "✕ arrêt : la commande ci-dessus a échoué" >&2' ERR
+    run="$(gh run list --branch main --workflow ci.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+    sha="$(gh run view "$run" --json headSha --jq .headSha)"
+    tmp="$(mktemp -d)"
+    trap 'shred -u "$tmp"/* 2>/dev/null || true; rm -rf "$tmp"' EXIT
+    gh run download "$run" -n "db-backup-$sha" -D "$tmp"
+    read -rsp "BACKUP_KEY : " key || true; echo
+    [ -n "$key" ] || { echo "✕ clé vide"; exit 1; }
+    BACKUP_KEY="$key" node --input-type=module -e '
+      import { readBackup } from "./scripts/read-backup.mjs";
+      const tables = readBackup(process.argv[1], process.env.BACKUP_KEY);
+      for (const [name, rows] of Object.entries(tables)) console.log(`${name}: ${rows.length} rows`);
+      console.log("✓ artefact déchiffré avec la copie hors ligne");
+    ' "$tmp/db.json.enc"
+  )
+  ```
+
+  Attendu : `movies: <n> rows` puis `✓ artefact déchiffré avec la copie hors ligne`. `sauvegarde illisible : mauvaise clé …` : la copie n'est pas la clé de GitHub ; en régler une nouvelle (§1.2) et la garder, sinon aucun artefact ne serait lisible le jour où il le faudrait.
 - [ ] En-têtes servis :
 
   ```bash
