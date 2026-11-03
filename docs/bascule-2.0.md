@@ -35,6 +35,8 @@ Faite le **2026-11-02**, sur la sauvegarde du dernier déploiement de `main` (ru
 
 Verdict : **conforme**. La copie a été supprimée ensuite (`.rehearsal/` est ignoré par git).
 
+Refaite le **2026-11-03**, jour de la bascule, sur l'artefact du run `41619927240` : 229 films, 229 dans « NOUS DEUX », `rejected` 153, `to_watch` 76, aucun écart. Conforme.
+
 **À refaire le jour J si `main` a été redéployée depuis** (une sauvegarde plus récente existe) :
 
 ```bash
@@ -384,6 +386,18 @@ Pendant le retour, la 1.3.x a écrit dans `movies` ; « NOUS DEUX » n'a pas bou
 Et rien du tout si « NOUS DEUX » n'existe plus (son dernier membre l'a quitté).
 
 **Si quelqu'un a utilisé la 1.3.x pendant la bascule** (entre la migration et la fumée verte, §2) : ce SQL couvre aussi cette fenêtre, car sa limite (`watched_at` postérieur à la création du groupe) part de la copie de 0006. Le livrer en migration dans un push sur `main` (étapes ci-dessus, sans revert), avec les mêmes limites.
+
+## Journal de la bascule du 2026-11-03
+
+Ce qui s'est passé, pour la prochaine bascule :
+
+1. **Build rouge** (rien migré) : `BETTER_AUTH_URL` et `SIGNUP` créées « Sensitive », donc `[SENSITIVE]` au build ; recréées avec `--no-sensitive` (§1.2), puis relance du job en échec (sans risque à ce stade : rien n'était migré).
+2. **Fumée rouge, retour automatique** : la promotion annoncée faite, le domaine servait encore la 1.3.x (`/connexion` en 307). Migration déjà passée. Correctif : la fumée attend que `/connexion` réponde 200 (2 minutes au plus), et rattrapage `0011` dans le même push (§5.1, §6).
+3. **Fumée rouge pendant la bascule du domaine** (requêtes servies tantôt par l'ancien, tantôt par le nouveau déploiement), puis **retour arrière en échec** (API Vercel muette 30 s) : la 2.0 est restée en ligne, saine (fumée rejouée à la main, puis relance du job : 8 contrôles verts).
+4. **Release non publiée** : la PR de release-please cherchée par étiquette n'était pas encore trouvable ; l'étape prend maintenant son numéro. `v2.0.0` publiée.
+5. Propriétaire inscrit, l'autre membre invité par le lien de « NOUS DEUX » ; `OWNER_CODE` retiré de Vercel (effectif au déploiement de ce journal).
+
+À reprendre : la fumée ne distingue pas deux versions qui répondent toutes deux 200 sur `/connexion` (une 2.x après la 2.0) ; le retour arrière abandonne sur une API Vercel lente au lieu de réessayer.
 
 ## 7. Restaurer une sauvegarde (base perdue ou abîmée)
 
