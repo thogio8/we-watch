@@ -50,3 +50,22 @@ describe("le budget du job release (.github/workflows/ci.yml)", () => {
     expect(wait).toBe(180);
   });
 });
+
+describe("le retour arrière du job release (.github/workflows/ci.yml)", () => {
+  // The production id is read first: a failed backup or migration must not
+  // "roll back" (promote what already serves) before any promote ran.
+  it("ne se lance qu'après une mise en ligne tentée", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const step = (name: string) => {
+      const start = ci.indexOf(`- name: ${name}`);
+      expect(start, name).toBeGreaterThan(-1);
+      const end = ci.indexOf("\n      - ", start + 1);
+      return ci.slice(start, end === -1 ? undefined : end);
+    };
+
+    expect(step("Put the new deployment online")).toMatch(/\n\s+id: promote\n/);
+    expect(step("Roll back if production is broken")).toContain(
+      "if: failure() && steps.previous.outputs.id != '' && steps.promote.outcome != 'skipped'",
+    );
+  });
+});

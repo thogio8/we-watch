@@ -166,6 +166,7 @@ jobs:
         run: npm run db:migrate
 
       - name: Put the new deployment online
+        id: promote
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -180,8 +181,10 @@ jobs:
           EXPECT_SIGNUP: ${{ vars.EXPECT_SIGNUP || 'invite' }}
         run: bash scripts/smoke-prod.sh
 
+      # Only once a promote was attempted (a failed one included): a failed
+      # backup or migration leaves the previous deployment online.
       - name: Roll back if production is broken
-        if: failure() && steps.previous.outputs.id != ''
+        if: failure() && steps.previous.outputs.id != '' && steps.promote.outcome != 'skipped'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
