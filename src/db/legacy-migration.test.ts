@@ -11,13 +11,16 @@ import { createClient, type Client, type InStatement } from "@libsql/client";
 import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
 import { createDatabase } from "./create-database";
 import { group } from "./group-schema";
 
 // The groups migration (2.0, piece 2) runs on the production list (1.3.x
 // rows) before the new code: it applies the real SQL files, in journal order,
 // on a database seeded the way 1.3.x left it.
+
+// The group migration 0006 creates: its id and name are written in its SQL.
+const LEGACY_GROUP_ID = "nous-deux";
+const LEGACY_GROUP_NAME = "NOUS DEUX";
 
 type Journal = { entries: { idx: number; tag: string; when: number }[] };
 const journal = JSON.parse(
@@ -151,7 +154,7 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     expect(dates.slice(1).every((when, i) => when > dates[i]!)).toBe(true);
   });
 
-  it("écrit dans le SQL l'id et le nom du groupe hérité du domaine", () => {
+  it("écrit dans le SQL l'id et le nom du groupe « NOUS DEUX »", () => {
     expect(sqlOf(COPY)).toContain(
       `'${LEGACY_GROUP_ID}', '${LEGACY_GROUP_NAME}'`,
     );

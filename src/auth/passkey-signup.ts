@@ -5,7 +5,7 @@ import {
   readSignupTicket,
   type IssuedSignupTicket,
 } from "@/access/signup-ticket";
-import { joinGroupInSignup, signupJoins } from "./group-join";
+import { joinInvitedGroup } from "./group-join";
 
 type Registration = NonNullable<PasskeyOptions["registration"]>;
 type ResolveUser = NonNullable<Registration["resolveUser"]>;
@@ -110,8 +110,7 @@ export function passkeySignup(secret: string): {
       if (session) {
         return attachToSession(session.user.id, registering.id, context);
       }
-      const ticket = await requireTicket(context, secret);
-      const { name, jti } = ticket;
+      const { name, invite, jti } = await requireTicket(context, secret);
       await consumeTicket(ctx, jti);
       // Better Auth requires a unique email; `.invalid` is a reserved TLD.
       const user = await ctx.context.internalAdapter.createUser(
@@ -122,9 +121,8 @@ export function passkeySignup(secret: string): {
         },
         { method: "passkey" },
       );
-      const now = new Date();
-      for (const join of signupJoins(ticket, now)) {
-        await joinGroupInSignup(user.id, join, now);
+      if (invite !== null) {
+        await joinInvitedGroup(user.id, invite, new Date());
       }
       return { userId: user.id };
     },

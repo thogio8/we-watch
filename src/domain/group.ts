@@ -2,10 +2,6 @@ import { parseLabel } from "./label";
 
 const MAX_LENGTH = 30;
 
-/** The group created from the pre-accounts list (migration, 2.0 piece 2). */
-export const LEGACY_GROUP_ID = "nous-deux";
-export const LEGACY_GROUP_NAME = "NOUS DEUX";
-
 /** Cookie remembering the displayed group. */
 export const GROUP_COOKIE = "ww_group";
 

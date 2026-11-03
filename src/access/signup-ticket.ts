@@ -4,7 +4,7 @@ import { constantTimeEqual } from "./token";
 
 /**
  * Short-lived signed signup ticket:
- * `base64url(JSON {name, owner, invite, exp, jti})`
+ * `base64url(JSON {name, invite, exp, jti})`
  * + `.` + `base64url(HMAC-SHA256)`. Issued by the signup Server Action, re-read
  * before Better Auth creates the user. Web Crypto only.
  * The signed message is prefixed with a fixed label so the signature can never
@@ -22,15 +22,14 @@ import { constantTimeEqual } from "./token";
  */
 export type SignupTicket = {
   name: string;
-  owner: boolean;
   invite: string | null;
 };
 export type IssuedSignupTicket = SignupTicket & { jti: string };
 
 const DOMAIN_LABEL = "wewatch:signup-ticket:v1";
 const LIFETIME_MS = 10 * 60 * 1000;
-// Largest legitimate ticket is about 410 characters: 30 four-byte characters
-// in the name, a 64-character invite and the owner role.
+// Largest legitimate ticket is about 390 characters: 30 four-byte characters
+// in the name and a 64-character invite.
 const MAX_TICKET_LENGTH = 512;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 const JTI_BYTES = 16;
@@ -40,7 +39,6 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
 
 const payloadSchema = z.strictObject({
   name: z.string(),
-  owner: z.boolean(),
   // A group id: never empty, 64 characters at most.
   invite: z.string().min(1).max(64).nullable(),
   exp: z.number().int(),
@@ -98,7 +96,6 @@ export async function createSignupTicket(
   }
   const payload = {
     name,
-    owner: ticket.owner,
     invite: ticket.invite,
     exp: now + LIFETIME_MS,
     jti: encode(crypto.getRandomValues(new Uint8Array(JTI_BYTES))),
@@ -147,5 +144,5 @@ export async function readSignupTicket(
   const name = parseDisplayName(payload.name);
   return name === null
     ? null
-    : { name, owner: payload.owner, invite: payload.invite, jti: payload.jti };
+    : { name, invite: payload.invite, jti: payload.jti };
 }

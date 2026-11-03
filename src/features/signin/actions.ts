@@ -80,7 +80,7 @@ export async function prepareSignup(
   });
   if (right.ok) {
     const ticket = await createSignupTicket(
-      { name, owner: right.owner, invite: invited.invite },
+      { name, invite: invited.invite },
       env.BETTER_AUTH_SECRET,
     );
     return { ok: true, ticket };

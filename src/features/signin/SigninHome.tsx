@@ -25,7 +25,8 @@ interface SigninHomeProps {
 
 /**
  * Passkey sign-in, then a way to create an account (or the invitation note),
- * and, when one is set, the owner code, which joins « NOUS DEUX ».
+ * and, when one is set, the owner code, which opens signup even on invitation
+ * only (to start a fresh instance).
  */
 export function SigninHome({
   title,

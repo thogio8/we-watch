@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { aMovie, NETFLIX } from "@tests/helpers/movies";
 import { stubMatchMedia } from "@tests/helpers/dom";
-import { LEGACY_GROUP_ID } from "@/domain/group";
 import type { Movie } from "@/domain/movie";
 import { DrawScreen } from "./DrawScreen";
 import { DrawSessionProvider } from "./DrawSessionProvider";
@@ -606,22 +605,6 @@ describe("DrawScreen : filtres « ce soir »", () => {
 
     rerender({ groupId: "groupe-a", toWatch: list });
     expect(summary()).toHaveTextContent("AVANT 23H30 · RIRE");
-  });
-
-  it("le groupe hérité relit les filtres d'avant les groupes, pas les autres", () => {
-    localStorage.setItem(
-      "ww-tonight-v1",
-      JSON.stringify({ bedtime: 23 * 60, platforms: [] }),
-    );
-    const summary = () => screen.getByRole("button", { name: /^LA SOIRÉE/ });
-    const { rerender } = renderDraw({
-      groupId: LEGACY_GROUP_ID,
-      toWatch: list,
-    });
-    expect(summary()).toHaveTextContent("AVANT 23H");
-
-    rerender({ groupId: "groupe-a", toWatch: list });
-    expect(summary()).toHaveTextContent("AUCUN FILTRE");
   });
 
   it("pas de panneau quand la liste est vide", () => {

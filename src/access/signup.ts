@@ -1,7 +1,7 @@
 import { constantTimeEqual } from "./token";
 
 export type SignupRight =
-  { ok: true; owner: boolean } | { ok: false; reason: "closed" | "wrong_code" };
+  { ok: true } | { ok: false; reason: "closed" | "wrong_code" };
 
 type SignupInput = {
   mode: "open" | "invite";
@@ -18,8 +18,9 @@ export function submittedOwnerCode(submittedCode?: string): string | null {
 }
 
 /**
- * Decides who may create an account. A valid owner code always grants the
- * owner role, invited or not. Without a code, signup is allowed through an
+ * Decides who may create an account. A valid owner code allows signup, in
+ * either mode, invited or not (it bootstraps a fresh "invite" instance); it
+ * grants nothing else. Without a code, signup is allowed through an
  * invitation (in either mode) or in "open" mode. A refusal says why:
  * "wrong_code" whenever a non-blank code was typed (in either mode, invited
  * or not), "closed" when none was and signup is not open. The UI message
@@ -34,11 +35,11 @@ export function signupRight({
   const submitted = submittedOwnerCode(submittedCode);
   if (submitted === null) {
     return invited || mode === "open"
-      ? { ok: true, owner: false }
+      ? { ok: true }
       : { ok: false, reason: "closed" };
   }
   if (ownerCode !== undefined && constantTimeEqual(submitted, ownerCode)) {
-    return { ok: true, owner: true };
+    return { ok: true };
   }
   return { ok: false, reason: "wrong_code" };
 }

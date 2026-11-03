@@ -2,9 +2,8 @@ import type * as betterAuthApi from "better-auth/api";
 import { getAuthoritativeSessionFromCtx } from "better-auth/api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSignupTicket, readSignupTicket } from "@/access/signup-ticket";
-import { LEGACY_GROUP_ID } from "@/domain/group";
 import type * as groupJoin from "./group-join";
-import { joinGroupInSignup } from "./group-join";
+import { joinInvitedGroup } from "./group-join";
 import { passkeySignup } from "./passkey-signup";
 
 vi.mock("better-auth/api", async (importOriginal) => ({
@@ -14,12 +13,12 @@ vi.mock("better-auth/api", async (importOriginal) => ({
 // The conditional insert runs on the real transaction: tested in group-join.
 vi.mock("./group-join", async (importOriginal) => ({
   ...(await importOriginal<typeof groupJoin>()),
-  joinGroupInSignup: vi.fn(),
+  joinInvitedGroup: vi.fn(),
 }));
 
 beforeEach(() => {
   vi.mocked(getAuthoritativeSessionFromCtx).mockResolvedValue(null);
-  vi.mocked(joinGroupInSignup).mockReset();
+  vi.mocked(joinInvitedGroup).mockReset();
 });
 
 const SECRET = "a-long-enough-better-auth-secret";
@@ -72,7 +71,7 @@ describe("passkeySignup", () => {
 
   it("resolveUser : un ticket valide donne le nom du ticket et un identifiant", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
     );
 
@@ -84,7 +83,7 @@ describe("passkeySignup", () => {
 
   it("resolveUser : deux inscriptions n'ont pas le même identifiant", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
     );
     const signup = passkeySignup(SECRET);
@@ -107,7 +106,7 @@ describe("passkeySignup", () => {
 
   it("resolveUser : un ticket signé avec un autre secret est rejeté", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       "another-long-enough-secret-value",
     );
 
@@ -118,7 +117,7 @@ describe("passkeySignup", () => {
 
   it("afterVerification : crée l'utilisateur une fois, avec ce nom et une adresse en @passkey.invalid", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: true, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
     );
     const { createUser, create, ctx } = fakeCtx();
@@ -144,7 +143,7 @@ describe("passkeySignup", () => {
 
   it("afterVerification : consomme le jti du ticket, dans la base de Better Auth", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
     );
     const jti = (await readSignupTicket(ticket, SECRET))?.jti;
@@ -167,7 +166,7 @@ describe("passkeySignup", () => {
 
   it("afterVerification : un ticket déjà utilisé est rejeté et aucun utilisateur n'est créé", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
     );
     const { createUser, create, ctx } = fakeCtx({ used: true });
@@ -186,7 +185,7 @@ describe("passkeySignup", () => {
 
   it("afterVerification : un ticket expiré est rejeté et aucun utilisateur n'est créé", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
       Date.now() - ELEVEN_MINUTES,
     );
@@ -208,7 +207,7 @@ describe("passkeySignup", () => {
 
   it("afterVerification : connecté, avec un ticket, on ne crée pas de second compte", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
     );
     signedIn();
@@ -261,9 +260,9 @@ describe("passkeySignup", () => {
     expect(createUser).not.toHaveBeenCalled();
   });
 
-  it("afterVerification : sans code ni invitation, aucun groupe rejoint", async () => {
+  it("afterVerification : sans invitation, aucun groupe rejoint", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: false, invite: null },
+      { name: "Léa", invite: null },
       SECRET,
     );
     const { ctx } = fakeCtx();
@@ -272,12 +271,12 @@ describe("passkeySignup", () => {
       afterVerificationArgs(ctx, ticket),
     );
 
-    expect(joinGroupInSignup).not.toHaveBeenCalled();
+    expect(joinInvitedGroup).not.toHaveBeenCalled();
   });
 
-  it("afterVerification : après la création du compte, rejoint le groupe de l’invitation puis « NOUS DEUX »", async () => {
+  it("afterVerification : après la création du compte, rejoint le groupe de l’invitation", async () => {
     const ticket = await createSignupTicket(
-      { name: "Léa", owner: true, invite: "g-5" },
+      { name: "Léa", invite: "g-5" },
       SECRET,
     );
     const { createUser, ctx } = fakeCtx();
@@ -286,13 +285,11 @@ describe("passkeySignup", () => {
       afterVerificationArgs(ctx, ticket),
     );
 
-    const now = expect.any(Date);
-    expect(vi.mocked(joinGroupInSignup).mock.calls).toEqual([
-      ["user-1", { groupId: "g-5", lastUsedAt: now }, now],
-      ["user-1", { groupId: LEGACY_GROUP_ID, lastUsedAt: null }, now],
+    expect(vi.mocked(joinInvitedGroup).mock.calls).toEqual([
+      ["user-1", "g-5", expect.any(Date)],
     ]);
     expect(createUser.mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(joinGroupInSignup).mock.invocationCallOrder[0] as number,
+      vi.mocked(joinInvitedGroup).mock.invocationCallOrder[0] as number,
     );
   });
 });

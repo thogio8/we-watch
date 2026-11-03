@@ -86,7 +86,6 @@ describe("prepareSignup", () => {
 
     await expect(ticketOf(result)).resolves.toEqual({
       name: "Léa M",
-      owner: false,
       invite: null,
       jti: expect.any(String),
     });
@@ -143,7 +142,7 @@ describe("prepareSignup", () => {
     }
   });
 
-  it("sur invitation, le bon code propriétaire donne un ticket de propriétaire", async () => {
+  it("sur invitation, le bon code propriétaire donne un ticket, sans groupe", async () => {
     const prepareSignup = await load({ SIGNUP: "invite", OWNER_CODE });
 
     const result = await prepareSignup(
@@ -152,7 +151,6 @@ describe("prepareSignup", () => {
 
     await expect(ticketOf(result)).resolves.toEqual({
       name: "Léa",
-      owner: true,
       invite: null,
       jti: expect.any(String),
     });
@@ -167,7 +165,6 @@ describe("prepareSignup", () => {
 
     await expect(ticketOf(result)).resolves.toEqual({
       name: "Léa",
-      owner: true,
       invite: null,
       jti: expect.any(String),
     });
@@ -228,7 +225,6 @@ describe("prepareSignup : par une invitation", () => {
 
       await expect(ticketOf(result)).resolves.toEqual({
         name: "Léa",
-        owner: false,
         invite: "g-5",
         jti: expect.any(String),
       });
@@ -248,17 +244,14 @@ describe("prepareSignup : par une invitation", () => {
     ).not.toContain(TOKEN);
   });
 
-  it("le bon code propriétaire avec une invitation : propriétaire et invité", async () => {
+  it("le bon code propriétaire avec une invitation : le ticket porte l’invitation", async () => {
     const prepareSignup = await load({ SIGNUP: "invite", OWNER_CODE });
 
     const result = await prepareSignup(
       form({ name: "Léa", ownerCode: OWNER_CODE, invite: TOKEN }),
     );
 
-    await expect(ticketOf(result)).resolves.toMatchObject({
-      owner: true,
-      invite: "g-5",
-    });
+    await expect(ticketOf(result)).resolves.toMatchObject({ invite: "g-5" });
   });
 
   it("un mauvais code avec une invitation : MAUVAIS CODE", async () => {

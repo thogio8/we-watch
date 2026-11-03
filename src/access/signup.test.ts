@@ -5,26 +5,26 @@ const OWNER_CODE = "code-proprietaire-123";
 
 describe("signupRight", () => {
   it("laisse s'inscrire en mode ouvert sans code", () => {
-    expect(signupRight({ mode: "open" })).toEqual({ ok: true, owner: false });
+    expect(signupRight({ mode: "open" })).toEqual({ ok: true });
   });
 
   it("traite un code vide ou d'espaces comme une absence de code", () => {
     expect(
       signupRight({ mode: "open", ownerCode: OWNER_CODE, submittedCode: "" }),
-    ).toEqual({ ok: true, owner: false });
+    ).toEqual({ ok: true });
     expect(
       signupRight({ mode: "open", ownerCode: OWNER_CODE, submittedCode: "  " }),
-    ).toEqual({ ok: true, owner: false });
+    ).toEqual({ ok: true });
   });
 
-  it("donne le rôle propriétaire avec le bon code en mode ouvert", () => {
+  it("accepte le bon code en mode ouvert", () => {
     expect(
       signupRight({
         mode: "open",
         ownerCode: OWNER_CODE,
         submittedCode: OWNER_CODE,
       }),
-    ).toEqual({ ok: true, owner: true });
+    ).toEqual({ ok: true });
   });
 
   it("ignore les espaces autour du code soumis", () => {
@@ -34,7 +34,7 @@ describe("signupRight", () => {
         ownerCode: OWNER_CODE,
         submittedCode: `  ${OWNER_CODE} `,
       }),
-    ).toEqual({ ok: true, owner: true });
+    ).toEqual({ ok: true });
   });
 
   it("ferme l'inscription en mode invitation avec un code d'espaces", () => {
@@ -77,7 +77,7 @@ describe("signupRight", () => {
         ownerCode: OWNER_CODE,
         submittedCode: OWNER_CODE,
       }),
-    ).toEqual({ ok: true, owner: true });
+    ).toEqual({ ok: true });
   });
 
   it("refuse un mauvais code en mode invitation", () => {
@@ -96,24 +96,23 @@ describe("signupRight", () => {
     ).toEqual({ ok: false, reason: "wrong_code" });
   });
 
-  const OWNER = { ok: true, owner: true };
-  const MEMBER = { ok: true, owner: false };
+  const OK = { ok: true };
   const CLOSED = { ok: false, reason: "closed" };
   const WRONG = { ok: false, reason: "wrong_code" };
   const CODES = { bon: OWNER_CODE, mauvais: "autre-code-12345", absent: "" };
 
   it.each([
-    ["open", false, "absent", MEMBER],
-    ["open", false, "bon", OWNER],
+    ["open", false, "absent", OK],
+    ["open", false, "bon", OK],
     ["open", false, "mauvais", WRONG],
-    ["open", true, "absent", MEMBER],
-    ["open", true, "bon", OWNER],
+    ["open", true, "absent", OK],
+    ["open", true, "bon", OK],
     ["open", true, "mauvais", WRONG],
     ["invite", false, "absent", CLOSED],
-    ["invite", false, "bon", OWNER],
+    ["invite", false, "bon", OK],
     ["invite", false, "mauvais", WRONG],
-    ["invite", true, "absent", MEMBER],
-    ["invite", true, "bon", OWNER],
+    ["invite", true, "absent", OK],
+    ["invite", true, "bon", OK],
     ["invite", true, "mauvais", WRONG],
   ] as const)(
     "mode %s, invité : %s, code %s → %j",

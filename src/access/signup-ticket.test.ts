@@ -9,7 +9,7 @@ import {
 const SECRET = "a-long-enough-better-auth-secret";
 const NOW = 1_800_000_000_000;
 const TEN_MINUTES = 10 * 60 * 1000;
-const TICKET: SignupTicket = { name: "Léa", owner: false, invite: null };
+const TICKET: SignupTicket = { name: "Léa", invite: null };
 const JTI = "AAAAAAAAAAAAAAAAAAAAAA";
 /** What reading a ticket issued for `ticket` gives back: a random jti too. */
 const issued = (ticket: SignupTicket) => ({
@@ -37,12 +37,6 @@ describe("createSignupTicket / readSignupTicket", () => {
   it("relit à l'identique un ticket créé", async () => {
     const token = await createSignupTicket(TICKET, SECRET, NOW);
     expect(await readSignupTicket(token, SECRET, NOW)).toEqual(issued(TICKET));
-  });
-
-  it("relit un ticket propriétaire", async () => {
-    const owner = { name: "Léa", owner: true, invite: null };
-    const token = await createSignupTicket(owner, SECRET, NOW);
-    expect(await readSignupTicket(token, SECRET, NOW)).toEqual(issued(owner));
   });
 
   it("donne à chaque ticket un identifiant unique (jti)", async () => {
@@ -110,7 +104,6 @@ describe("createSignupTicket / readSignupTicket", () => {
     // Trailing spaces are collapsed by parseDisplayName: valid but oversized.
     const token = sign({
       name: `Léa${" ".repeat(600)}`,
-      owner: false,
       invite: null,
       exp: NOW + 1000,
       jti: JTI,
@@ -121,32 +114,27 @@ describe("createSignupTicket / readSignupTicket", () => {
 
   it("normalise le nom à la création", async () => {
     const token = await createSignupTicket(
-      { name: "  Léa   Dupont ", owner: false, invite: null },
+      { name: "  Léa   Dupont ", invite: null },
       SECRET,
       NOW,
     );
     expect(await readSignupTicket(token, SECRET, NOW)).toEqual(
-      issued({ name: "Léa Dupont", owner: false, invite: null }),
+      issued({ name: "Léa Dupont", invite: null }),
     );
   });
 
   it("refuse de créer un ticket pour un nom invalide", async () => {
     await expect(
-      createSignupTicket(
-        { name: "   ", owner: false, invite: null },
-        SECRET,
-        NOW,
-      ),
+      createSignupTicket({ name: "   ", invite: null }, SECRET, NOW),
     ).rejects.toThrow("Invalid display name");
   });
 
-  it("refuse une charge modifiée (owner passé à true)", async () => {
+  it("refuse une charge modifiée (nom changé)", async () => {
     const token = await createSignupTicket(TICKET, SECRET, NOW);
     const [, signature] = token.split(".");
     const forged = b64(
       JSON.stringify({
-        name: "Léa",
-        owner: true,
+        name: "Hugo",
         invite: null,
         exp: NOW + TEN_MINUTES,
         jti: JTI,
@@ -199,7 +187,6 @@ describe("createSignupTicket / readSignupTicket", () => {
   it("refuse un nom invalide pour parseDisplayName", async () => {
     const token = sign({
       name: "   ",
-      owner: false,
       invite: null,
       exp: NOW + 1000,
       jti: JTI,
@@ -209,7 +196,6 @@ describe("createSignupTicket / readSignupTicket", () => {
 
   const VALID = {
     name: "Léa",
-    owner: false,
     invite: null,
     exp: NOW + 1000,
     jti: JTI,
@@ -218,8 +204,7 @@ describe("createSignupTicket / readSignupTicket", () => {
     Object.fromEntries(Object.entries(VALID).filter(([name]) => name !== key));
 
   it.each([
-    ["owner non booléen", { ...VALID, owner: "true" }],
-    ["owner absent", without("owner")],
+    ["l’ancien champ owner (ticket d’avant)", { ...VALID, owner: false }],
     ["exp absent", without("exp")],
     ["exp non entier", { ...VALID, exp: NOW + 0.5 }],
     ["exp chaîne", { ...VALID, exp: `${NOW + 1000}` }],
@@ -253,7 +238,7 @@ describe("createSignupTicket / readSignupTicket", () => {
   );
 
   describe("invitation", () => {
-    const INVITED: SignupTicket = { name: "Léa", owner: false, invite: "g-5" };
+    const INVITED: SignupTicket = { name: "Léa", invite: "g-5" };
 
     it("relit l’id du groupe de l’invitation", async () => {
       const token = await createSignupTicket(INVITED, SECRET, NOW);
@@ -274,10 +259,9 @@ describe("createSignupTicket / readSignupTicket", () => {
     });
 
     it("le plus gros ticket légitime tient en 512 caractères et se relit", async () => {
-      // 30 four-byte characters, the longest group id, the owner role.
+      // 30 four-byte characters and the longest group id.
       const largest: SignupTicket = {
         name: "\u{1F3AC}".repeat(30),
-        owner: true,
         invite: "g".repeat(64),
       };
       const token = await createSignupTicket(largest, SECRET, NOW);

@@ -30,7 +30,7 @@ let nextCredential = 0;
 const aCredential = () => new Uint8Array([6, 0, 0, ++nextCredential]);
 
 const ticketFor = (name: string) =>
-  createSignupTicket({ name, owner: false, invite: null }, AUTH_SECRET);
+  createSignupTicket({ name, invite: null }, AUTH_SECRET);
 
 /** Signed up with a first passkey, on an iPhone: the cookies it holds. */
 async function signedUp(name: string) {

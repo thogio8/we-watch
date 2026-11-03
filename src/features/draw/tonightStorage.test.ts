@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { LEGACY_GROUP_ID } from "@/domain/group";
 import { NO_FILTERS } from "@/domain/tonight";
 import {
   parseStoredTonight,
@@ -65,24 +64,9 @@ describe("tonightStorage", () => {
     expect(readStoredTonight(storage, "groupe-b")).toBeNull();
   });
 
-  it("le groupe hérité relit l'ancienne clé tant qu'il n'a pas la sienne", () => {
+  it("ne relit plus la clé d'avant les groupes", () => {
     expect(
-      readStoredTonight(storageWith({ "ww-tonight-v1": V1 }), LEGACY_GROUP_ID),
-    ).toBe(V1);
-    expect(
-      readStoredTonight(
-        storageWith({
-          "ww-tonight-v1": V1,
-          [`ww-tonight-v2:${LEGACY_GROUP_ID}`]: V2,
-        }),
-        LEGACY_GROUP_ID,
-      ),
-    ).toBe(V2);
-  });
-
-  it("un autre groupe n'hérite pas de l'ancienne clé", () => {
-    expect(
-      readStoredTonight(storageWith({ "ww-tonight-v1": V1 }), "groupe-a"),
+      readStoredTonight(storageWith({ "ww-tonight-v1": V1 }), "nous-deux"),
     ).toBeNull();
   });
 });

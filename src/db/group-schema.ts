@@ -12,8 +12,9 @@ import type { MovieStatus } from "@/domain/movie";
 import { user } from "./auth-schema";
 import { snapshotColumns } from "./schema";
 
-// Groups (2.0, piece 2). The pre-accounts table `movies` stays untouched for a
-// rollback to 1.3.x: migration 0006 copies it into the legacy group.
+// Groups (2.0, piece 2). Migration 0006 copied the pre-accounts table `movies`
+// into a group of its own; `movies` is no longer written but stays untouched
+// for a rollback to 1.3.x until 2.1.
 
 const timestamp = (name: string) => integer(name, { mode: "timestamp_ms" });
 const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;

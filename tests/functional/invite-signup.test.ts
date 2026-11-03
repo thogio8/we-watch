@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuth } from "@/auth/create-auth";
 import { user } from "@/db/auth-schema";
@@ -6,7 +6,6 @@ import type { Database } from "@/db/create-database";
 import { group, membership } from "@/db/group-schema";
 import { createGroups, type Groups } from "@/db/groups";
 import { createRateLimits } from "@/db/rate-limit";
-import { LEGACY_GROUP_ID, LEGACY_GROUP_NAME } from "@/domain/group";
 import { joinGroup } from "@/features/groups/actions";
 import { prepareSignup } from "@/features/signin/actions";
 import { startServerStack } from "../helpers/functional";
@@ -174,33 +173,16 @@ describe("inscription par une invitation (fonctionnel, SIGNUP=invite)", () => {
   });
 
   describe("avec le code propriétaire", () => {
-    beforeEach(async () => {
-      await db
-        .insert(group)
-        .values({ id: LEGACY_GROUP_ID, name: LEGACY_GROUP_NAME });
-    });
-
-    it("une invitation vers « NOUS DEUX » : une seule appartenance", async () => {
-      const token = await groups.ensureInvite(LEGACY_GROUP_ID);
-
+    it("sans invitation : le compte est créé, sans aucun groupe", async () => {
       const userId = await userIdOf(
-        await signUp(
-          await prepared({
-            name: "Wanda",
-            ownerCode: OWNER_CODE,
-            invite: token,
-          }),
-        ),
+        await signUp(await prepared({ name: "Wanda", ownerCode: OWNER_CODE })),
       );
 
-      const rows = await db.select().from(membership);
-      expect(rows).toEqual([
-        expect.objectContaining({ groupId: LEGACY_GROUP_ID, userId }),
-      ]);
-      expect(rows[0]?.lastUsedAt).toEqual(rows[0]?.joinedAt);
+      expect(await names()).toContain("Wanda");
+      expect(await groups.groupsOf(userId)).toEqual([]);
     });
 
-    it("une invitation vers un autre groupe : les deux, celui de l’invitation affiché", async () => {
+    it("avec une invitation : rejoint seulement le groupe de l’invitation, affiché", async () => {
       const coloc = await invitingGroup();
 
       const userId = await userIdOf(
@@ -213,20 +195,14 @@ describe("inscription par une invitation (fonctionnel, SIGNUP=invite)", () => {
         ),
       );
 
-      expect((await groups.groupsOf(userId)).map(({ id }) => id)).toEqual([
-        coloc.id,
-        LEGACY_GROUP_ID,
-      ]);
-      const [legacy] = await db
+      const rows = await db
         .select()
         .from(membership)
-        .where(
-          and(
-            eq(membership.userId, userId),
-            eq(membership.groupId, LEGACY_GROUP_ID),
-          ),
-        );
-      expect(legacy?.lastUsedAt).toBeNull();
+        .where(eq(membership.userId, userId));
+      expect(rows).toEqual([
+        expect.objectContaining({ groupId: coloc.id, userId }),
+      ]);
+      expect(rows[0]?.lastUsedAt).toEqual(rows[0]?.joinedAt);
     });
   });
 
