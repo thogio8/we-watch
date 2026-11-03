@@ -210,14 +210,24 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Open or update the release PR
+        id: please
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      # The PR release-please just opened or updated (its output), else one
+      # still open from a previous run, read through REST: a label search
+      # missed the PR labelled a second earlier (2026-11-03).
       - name: Merge it, if there is something to publish
         id: merge
+        env:
+          PR: ${{ steps.please.outputs.pr }}
         run: |
-          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --label "autorelease: pending" --state open --json number --jq '.[0].number // empty')"
+          number=""
+          if [ -n "$PR" ]; then number="$(jq -r '.number // empty' <<<"$PR")"; fi
+          if [ -z "$number" ]; then
+            number="$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&head=$GITHUB_REPOSITORY_OWNER:release-please--branches--main--components--we-watch" --jq '.[0].number // empty')"
+          fi
           if [ -n "$number" ]; then
             gh pr merge "$number" --repo "$GITHUB_REPOSITORY" --squash
             echo "merged=true" >> "$GITHUB_OUTPUT"
