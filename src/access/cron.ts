@@ -1,8 +1,8 @@
 import { constantTimeEqual } from "./token";
 
 /**
- * Daily refresh of the movies (spec §11.2), called by Vercel Cron without the
- * access cookie: Vercel sends `Authorization: Bearer <CRON_SECRET>` instead.
+ * Daily refresh of the movies (spec §11.2), called by Vercel Cron without a
+ * session: Vercel sends `Authorization: Bearer <CRON_SECRET>` instead.
  */
 export const CRON_PATH = "/api/cron/refresh-movies";
 

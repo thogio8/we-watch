@@ -79,8 +79,8 @@ describe("toSnapshot", () => {
     const snap = toSnapshot(
       tmdbMovieDetailsSchema.parse({
         id: 1,
-        title: "‎Avatar Aang‏ ",
-        overview: "‪Résumé‬",
+        title: "\u200EAvatar Aang\u200F ",
+        overview: "\u202ARésumé\u202C",
         vote_average: 5,
       }),
     );
@@ -248,5 +248,41 @@ describe("searchMovies", () => {
       search.results.slice(0, 8).map((r) => r.id),
     );
     expect(fetchImpl).toHaveBeenCalledTimes(9);
+  });
+
+  it("lit aussi la 2e page de TMDB et remonte le film le plus voté (WALL·E)", async () => {
+    const obscure = (from: number) =>
+      Array.from({ length: 20 }, (_, i) => ({ id: from + i, vote_count: 1 }));
+    const pages: Record<string, unknown> = {
+      "1": { results: obscure(1), total_pages: 7 },
+      "2": {
+        results: [
+          ...obscure(21).slice(0, 16),
+          { id: 10681, vote_count: 21131 },
+        ],
+        total_pages: 7,
+      },
+    };
+    const searched: (string | null)[] = [];
+    const fetchImpl = vi.fn((input: string | URL | Request) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/3/search/movie") {
+        searched.push(url.searchParams.get("page"));
+        return Promise.resolve(
+          jsonResponse(pages[url.searchParams.get("page") ?? "1"]),
+        );
+      }
+      const id = Number(url.pathname.split("/").pop());
+      return Promise.resolve(jsonResponse({ ...detailsFull, id }));
+    });
+
+    const result = await searchMovies(
+      clientWith(fetchImpl as unknown as typeof fetch),
+      "Wall-E",
+    );
+
+    expect(searched).toEqual(["1", "2"]);
+    expect(result[0]?.tmdbId).toBe(10681);
+    expect(result).toHaveLength(8);
   });
 });

@@ -4,9 +4,10 @@
  */
 export const E2E_WORKERS = process.env.CI ? 2 : 4;
 export const FAKE_TMDB_PORT = 3218;
-export const ACCESS_CODE = "e2e pop corn ce soir";
+export const E2E_AUTH_SECRET = "e2e-auth-secret-0123456789abcdef0123";
 
 export const appPort = (worker: number) => 3220 + worker;
+export const appUrl = (worker: number) => `http://localhost:${appPort(worker)}`;
 export const databaseOf = (worker: number) => `e2e/.data/e2e-${worker}.db`;
 export const workerIndexes = () => [...Array(E2E_WORKERS).keys()];
 
@@ -16,6 +17,10 @@ export const e2eEnv = (worker: number) => ({
   DATABASE_AUTH_TOKEN: "",
   TMDB_ACCESS_TOKEN: "fake-token",
   TMDB_API_URL: `http://localhost:${FAKE_TMDB_PORT}/3`,
-  ACCESS_CODE,
   CRON_SECRET: "e2e-cron-secret-0123456789",
+  BETTER_AUTH_SECRET: E2E_AUTH_SECRET,
+  BETTER_AUTH_URL: appUrl(worker),
+  // The e2e runs in open mode. Invite mode is covered by the functional tests
+  // (tests/functional/invite-signup.test.ts) and SigninScreen's tests.
+  SIGNUP: "open",
 });

@@ -32,7 +32,18 @@ describe("time", () => {
     );
     // 23 h 30 UTC on the 31st is already the 1st in Paris.
     expect(formatLongDate(new Date("2026-12-31T23:30:00Z"))).toBe(
-      "1 janvier 2027",
+      "1er janvier 2027",
+    );
+  });
+  it("formatLongDate écrit « 1er » le premier du mois, pas les autres jours", () => {
+    expect(formatLongDate(new Date("2026-10-01T12:00:00Z"))).toBe(
+      "1er octobre 2026",
+    );
+    expect(formatLongDate(new Date("2026-10-11T12:00:00Z"))).toBe(
+      "11 octobre 2026",
+    );
+    expect(formatLongDate(new Date("2026-10-21T12:00:00Z"))).toBe(
+      "21 octobre 2026",
     );
   });
   it("formatShortDate JJ/MM", () =>

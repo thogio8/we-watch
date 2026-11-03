@@ -1,0 +1,80 @@
+/* « MEMBRES ET INVITATION »: white slips under the title, narrow like a form. */
+.screen {
+  composes: screen from "../../ui/Sheet.module.css";
+}
+
+.sheet {
+  composes: sheet from "../../ui/Sheet.module.css";
+}
+
+.title {
+  composes: title from "../../ui/Sheet.module.css";
+}
+
+.members {
+  composes: rows from "../../ui/Sheet.module.css";
+}
+
+.member {
+  composes: row from "../../ui/Sheet.module.css";
+}
+
+.who {
+  composes: who from "../../ui/Sheet.module.css";
+}
+
+.name {
+  composes: rowName from "../../ui/Sheet.module.css";
+}
+
+.me {
+  composes: badge from "../../ui/Sheet.module.css";
+}
+
+.since {
+  composes: rowNote from "../../ui/Sheet.module.css";
+}
+
+.invite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.wide {
+  width: 100%;
+}
+
+.status {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+}
+
+.alert {
+  composes: alert from "../../ui/Alert.module.css";
+  width: 100%;
+  margin: 0;
+}
+
+/* Neither share nor clipboard: the link, to select by hand. */
+.link {
+  width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border: var(--border-thin);
+  border-radius: var(--radius-chip);
+  background: var(--paper);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.leave {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 28px;
+}

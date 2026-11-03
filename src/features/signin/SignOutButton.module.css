@@ -1,0 +1,10 @@
+.signOut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.failed {
+  composes: alert from "../../ui/Alert.module.css";
+  text-transform: uppercase;
+}

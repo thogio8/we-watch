@@ -3,10 +3,20 @@ import { GET } from "./route";
 
 const SECRET = "un-secret-de-cron-assez-long";
 const refreshMovies = vi.fn();
+const purge = vi.fn();
+const PURGED = {
+  verifications: 1,
+  signupTickets: 0,
+  sessions: 2,
+  rateLimits: 3,
+};
 const env = { CRON_SECRET: SECRET as string | undefined };
 
 vi.mock("@/env", () => ({ getServerEnv: () => env }));
-vi.mock("@/server/container", () => ({ getRefreshDeps: () => "deps" }));
+vi.mock("@/server/container", () => ({
+  getRefreshDeps: () => "deps",
+  getHousekeeping: () => ({ purge: (...args: unknown[]) => purge(...args) }),
+}));
 vi.mock("@/features/refresh/refresh-movies", () => ({
   refreshMovies: (...args: unknown[]) => refreshMovies(...args),
 }));
@@ -26,10 +36,11 @@ beforeEach(() => {
   refreshMovies
     .mockReset()
     .mockResolvedValue({ total: 2, refreshed: 2, failed: [] });
+  purge.mockReset().mockResolvedValue(PURGED);
 });
 
 describe("GET /api/cron/refresh-movies", () => {
-  it("rafraîchit et renvoie le compte rendu", async () => {
+  it("fait le ménage, rafraîchit et renvoie le compte rendu", async () => {
     const response = await call(`Bearer ${SECRET}`);
 
     expect(response.status).toBe(200);
@@ -37,8 +48,22 @@ describe("GET /api/cron/refresh-movies", () => {
       total: 2,
       refreshed: 2,
       failed: [],
+      purged: PURGED,
     });
+    expect(purge).toHaveBeenCalledOnce();
     expect(refreshMovies).toHaveBeenCalledWith("deps");
+    expect(purge.mock.invocationCallOrder[0]).toBeLessThan(
+      refreshMovies.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("un ménage qui échoue (base cassée) : l'erreur remonte (500), rien n'est rafraîchi", async () => {
+    purge.mockRejectedValue(new Error("database is locked"));
+
+    await expect(call(`Bearer ${SECRET}`)).rejects.toThrow(
+      "database is locked",
+    );
+    expect(refreshMovies).not.toHaveBeenCalled();
   });
 
   it("sans le bon secret : 401, rien n'est rafraîchi", async () => {
@@ -47,6 +72,7 @@ describe("GET /api/cron/refresh-movies", () => {
     env.CRON_SECRET = undefined;
     expect((await call("Bearer undefined")).status).toBe(401);
     expect(refreshMovies).not.toHaveBeenCalled();
+    expect(purge).not.toHaveBeenCalled();
   });
 
   it("journalise le compte rendu", async () => {
@@ -55,6 +81,7 @@ describe("GET /api/cron/refresh-movies", () => {
       total: 2,
       refreshed: 2,
       failed: [],
+      purged: PURGED,
     });
   });
 

@@ -64,6 +64,9 @@
   --shadow-ticket: 7px 7px 0 var(--blue);
   --shadow-logo: 3px 3px 0 var(--blue);
 
+  /* Behind an open panel (the group pill's): the screen, dimmed in ink. */
+  --scrim: rgba(27, 27, 107, 0.25);
+
   /* Coloured glows */
   --glow-pink: 0 0 22px rgba(255, 63, 164, 0.7);
   --glow-yellow: 0 0 22px rgba(255, 230, 0, 0.85);

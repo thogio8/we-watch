@@ -26,13 +26,19 @@ on:
       - .release-please-manifest.json
   workflow_dispatch:
 
+# Read-only token by default; only `version` widens it (release PR, tag).
+# Actions are pinned by commit (a moved tag runs nothing new), the version in
+# a comment; Dependabot (github-actions) bumps both.
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -47,15 +53,15 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       # Runs in the Playwright Docker image (scripts/e2e.sh).
       - run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: playwright-report-${{ matrix.shard }}
@@ -68,31 +74,41 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     outputs:
       url: ${{ steps.upload.outputs.url }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
+      # Install scripts run here (the build needs them), without any secret:
+      # the Vercel token lives on the next step only.
       - run: npm ci
+      # The Vercel CLI is a devDependency at an exact version (package.json,
+      # lockfile integrity, Dependabot bumps it): npx --no never downloads.
+      # `vercel pull` writes production's variables on the runner and `vercel
+      # build` runs with them: no step may come after this one.
       - name: Build and upload, not online yet
         id: upload
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-          npx vercel@latest build --prod --token="$VERCEL_TOKEN"
-          url="$(npx vercel@latest deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")"
+          npx --no vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx --no vercel build --prod --token="$VERCEL_TOKEN"
+          url="$(npx --no vercel deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
   release:
     needs: [checks, e2e, build]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Past it GitHub cancels the job, and a cancelled job skips the rollback:
+    # covers the slowest bounded path, about 21 min (promote wait 3 min and
+    # 30 s per Vercel request, 8 smoke requests of 60 s at most, the rollback
+    # a second promote; tests/scripts/release-budget.test.ts).
+    timeout-minutes: 25
     # One release at a time, never cancelled halfway through a migration.
     concurrency:
       group: production
@@ -100,45 +116,79 @@ jobs:
     environment:
       name: production
       url: ${{ vars.PROD_URL }}
+    # Each secret is set on the steps that use it, never on the job: npm ci
+    # (dependencies' code) sees none of them.
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       PROD_URL: ${{ vars.PROD_URL }}
-      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-
-      - name: Backup the movies table
-        run: node scripts/backup-db.mjs backup/movies.json
-      - uses: actions/upload-artifact@v7
-        with:
-          name: db-backup-${{ github.sha }}
-          path: backup/
-          retention-days: 90
-
-      - name: Migrate the database (before the code that needs it)
-        run: npm run db:migrate
+      # No install script: the migration (drizzle-kit, its esbuild through
+      # the platform package) and the backup (@libsql/client, prebuilt
+      # binding) work without them.
+      - run: npm ci --ignore-scripts
 
       - name: Remember the deployment in production
         id: previous
-        run: echo "id=$(bash scripts/vercel-prod.sh current)" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        # Never an empty id: the rollback step below needs it. Unknown → red
+        # here, first, before anything is backed up, migrated or put online.
+        run: |
+          id="$(bash scripts/vercel-prod.sh current)"
+          [ -n "$id" ] || { echo "✕ current production unknown"; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+      # Encrypted with BACKUP_KEY, set on this step only. Missing or malformed
+      # key: this step fails, so nothing is migrated nor deployed.
+      - name: Backup every app table (encrypted)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+          BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
+        run: node scripts/backup-db.mjs backup/db.json.enc
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-backup-${{ github.sha }}
+          path: backup/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Migrate the database (before the code that needs it)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+        run: npm run db:migrate
 
       - name: Put the new deployment online
+        id: promote
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: bash scripts/vercel-prod.sh promote "${{ needs.build.outputs.url }}"
 
+      # EXPECT_SIGNUP: repository variable, optional (invite unless set to
+      # open): the signup mode /connexion must show.
       - name: Smoke test production
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          EXPECT_SIGNUP: ${{ vars.EXPECT_SIGNUP || 'invite' }}
         run: bash scripts/smoke-prod.sh
 
+      # Only once a promote was attempted (a failed one included): a failed
+      # backup or migration leaves the previous deployment online.
       - name: Roll back if production is broken
-        if: failure() && steps.previous.outputs.id != ''
+        if: failure() && steps.previous.outputs.id != '' && steps.promote.outcome != 'skipped'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: bash scripts/vercel-prod.sh promote "${{ steps.previous.outputs.id }}"
 
   # fix → x.y.Z, feat → x.Y.0, feat! → X.0.0; refactor, test, ci, docs and
@@ -160,7 +210,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Open or update the release PR
-        uses: googleapis/release-please-action@v5
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
@@ -174,7 +224,7 @@ jobs:
           fi
       - name: Tag and publish the release
         if: steps.merge.outputs.merged == 'true'
-        uses: googleapis/release-please-action@v5
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json

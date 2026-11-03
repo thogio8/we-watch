@@ -20,9 +20,13 @@ import { viewKey } from "./drawView";
 import { useDraw } from "./useDraw";
 
 interface DrawScreenProps {
+  /** The displayed group: each group keeps its own evening. */
+  groupId: string;
   toWatch: Movie[];
   counts: { toWatch: number; watched: number };
   onWatched: (tmdbId: number) => Promise<void>;
+  /** The group pill: in the landmark, outside the animated screens. */
+  pill?: ReactNode;
 }
 
 /**
@@ -38,7 +42,7 @@ function Screen({
 }) {
   const present = useIsPresent();
   return (
-    <motion.main
+    <motion.div
       className={styles.screen}
       variants={viewVariants(reduce)}
       initial="hidden"
@@ -47,13 +51,19 @@ function Screen({
       inert={!present}
     >
       {children}
-    </motion.main>
+    </motion.div>
   );
 }
 
-export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
+export function DrawScreen({
+  groupId,
+  toWatch,
+  counts,
+  onWatched,
+  pill,
+}: DrawScreenProps) {
   const reduce = useReducedMotion() ?? false;
-  const draw = useDraw(toWatch, onWatched);
+  const draw = useDraw(groupId, toWatch, onWatched);
   const { view } = draw;
   // Once left, Next keeps this page in memory, asleep: an exit animation
   // started there never ends and would freeze the old screen. Off screen,
@@ -101,18 +111,25 @@ export function DrawScreen({ toWatch, counts, onWatched }: DrawScreenProps) {
       {view.phase === "empty" && <DrawEmpty />}
     </Screen>
   );
-  if (!onScreen) return screen;
   return (
-    <AnimatePresence mode="wait" custom={draw.exit} initial={false}>
-      {screen}
-    </AnimatePresence>
+    <main>
+      {pill}
+      {onScreen ? (
+        <AnimatePresence mode="wait" custom={draw.exit} initial={false}>
+          {screen}
+        </AnimatePresence>
+      ) : (
+        screen
+      )}
+    </main>
   );
 }
 
 /** Shown while the list loads: the home title, without numbers nor button. */
-export function DrawScreenFallback() {
+export function DrawScreenFallback({ pill }: { pill?: ReactNode }) {
   return (
     <main className={styles.screen} aria-busy="true">
+      {pill}
       <Headline lines={["CE SOIR", "ON REGARDE"]} className={styles.brand} />
     </main>
   );

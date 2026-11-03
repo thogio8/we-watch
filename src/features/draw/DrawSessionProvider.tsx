@@ -4,6 +4,7 @@ import {
   createContext,
   type Dispatch,
   type ReactNode,
+  useCallback,
   useContext,
   useReducer,
   useState,
@@ -15,12 +16,12 @@ import {
   drawSessionReducer,
   initialDrawSession,
 } from "@/domain/draw-session";
-import type { MoodId, TonightFilters } from "@/domain/tonight";
+import type { TonightFilters } from "@/domain/tonight";
 import {
   parseStoredTonight,
-  type StoredTonight,
+  readStoredTonight,
   serializeTonight,
-  TONIGHT_STORAGE_KEY,
+  tonightStorageKey,
 } from "./tonightStorage";
 
 interface DrawSession {
@@ -30,12 +31,36 @@ interface DrawSession {
   setFilters: (filters: TonightFilters) => void;
 }
 
-const DrawSessionContext = createContext<DrawSession | null>(null);
+/** A move in one group's draw: the other groups' evenings are left alone. */
+interface GroupDrawAction {
+  groupId: string;
+  action: DrawSessionAction;
+}
+
+type Sessions = Readonly<Record<string, DrawSessionState>>;
+
+function sessionsReducer(sessions: Sessions, move: GroupDrawAction): Sessions {
+  const state = sessions[move.groupId] ?? initialDrawSession;
+  return {
+    ...sessions,
+    [move.groupId]: drawSessionReducer(state, move.action),
+  };
+}
+
+interface DrawSessions {
+  sessions: Sessions;
+  dispatch: Dispatch<GroupDrawAction>;
+  /** The filters chosen in this session, per group. */
+  chosen: Readonly<Record<string, TonightFilters>>;
+  choose: (groupId: string, filters: TonightFilters) => void;
+}
+
+const DrawSessionContext = createContext<DrawSessions | null>(null);
 
 /** Private browsing or a full disk must not break the draw. */
-function readStorage(): string | null {
+function readStorage(groupId: string): string | null {
   try {
-    return localStorage.getItem(TONIGHT_STORAGE_KEY);
+    return readStoredTonight(localStorage, groupId);
   } catch {
     return null;
   }
@@ -50,52 +75,69 @@ function subscribeStorage(onChange: () => void): () => void {
 /** No localStorage on the server: nothing is remembered until hydration. */
 const serverStorage = () => null;
 
-function writeStorage(value: string): void {
+function writeStorage(groupId: string, value: string): void {
   try {
-    localStorage.setItem(TONIGHT_STORAGE_KEY, value);
+    localStorage.setItem(tonightStorageKey(groupId), value);
   } catch {
     // Not remembered: the filters still apply for this session.
   }
 }
 
 /**
- * Holds the draw session above the routes (root layout), so the current movie,
- * the « not tonight » pile and the filters survive tab switches. Only the
- * bedtime and the platforms are remembered on the device (spec §11.1).
+ * Holds the draw sessions above the routes (root layout), one per group, so
+ * the current movie, the « not tonight » pile and the filters survive tab and
+ * group switches. Only the bedtime and the platforms are remembered on the
+ * device (spec §11.1).
  */
 export function DrawSessionProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(drawSessionReducer, initialDrawSession);
-  const stored = useSyncExternalStore(
-    subscribeStorage,
-    readStorage,
-    serverStorage,
+  const [sessions, dispatch] = useReducer(sessionsReducer, {});
+  const [chosen, setChosen] = useState<DrawSessions["chosen"]>({});
+  const choose = useCallback(
+    (groupId: string, filters: TonightFilters) =>
+      setChosen((all) => ({ ...all, [groupId]: filters })),
+    [],
   );
-  // This session's choice wins over the stored one, even if it could not be
-  // saved (private browsing).
-  const [chosen, setChosen] = useState<StoredTonight | null>(null);
-  const [moods, setMoods] = useState<readonly MoodId[]>([]);
-  const filters: TonightFilters = {
-    ...(chosen ?? parseStoredTonight(stored)),
-    moods,
-  };
-
-  const setFilters = (next: TonightFilters) => {
-    setChosen({ bedtime: next.bedtime, platforms: next.platforms });
-    setMoods(next.moods);
-    writeStorage(serializeTonight(next));
-  };
 
   return (
-    <DrawSessionContext value={{ state, dispatch, filters, setFilters }}>
+    <DrawSessionContext value={{ sessions, dispatch, chosen, choose }}>
       {children}
     </DrawSessionContext>
   );
 }
 
-export function useDrawSession(): DrawSession {
-  const session = useContext(DrawSessionContext);
-  if (session === null) {
+/** The draw session of one group. */
+export function useDrawSession(groupId: string): DrawSession {
+  const all = useContext(DrawSessionContext);
+  // A throw ends the render: the hooks below never run in a different order.
+  if (all === null) {
     throw new Error("useDrawSession must be used inside <DrawSessionProvider>");
   }
-  return session;
+  const stored = useSyncExternalStore(
+    subscribeStorage,
+    () => readStorage(groupId),
+    serverStorage,
+  );
+  const { dispatch: groupDispatch } = all;
+  const dispatch = useCallback(
+    (action: DrawSessionAction) => groupDispatch({ groupId, action }),
+    [groupDispatch, groupId],
+  );
+  // This session's choice wins over the stored one, even if it could not be
+  // saved (private browsing). The mood is per evening: never stored.
+  const filters = all.chosen[groupId] ?? {
+    ...parseStoredTonight(stored),
+    moods: [],
+  };
+
+  const setFilters = (next: TonightFilters) => {
+    all.choose(groupId, next);
+    writeStorage(groupId, serializeTonight(next));
+  };
+
+  return {
+    state: all.sessions[groupId] ?? initialDrawSession,
+    dispatch,
+    filters,
+    setFilters,
+  };
 }

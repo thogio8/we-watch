@@ -1,0 +1,37 @@
+import { parseLabel } from "./label";
+
+const MAX_LENGTH = 30;
+
+/** The group created from the pre-accounts list (migration, 2.0 piece 2). */
+export const LEGACY_GROUP_ID = "nous-deux";
+export const LEGACY_GROUP_NAME = "NOUS DEUX";
+
+/** Cookie remembering the displayed group. */
+export const GROUP_COOKIE = "ww_group";
+
+/**
+ * Attributes of GROUP_COOKIE, the same to set and to clear it: `secure`
+ * whenever the app's public address (BETTER_AUTH_URL) is https, whatever
+ * NODE_ENV says; development and the e2e run over http.
+ */
+export const groupCookieAttributes = (baseURL: string) => ({
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: new URL(baseURL).protocol === "https:",
+  path: "/",
+});
+
+export type GroupSummary = { id: string; name: string; memberCount: number };
+
+/** A group name: a label of 1 to 30 characters (see parseLabel). */
+export function parseGroupName(input: unknown): string | null {
+  return parseLabel(input, MAX_LENGTH);
+}
+
+// 32 random bytes in base64url (no padding): 43 characters.
+const INVITE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+/** A well-formed invite token; anything else is never looked up. */
+export function isInviteToken(value: unknown): value is string {
+  return typeof value === "string" && INVITE_TOKEN_PATTERN.test(value);
+}

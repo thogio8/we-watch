@@ -2,6 +2,7 @@ import "server-only";
 import type { MovieSnapshot, StreamingProvider } from "@/domain/movie";
 import type { TmdbClient } from "./client";
 import { type DeckId, deckParams } from "./decks";
+import { pickSearchResults } from "./search-rank";
 import {
   type TmdbMovieDetails,
   tmdbDiscoverSchema,
@@ -10,7 +11,6 @@ import {
 } from "./schemas";
 
 const MAX_TMDB_PAGES = 500;
-const MAX_SEARCH_RESULTS = 8;
 const DETAILS_REVALIDATE_SECONDS = 86400;
 const DISCOVER_REVALIDATE_SECONDS = 3600;
 
@@ -110,20 +110,27 @@ export async function getMovieSnapshot(
   return toSnapshot(details);
 }
 
+const searchPage = (client: TmdbClient, query: string, page: number) =>
+  client.get(
+    "/search/movie",
+    { query, include_adult: false, page },
+    tmdbSearchSchema,
+  );
+
+/** The two first pages of TMDB's hits, re-ranked (see pickSearchResults). */
 export async function searchMovies(
   client: TmdbClient,
   query: string,
 ): Promise<MovieSnapshot[]> {
   const trimmed = query.trim();
   if (trimmed === "") return [];
-  const data = await client.get(
-    "/search/movie",
-    { query: trimmed, include_adult: false },
-    tmdbSearchSchema,
+  const first = await searchPage(client, trimmed, 1);
+  const hits =
+    first.total_pages > 1
+      ? [...first.results, ...(await searchPage(client, trimmed, 2)).results]
+      : first.results;
+  const ids = pickSearchResults(
+    hits.map((hit) => ({ id: hit.id, voteCount: hit.vote_count })),
   );
-  return Promise.all(
-    data.results
-      .slice(0, MAX_SEARCH_RESULTS)
-      .map((r) => getMovieSnapshot(client, r.id)),
-  );
+  return Promise.all(ids.map((id) => getMovieSnapshot(client, id)));
 }

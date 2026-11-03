@@ -1,0 +1,102 @@
+import { getCookies } from "better-auth/cookies";
+import { cookies } from "next/headers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createAuth } from "@/auth/create-auth";
+import { createDatabase } from "@/db/create-database";
+import { createRateLimits } from "@/db/rate-limit";
+import { signOutThisDevice } from "./sign-out";
+
+vi.mock("next/headers");
+
+// The real Better Auth configuration: only its options are read.
+let auth: ReturnType<typeof createAuth>;
+vi.mock("./container", () => ({ getAuth: () => auth }));
+// The same public address for Better Auth and for the group cookie.
+let publicURL: string;
+vi.mock("@/env", () => ({
+  getServerEnv: () => ({ BETTER_AUTH_URL: publicURL }),
+}));
+
+const useBaseURL = (baseURL: string) => {
+  publicURL = baseURL;
+  const db = createDatabase(":memory:");
+  auth = createAuth({
+    db,
+    secret: "sign-out-test-secret-0123456789abcdef",
+    baseURL,
+    rateLimits: createRateLimits(db),
+  });
+};
+
+beforeEach(async () => {
+  const jar = await cookies();
+  for (const prefix of ["", "__Secure-"]) {
+    for (const name of ["session_token", "session_data", "dont_remember"]) {
+      jar.delete(`${prefix}better-auth.${name}`);
+    }
+  }
+  jar.delete("ww_group");
+});
+
+/** Better Auth's own cookies, as it names and sets them for this config. */
+const sessionCookies = () => {
+  const { sessionToken, sessionData, dontRememberToken } = getCookies(
+    auth.options,
+  );
+  return [sessionToken, sessionData, dontRememberToken];
+};
+
+describe("signOutThisDevice", () => {
+  it.each([
+    ["http", "http://localhost:3000", "", false],
+    ["https", "https://wewatch.example", "__Secure-", true],
+  ])(
+    "en %s : expire les cookies de session avec les attributs de Better Auth",
+    async (_, baseURL, prefix, secure) => {
+      useBaseURL(baseURL);
+
+      await signOutThisDevice();
+
+      const jar = await cookies();
+      const expected = sessionCookies();
+      expect(expected.map(({ name }) => name)).toEqual([
+        `${prefix}better-auth.session_token`,
+        `${prefix}better-auth.session_data`,
+        `${prefix}better-auth.dont_remember`,
+      ]);
+      for (const { name, attributes } of expected) {
+        expect(jar.get(name)).toEqual({
+          name,
+          value: "",
+          maxAge: 0,
+          path: attributes.path,
+          httpOnly: attributes.httpOnly,
+          sameSite: attributes.sameSite.toLowerCase(),
+          secure,
+        });
+      }
+    },
+  );
+
+  it.each([
+    ["http://localhost:3000", false],
+    ["https://wewatch.example", true],
+  ])(
+    "sur %s, oublie aussi le groupe affiché (secure: %s)",
+    async (baseURL, secure) => {
+      useBaseURL(baseURL);
+
+      await signOutThisDevice();
+
+      expect((await cookies()).get("ww_group")).toEqual({
+        name: "ww_group",
+        value: "",
+        maxAge: 0,
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure,
+      });
+    },
+  );
+});

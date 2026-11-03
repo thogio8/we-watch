@@ -1,6 +1,7 @@
+import { leaveIfSignedOut } from "@/access/signed-out";
 import { type Dispatch, useEffect, useRef } from "react";
 import type { DeckId } from "@/tmdb/decks";
-import type { loadMoreCards } from "./actions";
+import type { LoadCards } from "./actions";
 import type { DeckAction, DeckState } from "./deckState";
 
 /** Below this many queued cards, the next page is fetched. */
@@ -14,7 +15,7 @@ export function useDeckLoader(
   deck: DeckId,
   { queue, nextPage, loadFailed }: DeckState,
   dispatch: Dispatch<DeckAction>,
-  loadMore: typeof loadMoreCards,
+  loadMore: LoadCards,
 ) {
   const loading = useRef(false);
   useEffect(() => {
@@ -30,7 +31,8 @@ export function useDeckLoader(
             : { type: "load_failed" },
         );
       },
-      () => {
+      (error: unknown) => {
+        leaveIfSignedOut(error);
         loading.current = false;
         dispatch({ type: "load_failed" });
       },

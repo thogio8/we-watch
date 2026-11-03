@@ -1,0 +1,50 @@
+/* A name field and its button: a group (create, rename) or my own name. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+}
+
+.input {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 8px 12px;
+  border: var(--border);
+  border-radius: var(--radius-chip);
+  background: var(--paper);
+  box-shadow: var(--shadow-offset-sm);
+  color: var(--ink);
+  caret-color: var(--pink);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* A person's name: shown as typed, the case is theirs. */
+.input.asTyped {
+  text-transform: none;
+}
+
+.input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.error {
+  composes: alert from "./Alert.module.css";
+  margin: 0;
+}
+
+.submit {
+  width: 100%;
+}

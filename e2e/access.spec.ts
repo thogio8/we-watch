@@ -1,33 +1,149 @@
-import { enterCode, expect, test, unlock } from "./fixtures";
+import type { Page } from "@playwright/test";
+import { deleteSessions, expect, test } from "./fixtures";
 
-test.describe("code d'accès", () => {
-  test("sans code, toutes les pages renvoient vers l'écran du code", async ({
+const FORGED = [
+  { name: "better-auth.session_token", value: "forge.abc" },
+  { name: "better-auth.session_data", value: "bidon" },
+].map((cookie) => ({ ...cookie, domain: "localhost", path: "/" }));
+
+test.describe("connexion", () => {
+  test("sans compte, toutes les pages renvoient vers la connexion", async ({
     page,
   }) => {
     for (const path of ["/", "/swipe", "/list"]) {
       await page.goto(path);
-      await expect(page).toHaveURL(/\/unlock/);
+      await expect(page).toHaveURL(/\/connexion/);
     }
   });
 
-  test("un mauvais code est refusé", async ({ page }) => {
-    await enterCode(page, "pas le bon code");
-
-    await expect(page.getByText("MAUVAIS CODE")).toBeVisible();
-    await expect(page).toHaveURL(/\/unlock/);
-  });
-
-  test("le bon code ouvre l'appli, et le téléphone s'en souvient", async ({
+  test("un cookie de session forgé renvoie vers la connexion", async ({
     page,
   }) => {
-    await unlock(page);
+    await page.context().addCookies(FORGED);
 
-    await expect(
-      page.getByRole("heading", { level: 1, name: "CE SOIR ON REGARDE" }),
-    ).toBeVisible();
-    await page.goto("/list");
-    await expect(
-      page.getByRole("heading", { name: "NOTRE LISTE" }),
-    ).toBeVisible();
+    await page.goto("/");
+
+    await expect(page).toHaveURL(/\/connexion/);
+  });
+
+  test("une action serveur avec un cookie forgé reçoit une 401", async ({
+    page,
+  }) => {
+    await page.context().addCookies(FORGED);
+
+    const response = await page.request.post("/", {
+      headers: { "next-action": "0".repeat(42) },
+      data: "[]",
+    });
+
+    expect(response.status()).toBe(401);
+  });
+
+  // Before any page sets the session cache cookie (session_data): with it,
+  // a deleted session is still accepted for up to 5 minutes (cookieCache in
+  // src/auth/create-auth.ts), a known lag left for piece 5.
+  test("une session supprimée, sans cache de session, renvoie vers la connexion", async ({
+    app,
+  }) => {
+    await deleteSessions();
+
+    await app.goto("/");
+
+    await expect(app).toHaveURL(/\/connexion/);
+  });
+
+  test("connecté, le cache de session est posé dans le navigateur", async ({
+    app,
+  }) => {
+    await app.goto("/");
+
+    await expect(app).not.toHaveURL(/\/connexion/);
+    const names = (await app.context().cookies()).map(({ name }) => name);
+    expect(names).toContain("better-auth.session_data");
+  });
+});
+
+test.describe("en-têtes de sécurité", () => {
+  const expectSecurityHeaders = (headers: Record<string, string>) => {
+    expect(headers["content-security-policy"]).toContain(
+      "frame-ancestors 'none'",
+    );
+    expect(headers["content-security-policy"]).not.toContain("'unsafe-eval'");
+    expect(headers).toMatchObject({
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "cross-origin-opener-policy": "same-origin",
+      "strict-transport-security": "max-age=63072000",
+    });
+    expect(headers["permissions-policy"]).toContain("camera=()");
+  };
+
+  test("les en-têtes de sécurité sont servis sur la connexion", async ({
+    page,
+  }) => {
+    const response = await page.goto("/connexion");
+
+    expectSecurityHeaders(response!.headers());
+  });
+
+  test("les en-têtes de sécurité sont servis sur TIRER, connecté", async ({
+    app,
+  }) => {
+    const response = await app.goto("/");
+
+    await expect(app).not.toHaveURL(/\/connexion/);
+    expectSecurityHeaders(response!.headers());
+  });
+
+  test("une invitation garde son Referrer-Policy: no-referrer", async ({
+    page,
+  }) => {
+    const response = await page.goto(`/invitation/${"x".repeat(43)}`);
+
+    expect(response!.headers()).toMatchObject({
+      "referrer-policy": "no-referrer",
+      "x-frame-options": "DENY",
+    });
+  });
+});
+
+test.describe("onglets sans JavaScript", () => {
+  const tabs = (page: Page) =>
+    page.getByRole("navigation", { name: "Navigation principale" });
+
+  test("sans JavaScript, la connexion et une invitation ne montrent pas les onglets", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      javaScriptEnabled: false,
+    });
+    const page = await context.newPage();
+    for (const path of ["/connexion", `/invitation/${"x".repeat(43)}`]) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", { name: "CE SOIR ON REGARDE" }),
+      ).toBeVisible();
+      await expect(tabs(page)).toBeHidden();
+    }
+    await context.close();
+  });
+
+  test("sans JavaScript, TIRER montre les onglets", async ({
+    app,
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      javaScriptEnabled: false,
+      storageState: await app.context().storageState(),
+    });
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(tabs(page)).toBeVisible();
+    await context.close();
   });
 });

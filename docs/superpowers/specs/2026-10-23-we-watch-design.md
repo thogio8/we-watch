@@ -277,3 +277,4 @@ Semver calculé depuis les commits (Conventional Commits) par release-please : `
 - **V1.3.2** (2026-10-28), trouvés en testant l'appli comme une utilisatrice :
   - TIRER restait figé sur son dernier écran (ticket d'un film déjà vu, boutons morts ; ou « RIEN À TIRER » avec une liste remplie) quand la liste changeait pendant qu'on était sur une autre page. Cause : Next garde la page en mémoire, endormie, et l'animation de sortie lancée là ne finit jamais. Hors écran, les vues se remplacent désormais sans animation.
   - Les titres et résumés TMDB perdent leurs marques de direction invisibles (U+200E…) ; les films déjà en base sont nettoyés par le rafraîchissement quotidien.
+- L'appli s'appelle désormais **WeWatch** (titre, écran d'accueil, PWA) ; « we-watch » reste le nom technique (dépôt, paquet).

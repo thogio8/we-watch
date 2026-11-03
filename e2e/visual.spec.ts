@@ -1,13 +1,20 @@
 import { type Page } from "@playwright/test";
 import {
   decidedOn,
+  emptyNameRefused,
   expect,
+  joinedOn,
+  leasAccountOn,
+  leasInvitation,
   listTitles,
   settled,
   swipe,
   test,
   topCard,
+  UNSUPPORTED_MESSAGE,
+  withoutPasskeys,
 } from "./fixtures";
+import { COPY_LINK } from "./groups";
 
 /**
  * Visual regression: one reference image per screen and format
@@ -31,11 +38,16 @@ async function freeze(page: Page) {
   });
 }
 
-/** Captures once the screen is final: data loaded, fonts in, no request left. */
-async function shoot(page: Page, name: string) {
+/**
+ * Captures once the screen is final: data loaded, fonts in, no request left.
+ * In a fullPage capture the fixed bottom nav sits where the first viewport
+ * ends, so it may cover content in the image only (the shell pads for it);
+ * `fullPage: false` captures the viewport as it is, scrolled.
+ */
+async function shoot(page: Page, name: string, { fullPage = true } = {}) {
   await settled(page);
   await page.evaluate(() => document.fonts.ready);
-  await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
+  await expect(page).toHaveScreenshot(`${name}.png`, { fullPage });
 }
 
 test.describe("rendu visuel", () => {
@@ -49,8 +61,9 @@ test.describe("rendu visuel", () => {
   });
 
   for (const format of FORMATS) {
-    test(`écrans : ${format.name}`, async ({ app }) => {
+    test(`écrans : ${format.name}`, async ({ app, member, outsider }) => {
       await app.setViewportSize(format);
+      const invitation = await leasInvitation();
 
       await app.goto("/");
       await shoot(app, `${format.name}-1-accueil`);
@@ -74,9 +87,92 @@ test.describe("rendu visuel", () => {
       await expect(app.getByText("Bong Joon-ho")).toBeVisible();
       await shoot(app, `${format.name}-5b-fiche`);
 
+      await app.goto("/");
+      await app.getByRole("button", { name: /^Groupe affiché/ }).click();
+      await expect(
+        app.getByRole("dialog", { name: "TES GROUPES" }),
+      ).toBeVisible();
+      await shoot(app, `${format.name}-7-groupes-panneau`);
+      // Hugo joins now: the screens before show Léa alone.
+      await member("Hugo");
+      // « depuis le … » on the members screen, stamped by the server.
+      await joinedOn(FROZEN_NOW);
+      await app.getByRole("link", { name: "MEMBRES ET INVITATION" }).click();
+      await expect(app.getByRole("button", { name: COPY_LINK })).toBeEnabled();
+      await shoot(app, `${format.name}-8-groupe`);
+      await app.getByRole("button", { name: "QUITTER LE GROUPE" }).click();
+      await expect(app.getByRole("group")).toBeVisible();
+      // As it opens (the app brings it clear of the nav): the viewport, since
+      // a fullPage image would draw the fixed nav over it.
+      await shoot(app, `${format.name}-8b-groupe-quitter`, {
+        fullPage: false,
+      });
+
+      // « MON COMPTE »: this iPhone and a Mac, a passkey of each.
+      await leasAccountOn(FROZEN_NOW);
+      await app.goto("/compte");
+      await expect(app.getByText("Mac · Chrome")).toHaveCount(2);
+      await shoot(app, `${format.name}-10-compte`);
+      await app.getByRole("button", { name: "SUPPRIMER MON COMPTE" }).click();
+      // Half typed: « SUPPRIMER DÉFINITIVEMENT » still waits, in-palette.
+      await app.getByLabel("TAPE « Léa » POUR CONFIRMER").fill("Lé");
+      await expect(
+        app.getByRole("button", { name: "SUPPRIMER DÉFINITIVEMENT" }),
+      ).toBeDisabled();
+      await shoot(app, `${format.name}-10b-compte-supprimer`, {
+        fullPage: false,
+      });
+
+      // Signed in, not a member yet: the invite link offers to join.
+      const ines = await outsider("Inès");
+      await ines.setViewportSize(format);
+      await freeze(ines);
+      await ines.goto(invitation);
+      await expect(
+        ines.getByRole("button", { name: "REJOINDRE" }),
+      ).toBeVisible();
+      await shoot(ines, `${format.name}-9b-invitation-rejoindre`);
+
+      // Signed out: the invite link, then the sign-in page, as a newcomer
+      // sees them.
       await app.context().clearCookies();
-      await app.goto("/unlock");
-      await shoot(app, `${format.name}-6-code`);
+      await app.goto(invitation);
+      await expect(
+        app.getByRole("button", { name: "CRÉER UN COMPTE" }),
+      ).toBeVisible();
+      await shoot(app, `${format.name}-9-invitation`);
+      await app.goto("/connexion");
+      await expect(
+        app.getByRole("button", { name: "SE CONNECTER" }),
+      ).toBeVisible();
+      await shoot(app, `${format.name}-6-connexion`);
+      await emptyNameRefused(app);
+      await shoot(app, `${format.name}-6b-connexion-erreur`);
+
+      // A browser without passkeys: the explanation instead of the buttons.
+      await withoutPasskeys(app);
+      await app.goto("/connexion");
+      await expect(app.getByText(UNSUPPORTED_MESSAGE)).toBeVisible();
+      await shoot(app, `${format.name}-6c-connexion-sans-cle`);
+    });
+  }
+});
+
+test.describe("rendu visuel, sans groupe", () => {
+  test.beforeEach(async ({ newcomer }) => {
+    test.skip(test.info().project.name !== "desktop");
+    await freeze(newcomer);
+  });
+
+  for (const format of FORMATS) {
+    test(`premier groupe : ${format.name}`, async ({ newcomer }) => {
+      await newcomer.setViewportSize(format);
+
+      await newcomer.goto("/");
+      await expect(
+        newcomer.getByRole("heading", { name: "CRÉER TON PREMIER GROUPE" }),
+      ).toBeVisible();
+      await shoot(newcomer, `${format.name}-7b-premier-groupe`);
     });
   }
 });

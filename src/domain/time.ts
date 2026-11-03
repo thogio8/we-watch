@@ -33,7 +33,10 @@ const LONG_DATE = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
 });
 
-/** « 27 octobre 2026 », in Paris time. */
+/** « 27 octobre 2026 », « 1er octobre 2026 », in Paris time. */
 export function formatLongDate(date: Date): string {
-  return LONG_DATE.format(date);
+  // French writes the first of the month as an ordinal: « 1er ».
+  return LONG_DATE.formatToParts(date)
+    .map(({ type, value }) => (type === "day" && value === "1" ? "1er" : value))
+    .join("");
 }

@@ -43,6 +43,11 @@ export function aMovie(tmdbId: number, overrides: Partial<Movie> = {}): Movie {
     status: "to_watch",
     decidedAt: new Date(2026, 9, 1),
     watchedAt: null,
+    addedBy: null,
+    wantedBy: [],
+    watchedBy: null,
+    legacy: false,
+    watchedLegacy: false,
     ...overrides,
   };
 }

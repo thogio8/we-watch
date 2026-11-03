@@ -19,6 +19,8 @@ interface ListScreenProps {
   onUnwatch: ListAction;
   /** « AJOUTER UN FILM… » above the tabs; its results replace the list. */
   search?: SearchActions;
+  /** The group pill, first in the landmark. */
+  pill?: ReactNode;
 }
 
 export function ListScreen({
@@ -27,6 +29,7 @@ export function ListScreen({
   onRemove,
   onUnwatch,
   search,
+  pill,
 }: ListScreenProps) {
   // The tab lives here, so it survives a search replacing the list.
   const [tab, setTab] = useState<Tab>("toWatch");
@@ -64,6 +67,7 @@ export function ListScreen({
 
   return (
     <main className={styles.screen}>
+      {pill}
       <Headline lines={["NOTRE LISTE"]} size="medium" />
       {search ? <SearchPanel {...search}>{lists}</SearchPanel> : lists}
       <ListFooter />
@@ -72,9 +76,10 @@ export function ListScreen({
 }
 
 /** Shown while the list loads: the title alone. */
-export function ListScreenFallback() {
+export function ListScreenFallback({ pill }: { pill?: ReactNode }) {
   return (
     <main className={styles.screen} aria-busy="true">
+      {pill}
       <Headline lines={["NOTRE LISTE"]} size="medium" />
     </main>
   );

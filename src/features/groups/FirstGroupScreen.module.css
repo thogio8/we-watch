@@ -1,0 +1,12 @@
+/* A newcomer without a group: the title, a white slip with the form, sign out. */
+.screen {
+  composes: screen from "../../ui/Sheet.module.css";
+}
+
+.sheet {
+  composes: sheet from "../../ui/Sheet.module.css";
+}
+
+.signOut {
+  margin-top: 28px;
+}

@@ -23,3 +23,10 @@ export function assertSwipeDecision(
     throw new Error(`${action}: invalid decision ${String(decision)}`);
   }
 }
+
+/** A database id (passkey, session…): a string of 1 to 64 characters. */
+export function assertId(action: string, id: unknown): asserts id is string {
+  if (typeof id !== "string" || id.length < 1 || id.length > 64) {
+    throw new Error(`${action}: invalid id`);
+  }
+}
