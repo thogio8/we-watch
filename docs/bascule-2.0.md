@@ -7,10 +7,10 @@ Ces règles valent pour toute la page :
 - **La prod ne se migre et ne se déploie que par la CI** (push sur `main`). Jamais `vercel --prod`, jamais `npm run db:migrate` ni un SQL lancé à la main sur la base de prod.
 - **Aucun secret à l'écran ni dans un fichier suivi** : les commandes ci-dessous les lisent par une invite masquée (`read -rs`), les passent d'une commande à l'autre par un tube ou une variable (`openssl … |`, `"$(turso …)"`), ou les comparent sans les afficher. Jamais un secret en argument de commande (il resterait dans l'historique).
 - **Un accès qui échoue arrête tout** : `x="$(turso …)"` ne s'arrête pas seul sur un échec (et `export x="$(…)"` masque même le code d'erreur), ce qui laisserait une valeur vide filer vers la commande suivante. Les blocs entre `( … )` tournent donc dans un sous-shell en `set -euo pipefail` : la première commande qui échoue arrête le bloc (pas le terminal), et ses variables, secrets compris, disparaissent avec lui. Hors d'un tel bloc, une ligne `✓ …` / `✕ …` vérifie les valeurs avant de continuer.
-- Les commandes se lancent depuis la racine du dépôt. Celles qui visent l'adresse de prod commencent par la lire :
+- Les commandes se lancent depuis la racine du dépôt. Celles qui visent l'adresse de prod commencent par la lire (par l'API : `gh variable get` n'existe pas dans le `gh` d'Ubuntu, 2.45) :
 
   ```bash
-  PROD_URL="$(gh variable get PROD_URL)"
+  PROD_URL="$(gh api 'repos/{owner}/{repo}/actions/variables/PROD_URL' --jq .value)"
   ```
 
 - Le CLI Vercel est celui du dépôt (`devDependencies`, version épinglée), lancé par `npx --no -- vercel` : `--no` refuse d'en télécharger un autre. Il faut donc un checkout de la 2.0 aux dépendances installées (`npm ci`) ; sinon `npx` s'arrête sur « npx canceled due to missing packages », sans rien changer.
