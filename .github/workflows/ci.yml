@@ -104,7 +104,11 @@ jobs:
   release:
     needs: [checks, e2e, build]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Past it GitHub cancels the job, and a cancelled job skips the rollback:
+    # covers the slowest bounded path, about 21 min (promote wait 3 min and
+    # 30 s per Vercel request, 8 smoke requests of 60 s at most, the rollback
+    # a second promote; tests/scripts/release-budget.test.ts).
+    timeout-minutes: 25
     # One release at a time, never cancelled halfway through a migration.
     concurrency:
       group: production

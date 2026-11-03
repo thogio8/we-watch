@@ -12,7 +12,7 @@ set -euo pipefail
 API="${VERCEL_API_URL:-https://api.vercel.com}"
 # Vercel may answer the promote (202) before production switches: the smoke
 # test that follows must not hit the previous deployment.
-TIMEOUT="${VERCEL_PROMOTE_TIMEOUT:-60}"
+TIMEOUT="${VERCEL_PROMOTE_TIMEOUT:-180}"
 INTERVAL="${VERCEL_POLL_INTERVAL:-3}"
 # Every request is bounded: a stalled call would get the job cancelled, and a
 # cancelled job skips the rollback (if: failure()).
