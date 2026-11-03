@@ -12,7 +12,7 @@ type SignupInput = {
 };
 
 /** The owner code a person typed, trimmed; null when blank (no code at all). */
-function submittedOwnerCode(submittedCode?: string): string | null {
+export function submittedOwnerCode(submittedCode?: string): string | null {
   const submitted = submittedCode?.trim() ?? "";
   return submitted === "" ? null : submitted;
 }

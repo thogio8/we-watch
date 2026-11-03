@@ -4,56 +4,26 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as authSchema from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
+import type { RateLimits } from "@/db/rate-limit";
 import { parseDisplayName } from "@/domain/display-name";
 import { GROUP_COOKIE, groupCookieAttributes } from "@/domain/group";
+import { onlyAuthPaths } from "./auth-paths";
 import { passkeyRegistration } from "./passkey-registration";
 import { passkeySignup, signupTicketUses } from "./passkey-signup";
+import { authRateLimit } from "./rate-limits";
 import { trackTransactions } from "./signup-transaction";
 
 export type AuthConfig<Plugins extends BetterAuthPlugin[] = []> = {
   db: Database;
   secret: string;
   baseURL: string;
+  /** Where attempts are counted (rate-limits.ts). */
+  rateLimits: RateLimits;
   /** Extra plugins, appended last (server/container.ts adds nextCookies()). */
   plugins?: Plugins;
 };
 
 const DAY_SECONDS = 24 * 60 * 60;
-
-// Sign-in is passkey only: these core endpoints (email/password, email
-// change and verification, social accounts, profile and session edits, user
-// deletion, passkey and session management: « MON COMPTE » does it with its
-// own Server Actions) are unused, so those exact paths answer 404 (/reset-password/:token,
-// /callback/:id, /ok and /error still answer; harmless, see piece 6).
-export const DISABLED_PATHS = [
-  "/sign-up/email",
-  "/sign-in/email",
-  "/sign-in/social",
-  "/verify-password",
-  "/change-password",
-  "/request-password-reset",
-  "/reset-password",
-  "/change-email",
-  "/send-verification-email",
-  "/verify-email",
-  "/update-user",
-  "/update-session",
-  "/list-sessions",
-  "/revoke-session",
-  "/revoke-sessions",
-  "/revoke-other-sessions",
-  "/delete-user",
-  "/delete-user/callback",
-  "/link-social",
-  "/unlink-account",
-  "/list-accounts",
-  "/account-info",
-  "/get-access-token",
-  "/refresh-token",
-  "/passkey/list-user-passkeys",
-  "/passkey/update-passkey",
-  "/passkey/delete-passkey",
-];
 
 /**
  * How pages and Server Actions read the session (server/session.ts): from
@@ -80,20 +50,33 @@ function normalisedName(name: unknown): { name: string } {
  * Signing out also forgets the displayed group: another account signing in
  * on this device must not open on it.
  */
-const forgetGroupOnSignOut = createAuthMiddleware(async (ctx) => {
-  if (ctx.path !== "/sign-out") {
-    return;
-  }
-  ctx.setCookie(GROUP_COOKIE, "", {
-    ...groupCookieAttributes(process.env.NODE_ENV === "production"),
-    maxAge: 0,
+const forgetGroupOnSignOut = (baseURL: string) =>
+  createAuthMiddleware(async (ctx) => {
+    if (ctx.path !== "/sign-out") {
+      return;
+    }
+    ctx.setCookie(GROUP_COOKIE, "", {
+      ...groupCookieAttributes(baseURL),
+      maxAge: 0,
+    });
   });
-});
+
+/**
+ * Better Auth skips its origin and CSRF checks when it believes it runs
+ * tests (NODE_ENV=test or any truthy TEST variable). In production they stay
+ * on whatever the environment says; elsewhere its default is kept, so unit
+ * and functional tests need no Origin header.
+ */
+const originCheckForcedOn = () =>
+  process.env.NODE_ENV === "production"
+    ? { disableOriginCheck: false, disableCSRFCheck: false }
+    : {};
 
 export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
   db,
   secret,
   baseURL,
+  rateLimits,
   plugins,
 }: AuthConfig<Plugins>) {
   const url = new URL(baseURL);
@@ -117,8 +100,9 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
     emailAndPassword: { enabled: false },
-    disabledPaths: DISABLED_PATHS,
-    hooks: { after: forgetGroupOnSignOut },
+    rateLimit: authRateLimit(rateLimits),
+    advanced: originCheckForcedOn(),
+    hooks: { after: forgetGroupOnSignOut(baseURL) },
     databaseHooks: {
       user: {
         create: {
@@ -133,6 +117,8 @@ export function createAuth<Plugins extends BetterAuthPlugin[] = []>({
       },
     },
     plugins: [
+      // First: an unused path stops here, before any other plugin.
+      onlyAuthPaths,
       passkey({
         rpID: url.hostname,
         rpName: "WeWatch",

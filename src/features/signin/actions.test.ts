@@ -3,6 +3,11 @@ import { readSignupTicket } from "@/access/signup-ticket";
 
 const findByInvite = vi.hoisted(() => vi.fn());
 vi.mock("@/server/container", () => ({ getGroups: () => ({ findByInvite }) }));
+const limits = vi.hoisted(() => ({
+  withinLimit: vi.fn(),
+  clientIp: vi.fn(),
+}));
+vi.mock("@/server/rate-limit", () => limits);
 
 const SECRET = "un-secret-better-auth-de-test-0123456789";
 const TOKEN = "A".repeat(43);
@@ -55,8 +60,16 @@ async function ticketOf(result: unknown) {
   return readSignupTicket((result as { ticket: string }).ticket, SECRET);
 }
 
+const IP = "203.0.113.7";
+const TOO_MANY = {
+  ok: false,
+  error: "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.",
+};
+
 beforeEach(() => {
   findByInvite.mockReset().mockResolvedValue({ id: "g-5", name: "LA COLOC" });
+  limits.withinLimit.mockReset().mockResolvedValue(true);
+  limits.clientIp.mockReset().mockResolvedValue(IP);
   // Only setTimeout: Web Crypto and setImmediate keep running for real.
   vi.useFakeTimers({ toFake: ["setTimeout"] });
 });
@@ -315,5 +328,65 @@ describe("prepareSignup : par une invitation", () => {
         ),
       ).resolves.toEqual({ ok: false, error: INVITE_INVALID });
     });
+  });
+});
+
+describe("prepareSignup : limites de tentatives", () => {
+  /** Refuses the attempts counted under `refused`, allows the others. */
+  const refusing = (refused: string) =>
+    limits.withinLimit.mockImplementation(
+      async (name: string) => name !== refused,
+    );
+  const counted = () => limits.withinLimit.mock.calls.map(([name]) => name);
+
+  it("compte d’abord une inscription de cette IP, avant de lire le prénom", async () => {
+    refusing("signup");
+    const prepareSignup = await load({ SIGNUP: "open" });
+
+    await expect(
+      prepareSignup(form({ name: "", invite: TOKEN })),
+    ).resolves.toEqual(TOO_MANY);
+    expect(limits.withinLimit).toHaveBeenCalledExactlyOnceWith("signup", IP);
+    expect(findByInvite).not.toHaveBeenCalled();
+  });
+
+  it("un code saisi compte un essai de code de cette IP, après le prénom et l’invitation", async () => {
+    const prepareSignup = await load({ SIGNUP: "invite", OWNER_CODE });
+
+    await ticketOf(
+      await prepareSignup(
+        form({ name: "Léa", ownerCode: OWNER_CODE, invite: TOKEN }),
+      ),
+    );
+
+    expect(limits.withinLimit.mock.calls).toEqual([
+      ["signup", IP],
+      ["owner-code", IP],
+    ]);
+    expect(findByInvite.mock.invocationCallOrder[0]).toBeLessThan(
+      limits.withinLimit.mock.invocationCallOrder[1]!,
+    );
+  });
+
+  it("trop d’essais de code : refusé même avec le bon code, sans ticket ni délai", async () => {
+    refusing("owner-code");
+    const prepareSignup = await load({ SIGNUP: "invite", OWNER_CODE });
+
+    await expect(
+      prepareSignup(form({ name: "Léa", ownerCode: OWNER_CODE })),
+    ).resolves.toEqual(TOO_MANY);
+  });
+
+  it.each([
+    ["aucun code", { name: "Léa" }],
+    ["un code blanc", { name: "Léa", ownerCode: "   " }],
+    ["un prénom refusé", { name: "", ownerCode: OWNER_CODE }],
+    ["un lien invalide", { name: "Léa", ownerCode: OWNER_CODE, invite: "x" }],
+  ])("%s : aucun essai de code compté", async (_, fields) => {
+    const prepareSignup = await load({ SIGNUP: "open", OWNER_CODE });
+
+    await prepareSignup(form(fields));
+
+    expect(counted()).toEqual(["signup"]);
   });
 });

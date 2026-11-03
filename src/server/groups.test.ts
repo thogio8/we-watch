@@ -23,6 +23,10 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("./session");
 vi.mock("./container", () => ({ getGroups: () => ({ groupsOf, isMember }) }));
+let baseURL = "http://localhost:3000";
+vi.mock("@/env", () => ({
+  getServerEnv: () => ({ BETTER_AUTH_URL: baseURL }),
+}));
 
 const LEA = { userId: "user-1", name: "Léa", sessionId: "session-1" };
 const NOUS_DEUX: GroupSummary = {
@@ -33,6 +37,7 @@ const NOUS_DEUX: GroupSummary = {
 const COLOC: GroupSummary = { id: "g-2", name: "LA COLOC", memberCount: 3 };
 
 beforeEach(async () => {
+  baseURL = "http://localhost:3000";
   (await cookies()).delete(GROUP_COOKIE);
   vi.mocked(getCurrentUser).mockReset().mockResolvedValue(LEA);
   groupsOf.mockReset().mockResolvedValue([NOUS_DEUX, COLOC]);
@@ -110,13 +115,23 @@ describe("rememberGroup", () => {
     });
   });
 
-  it("en production, le cookie est secure", async () => {
-    vi.stubEnv("NODE_ENV", "production");
+  it("sur une adresse publique en https, le cookie est secure, même hors production", async () => {
+    baseURL = "https://wewatch.example";
 
     await rememberGroup(COLOC.id);
 
     expect((await cookies()).get(GROUP_COOKIE)).toMatchObject({
       secure: true,
+    });
+  });
+
+  it("sur une adresse en http, le cookie n’est pas secure, même en production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    await rememberGroup(COLOC.id);
+
+    expect((await cookies()).get(GROUP_COOKIE)).toMatchObject({
+      secure: false,
     });
   });
 });
@@ -200,13 +215,28 @@ describe("isMemberOf (lectures)", () => {
 });
 
 describe("forgetGroup", () => {
-  it("supprime le cookie quand il désigne ce groupe", async () => {
-    await rememberGroup(COLOC.id);
+  it.each([
+    ["http://localhost:3000", false],
+    ["https://wewatch.example", true],
+  ])(
+    "sur %s, expire le cookie quand il désigne ce groupe, avec ses attributs (secure: %s)",
+    async (url, secure) => {
+      baseURL = url;
+      await rememberGroup(COLOC.id);
 
-    await forgetGroup(COLOC.id);
+      await forgetGroup(COLOC.id);
 
-    expect((await cookies()).get(GROUP_COOKIE)).toBeUndefined();
-  });
+      expect((await cookies()).get(GROUP_COOKIE)).toEqual({
+        name: GROUP_COOKIE,
+        value: "",
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure,
+        maxAge: 0,
+      });
+    },
+  );
 
   it("laisse le cookie d’un autre groupe", async () => {
     await rememberGroup(NOUS_DEUX.id);

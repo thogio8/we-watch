@@ -7,6 +7,7 @@ import {
   groupCookieAttributes,
   type GroupSummary,
 } from "@/domain/group";
+import { getServerEnv } from "@/env";
 import { getGroups } from "./container";
 import { assertSignedIn, type CurrentUser, getCurrentUser } from "./session";
 
@@ -40,19 +41,26 @@ export async function getActiveGroup(): Promise<ActiveGroup> {
   return { user, group, groups };
 }
 
+/** GROUP_COOKIE's attributes on this deployment (secure over https). */
+const groupCookie = () => groupCookieAttributes(getServerEnv().BETTER_AUTH_URL);
+
 /** Remembers the displayed group on this device. Server Actions only. */
 export async function rememberGroup(groupId: string): Promise<void> {
   (await cookies()).set(GROUP_COOKIE, groupId, {
-    ...groupCookieAttributes(process.env.NODE_ENV === "production"),
+    ...groupCookie(),
     maxAge: ONE_YEAR_AND_A_MONTH,
   });
 }
 
+/** Expires the displayed group on this device. Server Actions only. */
+export async function clearGroup(): Promise<void> {
+  (await cookies()).set(GROUP_COOKIE, "", { ...groupCookie(), maxAge: 0 });
+}
+
 /** Forgets the displayed group when it is `groupId` (left or removed). Server Actions only. */
 export async function forgetGroup(groupId: string): Promise<void> {
-  const jar = await cookies();
-  if (jar.get(GROUP_COOKIE)?.value === groupId) {
-    jar.delete(GROUP_COOKIE);
+  if ((await cookies()).get(GROUP_COOKIE)?.value === groupId) {
+    await clearGroup();
   }
 }
 

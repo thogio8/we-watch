@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { deleteSessions, expect, test } from "./fixtures";
 
 const FORGED = [
@@ -59,5 +60,90 @@ test.describe("connexion", () => {
     await expect(app).not.toHaveURL(/\/connexion/);
     const names = (await app.context().cookies()).map(({ name }) => name);
     expect(names).toContain("better-auth.session_data");
+  });
+});
+
+test.describe("en-têtes de sécurité", () => {
+  const expectSecurityHeaders = (headers: Record<string, string>) => {
+    expect(headers["content-security-policy"]).toContain(
+      "frame-ancestors 'none'",
+    );
+    expect(headers["content-security-policy"]).not.toContain("'unsafe-eval'");
+    expect(headers).toMatchObject({
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "cross-origin-opener-policy": "same-origin",
+      "strict-transport-security": "max-age=63072000",
+    });
+    expect(headers["permissions-policy"]).toContain("camera=()");
+  };
+
+  test("les en-têtes de sécurité sont servis sur la connexion", async ({
+    page,
+  }) => {
+    const response = await page.goto("/connexion");
+
+    expectSecurityHeaders(response!.headers());
+  });
+
+  test("les en-têtes de sécurité sont servis sur TIRER, connecté", async ({
+    app,
+  }) => {
+    const response = await app.goto("/");
+
+    await expect(app).not.toHaveURL(/\/connexion/);
+    expectSecurityHeaders(response!.headers());
+  });
+
+  test("une invitation garde son Referrer-Policy: no-referrer", async ({
+    page,
+  }) => {
+    const response = await page.goto(`/invitation/${"x".repeat(43)}`);
+
+    expect(response!.headers()).toMatchObject({
+      "referrer-policy": "no-referrer",
+      "x-frame-options": "DENY",
+    });
+  });
+});
+
+test.describe("onglets sans JavaScript", () => {
+  const tabs = (page: Page) =>
+    page.getByRole("navigation", { name: "Navigation principale" });
+
+  test("sans JavaScript, la connexion et une invitation ne montrent pas les onglets", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      javaScriptEnabled: false,
+    });
+    const page = await context.newPage();
+    for (const path of ["/connexion", `/invitation/${"x".repeat(43)}`]) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", { name: "CE SOIR ON REGARDE" }),
+      ).toBeVisible();
+      await expect(tabs(page)).toBeHidden();
+    }
+    await context.close();
+  });
+
+  test("sans JavaScript, TIRER montre les onglets", async ({
+    app,
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      javaScriptEnabled: false,
+      storageState: await app.context().storageState(),
+    });
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(tabs(page)).toBeVisible();
+    await context.close();
   });
 });

@@ -11,9 +11,9 @@ export const migrationTags = (
 export const migrationTag = (number: string) =>
   migrationTags.find((tag) => tag.startsWith(`${number}_`)) ?? "";
 
-/** The SQL statements of migration `tag`, comments aside. */
-export const statementsOf = (tag: string) =>
-  readFileSync(`drizzle/${tag}.sql`, "utf8")
+/** The SQL statements of the file at `path`, comments aside. */
+export const statementsIn = (path: string) =>
+  readFileSync(path, "utf8")
     .split("--> statement-breakpoint")
     .map((statement) =>
       statement
@@ -23,3 +23,6 @@ export const statementsOf = (tag: string) =>
         .trim(),
     )
     .filter((statement) => statement !== "");
+
+/** The SQL statements of migration `tag`, comments aside. */
+export const statementsOf = (tag: string) => statementsIn(`drizzle/${tag}.sql`);

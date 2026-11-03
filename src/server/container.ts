@@ -6,6 +6,8 @@ import { createDatabase, type Database } from "@/db/create-database";
 import { createDecisions, type Decisions } from "@/db/decisions";
 import { createGroupList, type GroupList } from "@/db/group-list";
 import { createGroups, type Groups } from "@/db/groups";
+import { createHousekeeping, type Housekeeping } from "@/db/housekeeping";
+import { createRateLimits, type RateLimits } from "@/db/rate-limit";
 import { createSnapshots, type Snapshots } from "@/db/snapshots";
 import { getServerEnv } from "@/env";
 import type { RefreshDeps } from "@/features/refresh/refresh-movies";
@@ -19,6 +21,8 @@ let account: Account | undefined;
 let decisions: Decisions | undefined;
 let groupList: GroupList | undefined;
 let groups: Groups | undefined;
+let housekeeping: Housekeeping | undefined;
+let rateLimits: RateLimits | undefined;
 let snapshots: Snapshots | undefined;
 let tmdbClient: TmdbClient | undefined;
 let auth: Auth | undefined;
@@ -49,6 +53,18 @@ export function getGroups(): Groups {
   return groups;
 }
 
+/** The cron's daily purge of rows nobody reads again. */
+export function getHousekeeping(): Housekeeping {
+  housekeeping ??= createHousekeeping(getDatabase());
+  return housekeeping;
+}
+
+/** Attempt counters, shared by Better Auth and the Server Actions. */
+export function getRateLimits(): RateLimits {
+  rateLimits ??= createRateLimits(getDatabase());
+  return rateLimits;
+}
+
 function getSnapshots(): Snapshots {
   snapshots ??= createSnapshots(getDatabase());
   return snapshots;
@@ -60,6 +76,7 @@ function buildAuth() {
     db: getDatabase(),
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    rateLimits: getRateLimits(),
     // Lets Server Actions set Better Auth's cookies; must stay the last plugin.
     plugins: [nextCookies()],
   });

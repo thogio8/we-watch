@@ -1,8 +1,8 @@
 import "server-only";
 import { getCookies } from "better-auth/cookies";
 import { cookies } from "next/headers";
-import { GROUP_COOKIE, groupCookieAttributes } from "@/domain/group";
 import { getAuth } from "./container";
+import { clearGroup } from "./groups";
 
 /**
  * Signs this device out once its session is gone from the database (revoked
@@ -34,8 +34,5 @@ export async function signOutThisDevice(): Promise<void> {
       maxAge: 0,
     });
   }
-  jar.set(GROUP_COOKIE, "", {
-    ...groupCookieAttributes(process.env.NODE_ENV === "production"),
-    maxAge: 0,
-  });
+  await clearGroup();
 }

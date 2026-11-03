@@ -127,6 +127,22 @@ describe("PasskeyList", () => {
     expect(title()).toHaveFocus();
   });
 
+  it("trop d’essais : le refus s’affiche, la liste n’est pas rechargée, le focus sur le titre", async () => {
+    const { user } = renderList([IPHONE, MAC], async () => ({
+      ok: false,
+      reason: "too_many",
+    }));
+
+    await removeIPhone(user);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.",
+    );
+    expect(refresh).not.toHaveBeenCalled();
+    expect(row("iPhone · Safari")).toBeVisible();
+    expect(title()).toHaveFocus();
+  });
+
   it("un échec (réseau, base) : le message d’échec dans le ticket, jamais « déjà supprimée », la liste n’est pas rechargée", async () => {
     const { user } = renderList([IPHONE, MAC], () =>
       Promise.reject(new Error("Failed to fetch")),

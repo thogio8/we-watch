@@ -14,6 +14,7 @@ import {
   movieSnapshot,
   movieWant,
 } from "@/db/group-schema";
+import { rateLimit } from "@/db/rate-limit-schema";
 import { movies } from "@/db/schema";
 import { fakeTmdb } from "../fake-tmdb/handler";
 import { aGroup } from "./groups";
@@ -28,8 +29,9 @@ const LEA = { id: "user-1", name: "Léa", email: "user-1@test.invalid" };
  * TMDB client → zod → mapping) on a fresh database file, with TMDB answered
  * by the fake catalogue. Call once per test file, before any test runs.
  * Léa, the mocked session's user, has an account row (foreign keys hold);
- * `reset` empties the lists and groups, children first, and deletes every
- * account but Léa's (their sessions and passkeys go with them).
+ * `reset` empties the lists, groups and attempt counters, children first,
+ * and deletes every account but Léa's (their sessions and passkeys go with
+ * them).
  */
 export async function startServerStack(): Promise<{
   db: Database;
@@ -59,6 +61,7 @@ export async function startServerStack(): Promise<{
         group,
         movieSnapshot,
         movies,
+        rateLimit,
       ]) {
         await db.delete(table);
       }

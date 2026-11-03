@@ -81,6 +81,21 @@ describe("AddPasskey", () => {
     );
   });
 
+  it("trop d’essais (429) : il le dit", async () => {
+    addPasskey.mockResolvedValue({
+      data: null,
+      error: { status: 429, message: "Too many requests." },
+    });
+    const user = renderAdd();
+
+    await user.click(screen.getByRole("button", { name: ADD }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.",
+    );
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+
   it("un navigateur sans clés d’accès voit le message existant à la place d’« AJOUTER »", () => {
     vi.stubGlobal("PublicKeyCredential", undefined);
     renderAdd();

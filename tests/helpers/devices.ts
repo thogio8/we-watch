@@ -1,6 +1,7 @@
 import { testUtils } from "better-auth/plugins";
 import { createAuth } from "@/auth/create-auth";
 import type { Database } from "@/db/create-database";
+import { createRateLimits } from "@/db/rate-limit";
 import { BASE_URL } from "./signup-ceremony";
 
 export const AUTH_SECRET = "functional-auth-secret-0123456789abcdef";
@@ -11,6 +12,7 @@ export const aTestAuth = (db: Database) =>
     db,
     secret: AUTH_SECRET,
     baseURL: BASE_URL,
+    rateLimits: createRateLimits(db),
     plugins: [testUtils()],
   });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isTooManyAttempts, TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import type { PrepareSignupResult } from "./actions";
 import { authClient } from "./authClient";
 import { CANCELLED_ERROR, signinFailure } from "./messages";
@@ -40,7 +41,10 @@ async function signUpWithPasskey(
     createSession: true,
     name: "WeWatch",
   });
-  return error ? CANCELLED_ERROR : null;
+  if (!error) {
+    return null;
+  }
+  return isTooManyAttempts(error) ? TOO_MANY_ATTEMPTS : CANCELLED_ERROR;
 }
 
 /**

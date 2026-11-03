@@ -152,6 +152,9 @@ Le détail visuel de ces écrans est laissé au builder, dans la DA, vérifié s
 - Secrets : `BETTER_AUTH_SECRET`, identifiants Google, `OWNER_CODE` ; jamais commités ni affichés (comme aujourd'hui).
 - La route du cron reste protégée par `CRON_SECRET`.
 - Un audit de sécurité ciblé clôt la version avant la bascule.
+- Livré (morceau 6) : limites de tentatives en base (table `rate_limit`, fenêtre fixe comptée avant toute validation, refus « TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT. ») : par IP et chemin pour les cérémonies passkey (Better Auth, sur 10 min : 30 demandes de connexion, 20 vérifications, 10 + 10 pour enregistrer une clé), par IP pour l'inscription (10 par 10 min) et le code propriétaire (5 par 15 min, sans seau commun à toutes les IP : une attaque ne doit pas fermer la seule porte de la bascule), par compte pour créer un groupe (10 par heure), rejoindre (20), changer de prénom (20), supprimer une clé (10) et supprimer son compte (5). Valeurs : `src/domain/rate-limit.ts` et `src/auth/rate-limits.ts`.
+- Livré (morceau 6) : seuls les chemins Better Auth de l'appli répondent (`AUTH_PATHS`), tout autre chemin sous `/api/auth` répond 404 ; contrôle d'origine forcé en production. En-têtes sur toute réponse : CSP **statique** (un nonce exige un rendu par requête, incompatible avec le prérendu partiel : `'unsafe-inline'` pour les scripts), `frame-ancestors 'none'`, HSTS, `nosniff`, `X-Frame-Options`, COOP, `Permissions-Policy`, sans `X-Powered-By`. Cookie `ww_group` `secure` dès que `BETTER_AUTH_URL` est en https. Le cron fait chaque jour le ménage des lignes d'authentification expirées et des vieux compteurs.
+- Livré (morceau 6) : sauvegarde chiffrée (AES-256-GCM, `BACKUP_KEY`), comptes compris sans leurs jetons, jamais les sessions ; secrets de la CI posés sur la seule étape qui s'en sert, jeton du workflow en lecture seule, actions épinglées par commit, CLI Vercel épinglée. Audit : `docs/security-audit-2.0.md` (0 critique, 0 haute ; la moyenne et les 4 faibles corrigées, 2 informatifs corrigés et 4 acceptés avec leur raison, comme le risque résiduel du build de prod).
 
 ## 13. Découpage et façon de livrer
 
@@ -163,6 +166,9 @@ Branche `release/2.0.0` depuis `main` ; un morceau = une branche `feat/v2-…` �
 4. **Google** : connexion, liaison depuis « Mon compte », vérification dans la PWA iPhone.
 5. **Mon compte** : nom, passkeys (ajouter / supprimer), Google, appareils connectés, suppression du compte.
 6. **Blindage et bascule** : limites de tentatives, en-têtes, audit, README et `CLAUDE.md` à jour, répétition de la migration sur une copie de la prod, puis fusion de `release/2.0.0` dans `main` (commit de fusion, avec au moins un commit `feat!` pour que release-please publie la **2.0.0**).
+
+- Livré (morceau 6, avant la bascule) : limites, chemins et en-têtes (§12), ménage du cron, test de fumée 2.0 (connexion, en-têtes, `rpId`, inscription sur invitation, autre origine refusée, cron), mise en ligne qui attend que la prod serve le nouveau déploiement, sauvegarde chiffrée, restauration et rattrapage d'un retour en 1.3.x, répétition de la migration sur la sauvegarde de prod du 2026-10-28 (208 films, tous copiés à l'identique), audit. La bascule suit le déroulé `docs/bascule-2.0.md`, sur l'accord explicite du mainteneur.
+- **En attente du mainteneur** : Google (morceau 4) avant ou après la bascule. Le déroulé (§1.1) demande l'un des deux : « 2.0.0 livrée sans Google », décision notée ici, ou morceau 4 fusionné dans `release/2.0.0`. Rien n'est décidé à ce jour.
 
 ## 14. Tests
 

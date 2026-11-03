@@ -1,4 +1,5 @@
 import type { SignupRight } from "@/access/signup";
+import { isTooManyAttempts, TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import { quoted } from "@/ui/quoted";
 
 /** Error texts of the sign-in screen (spec §9). Raw error text is never shown. */
@@ -10,11 +11,15 @@ export const NO_ACCOUNT_ERROR = "AUCUN COMPTE SUR CET APPAREIL";
 
 /**
  * A failed passkey sign-in. The server only answers PASSKEY_NOT_FOUND when
- * the device offered a passkey it does not know (account gone); everything
- * else (closed sheet, no passkey picked, network) reads as a cancellation.
+ * the device offered a passkey it does not know (account gone), and 429 when
+ * an attempt limit refuses it; everything else (closed sheet, no passkey
+ * picked, network) reads as a cancellation.
  */
 export function signinFailure(error: object | null | undefined): string {
-  // Only the code of a Better Auth client error is ever read.
+  // Only the status and code of a Better Auth client error are ever read.
+  if (isTooManyAttempts(error)) {
+    return TOO_MANY_ATTEMPTS;
+  }
   return error && "code" in error && error.code === "PASSKEY_NOT_FOUND"
     ? NO_ACCOUNT_ERROR
     : CANCELLED_ERROR;

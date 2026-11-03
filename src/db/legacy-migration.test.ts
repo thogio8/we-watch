@@ -19,7 +19,7 @@ import { group } from "./group-schema";
 // rows) before the new code: it applies the real SQL files, in journal order,
 // on a database seeded the way 1.3.x left it.
 
-type Journal = { entries: { idx: number; tag: string }[] };
+type Journal = { entries: { idx: number; tag: string; when: number }[] };
 const journal = JSON.parse(
   readFileSync("drizzle/meta/_journal.json", "utf8"),
 ) as Journal;
@@ -143,6 +143,12 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     expect(GROUPS[2]).toBe(WATCHED_LEGACY);
     // Later versions add theirs after them.
     expect(tags.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("date chaque migration après la précédente : drizzle ignore une migration plus ancienne que la dernière appliquée", () => {
+    const dates = journal.entries.map((entry) => entry.when);
+
+    expect(dates.slice(1).every((when, i) => when > dates[i]!)).toBe(true);
   });
 
   it("écrit dans le SQL l'id et le nom du groupe hérité du domaine", () => {
@@ -278,7 +284,7 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     expect(await db.$count(group)).toBe(0);
   });
 
-  describe("comme en production : 0000 à 0004 déjà passées, puis le migrateur de Drizzle", () => {
+  describe("avec le migrateur de Drizzle, depuis une base arrêtée à 0004 (juste avant les groupes)", () => {
     let dir: string;
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

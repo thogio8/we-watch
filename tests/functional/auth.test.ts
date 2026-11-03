@@ -2,11 +2,13 @@ import { testUtils } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createSignupTicket } from "@/access/signup-ticket";
-import { createAuth, DISABLED_PATHS } from "@/auth/create-auth";
+import { createAuth } from "@/auth/create-auth";
 import { passkey, user } from "@/db/auth-schema";
 import { createDatabase, type Database } from "@/db/create-database";
 import { group, membership } from "@/db/group-schema";
 import { createGroups } from "@/db/groups";
+import { createRateLimits } from "@/db/rate-limit";
+import { rateLimit } from "@/db/rate-limit-schema";
 import {
   GROUP_COOKIE,
   LEGACY_GROUP_ID,
@@ -17,11 +19,12 @@ import { BASE_URL, cookiesOf, signUpWith } from "../helpers/signup-ceremony";
 
 const SECRET = "functional-auth-secret-0123456789abcdef";
 
-function buildAuth() {
+function buildAuth(baseURL = BASE_URL) {
   return createAuth({
     db,
     secret: SECRET,
-    baseURL: BASE_URL,
+    baseURL,
+    rateLimits: createRateLimits(db),
     plugins: [testUtils()],
   });
 }
@@ -34,6 +37,9 @@ beforeAll(async () => {
   db = createDatabase(process.env.DATABASE_URL as string);
   auth = buildAuth();
 });
+// Every ceremony below counts against the attempt limits: start each test
+// with none.
+beforeEach(() => db.delete(rateLimit));
 
 async function saveUser(name: string) {
   const ctx = await auth.$context;
@@ -118,92 +124,52 @@ describe("Better Auth (fonctionnel)", () => {
     });
   });
 
-  it.each(
-    DISABLED_PATHS.flatMap((path) => [
-      ["GET", path],
-      ["POST", path],
-    ]),
-  )("%s %s inutilisée répond 404", async (method, path) => {
-    const response = await auth.handler(
-      new Request(`${BASE_URL}/api/auth${path}`, {
-        method,
-        headers: { "content-type": "application/json", origin: BASE_URL },
-        body: method === "POST" ? JSON.stringify({ name: "\u200B" }) : null,
-      }),
-    );
-
-    expect(response.status).toBe(404);
-  });
-
   it.each([
-    ["GET", "/list-sessions"],
-    ["POST", "/revoke-session"],
-    ["POST", "/revoke-sessions"],
-    ["POST", "/revoke-other-sessions"],
+    [BASE_URL, false],
+    ["https://wewatch.example", true],
   ])(
-    "%s %s est coupée (404), même connecté : l'appli gère les sessions elle-même",
-    async (method, path) => {
-      const ctx = await auth.$context;
-      const lea = await saveUser("Léa");
+    "sur %s, la déconnexion efface aussi le groupe affiché (cookie ww_group, secure: %s)",
+    async (baseURL, secure) => {
+      const instance = buildAuth(baseURL);
+      const ctx = await instance.$context;
+      const lea = await ctx.test.saveUser(ctx.test.createUser({ name: "Léa" }));
       const signedIn = await ctx.test.getAuthHeaders({ userId: lea.id });
 
-      const response = await auth.handler(
-        new Request(`${BASE_URL}/api/auth${path}`, {
-          method,
+      const response = await instance.handler(
+        new Request(`${baseURL}/api/auth/sign-out`, {
+          method: "POST",
           headers: {
             "content-type": "application/json",
-            origin: BASE_URL,
-            cookie: signedIn.get("cookie") as string,
+            origin: baseURL,
+            cookie: `${signedIn.get("cookie")}; ${GROUP_COOKIE}=groupe-1`,
           },
-          body: method === "POST" ? JSON.stringify({ token: "x" }) : null,
+          body: "{}",
         }),
       );
 
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(200);
+      const cleared = response.headers
+        .getSetCookie()
+        .find((line) => line.startsWith(`${GROUP_COOKIE}=`));
+      expect(cleared).toBeDefined();
+      expect(cleared).toMatch(new RegExp(`^${GROUP_COOKIE}=;`));
+      expect(cleared).toMatch(/Max-Age=0/);
+      expect(cleared).toMatch(/Path=\//);
+      expect(cleared).toMatch(/HttpOnly/);
+      expect(cleared).toMatch(/SameSite=Lax/i);
+      expect(/; Secure/i.test(cleared ?? "")).toBe(secure);
     },
   );
 
-  it("la déconnexion efface aussi le groupe affiché (cookie ww_group)", async () => {
-    const ctx = await auth.$context;
-    const lea = await saveUser("Léa");
-    const signedIn = await ctx.test.getAuthHeaders({ userId: lea.id });
-
-    const response = await auth.handler(
-      new Request(`${BASE_URL}/api/auth/sign-out`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          origin: BASE_URL,
-          cookie: `${signedIn.get("cookie")}; ${GROUP_COOKIE}=groupe-1`,
-        },
-        body: "{}",
-      }),
-    );
-
-    expect(response.status).toBe(200);
-    const cleared = response.headers
-      .getSetCookie()
-      .find((line) => line.startsWith(`${GROUP_COOKIE}=`));
-    expect(cleared).toBeDefined();
-    expect(cleared).toMatch(new RegExp(`^${GROUP_COOKIE}=;`));
-    expect(cleared).toMatch(/Max-Age=0/);
-    expect(cleared).toMatch(/Path=\//);
-    expect(cleared).toMatch(/HttpOnly/);
-    expect(cleared).toMatch(/SameSite=Lax/i);
-  });
-
   it("sans plugin supplémentaire, l'instance répond aussi", async () => {
-    const bare = createAuth({ db, secret: SECRET, baseURL: BASE_URL });
+    const bare = createAuth({
+      db,
+      secret: SECRET,
+      baseURL: BASE_URL,
+      rateLimits: createRateLimits(db),
+    });
 
     expect(await bare.api.getSession({ headers: new Headers() })).toBeNull();
-  });
-
-  it("la route de session reste ouverte", async () => {
-    const response = await auth.handler(
-      new Request(`${BASE_URL}/api/auth/get-session`),
-    );
-
-    expect(response.status).toBe(200);
   });
 
   it("une inscription par passkey sans ticket est refusée", async () => {
@@ -470,5 +436,65 @@ describe("Better Auth (fonctionnel)", () => {
       expect(await db.select().from(user)).toHaveLength(before);
       expect(await names()).not.toContain("Sam");
     });
+  });
+});
+
+describe("limites de tentatives (fonctionnel)", () => {
+  const from = (ip: string, path: string) =>
+    auth.handler(
+      new Request(`${BASE_URL}/api/auth${path}`, {
+        headers: { "x-forwarded-for": ip },
+      }),
+    );
+  const statusesFrom = async (ip: string, path: string, times: number) => {
+    const statuses: number[] = [];
+    for (let i = 0; i < times; i++) {
+      statuses.push((await from(ip, path)).status);
+    }
+    return statuses;
+  };
+
+  it("la 11ᵉ demande d'options d'inscription de la même IP en 10 minutes répond 429, une autre IP non", async () => {
+    const path = "/passkey/generate-register-options";
+
+    const first = await statusesFrom("203.0.113.1", path, 10);
+    const eleventh = await from("203.0.113.1", path);
+
+    expect(first).not.toContain(429);
+    expect(eleventh.status).toBe(429);
+    expect(Number(eleventh.headers.get("x-retry-after"))).toBeGreaterThan(590);
+    expect((await from("203.0.113.2", path)).status).not.toBe(429);
+  });
+
+  it("la 31ᵉ demande d'options de connexion de la même IP répond 429, une autre IP répond 200", async () => {
+    const path = "/passkey/generate-authenticate-options";
+
+    expect(await statusesFrom("203.0.113.1", path, 30)).toEqual(
+      Array(30).fill(200),
+    );
+    expect((await from("203.0.113.1", path)).status).toBe(429);
+    expect((await from("203.0.113.2", path)).status).toBe(200);
+  });
+
+  it("un chemin inconnu répond 404 sans rien écrire dans rate_limit", async () => {
+    for (let i = 0; i < 50; i++) {
+      expect((await from("203.0.113.1", `/x${i}`)).status).toBe(404);
+    }
+
+    expect(await db.select().from(rateLimit)).toEqual([]);
+  });
+
+  it("chaque tentative est comptée par IP et chemin, avant toute validation", async () => {
+    await from(
+      "203.0.113.1",
+      "/passkey/generate-register-options?context=faux",
+    );
+
+    expect(await db.select().from(rateLimit)).toEqual([
+      expect.objectContaining({
+        key: "203.0.113.1|/passkey/generate-register-options",
+        count: 1,
+      }),
+    ]);
   });
 });

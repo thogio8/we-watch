@@ -10,13 +10,14 @@ export const LEGACY_GROUP_NAME = "NOUS DEUX";
 export const GROUP_COOKIE = "ww_group";
 
 /**
- * Attributes of GROUP_COOKIE, the same to set and to delete it (`secure`
- * in production only: development and tests run over http).
+ * Attributes of GROUP_COOKIE, the same to set and to clear it: `secure`
+ * whenever the app's public address (BETTER_AUTH_URL) is https, whatever
+ * NODE_ENV says; development and the e2e run over http.
  */
-export const groupCookieAttributes = (secure: boolean) => ({
+export const groupCookieAttributes = (baseURL: string) => ({
   httpOnly: true,
   sameSite: "lax" as const,
-  secure,
+  secure: new URL(baseURL).protocol === "https:",
   path: "/",
 });
 

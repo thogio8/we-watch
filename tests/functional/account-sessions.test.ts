@@ -171,7 +171,7 @@ describe("supprimer mon compte (fonctionnel)", () => {
     return groupId;
   }
 
-  it("un prénom faux : refus, rien n’est écrit", async () => {
+  it("un prénom faux : refus, rien n’est écrit hors la tentative comptée", async () => {
     const zoe = await aDeviceOf(auth, "Zoé");
     from(zoe);
     const before = await allRows(db);
@@ -181,7 +181,15 @@ describe("supprimer mon compte (fonctionnel)", () => {
       error: "TAPE TON PRÉNOM EXACT",
     });
 
-    expect(await allRows(db)).toEqual(before);
+    expect(await allRows(db)).toEqual({
+      ...before,
+      rate_limit: [
+        expect.objectContaining({
+          key: `delete-account:${zoe.userId}`,
+          count: 1,
+        }),
+      ],
+    });
   });
 
   it("un ancien prénom, écrit avant les règles actuelles, se confirme encore, apostrophe du téléphone comprise", async () => {

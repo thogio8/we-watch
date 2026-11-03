@@ -53,19 +53,20 @@ describe("NameForm", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("un refus du serveur s’affiche, rien n’est annoncé", async () => {
-    const { user } = renderForm(async () => ({
-      ok: false,
-      error: "UN PRÉNOM DE 1 À 30 CARACTÈRES",
-    }));
+  it.each([
+    ["un prénom refusé", "UN PRÉNOM DE 1 À 30 CARACTÈRES"],
+    ["trop d’essais", "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT."],
+  ])(
+    "un refus du serveur (%s) s’affiche, rien n’est annoncé",
+    async (_, error) => {
+      const { user } = renderForm(async () => ({ ok: false, error }));
 
-    await user.click(submit());
+      await user.click(submit());
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "UN PRÉNOM DE 1 À 30 CARACTÈRES",
-    );
-    expect(screen.getByRole("status")).toBeEmptyDOMElement();
-  });
+      expect(screen.getByRole("alert")).toHaveTextContent(error);
+      expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    },
+  );
 
   it("une panne affiche un message de la DA, jamais le texte brut", async () => {
     const { user } = renderForm(() => Promise.reject(new Error("raw text")));

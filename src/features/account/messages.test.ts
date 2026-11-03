@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import {
   activeOn,
   addPasskeyFailure,
@@ -57,5 +58,9 @@ describe("textes de « MON COMPTE »", () => {
       "VALIDATION ANNULÉE, RÉESSAIE",
     );
     expect(addPasskeyFailure(null)).toBe("VALIDATION ANNULÉE, RÉESSAIE");
+  });
+
+  it("ajouter une clé refusé pour trop d’essais (429) : TROP D’ESSAIS", () => {
+    expect(addPasskeyFailure({ status: 429 })).toBe(TOO_MANY_ATTEMPTS);
   });
 });

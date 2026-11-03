@@ -1,11 +1,13 @@
 "use server";
 
-import { signupRight } from "@/access/signup";
+import { signupRight, submittedOwnerCode } from "@/access/signup";
 import { createSignupTicket } from "@/access/signup-ticket";
 import { parseDisplayName } from "@/domain/display-name";
+import { TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import { getServerEnv } from "@/env";
 import { INVITE_INVALID } from "@/features/groups/messages";
 import { findInvitedGroup } from "@/server/invitations";
+import { clientIp, withinLimit } from "@/server/rate-limit";
 import { NAME_ERROR, refusalMessage, WRONG_CODE_ERROR } from "./messages";
 
 export type PrepareSignupResult =
@@ -37,7 +39,9 @@ async function invitedGroup(
 /**
  * « CRÉER MON COMPTE », first step: checks the name, the invite link if any
  * and the right to sign up, then hands out a short-lived signed ticket that the passkey ceremony
- * carries to Better Auth.
+ * carries to Better Auth. Every attempt counts against this IP's signup
+ * limit first; a typed owner code also counts against its own, just
+ * before it is compared (even the right code is refused past it).
  *
  * Public on purpose, unlike every other action: it runs before the account
  * exists, so there is no session to assert. It trusts nothing instead: the
@@ -47,6 +51,10 @@ async function invitedGroup(
 export async function prepareSignup(
   formData: FormData,
 ): Promise<PrepareSignupResult> {
+  const ip = await clientIp();
+  if (!(await withinLimit("signup", ip))) {
+    return { ok: false, error: TOO_MANY_ATTEMPTS };
+  }
   const fields = formData instanceof FormData ? formData : new FormData();
   const name = parseDisplayName(fields.get("name"));
   if (name === null) {
@@ -58,6 +66,12 @@ export async function prepareSignup(
   }
   const env = getServerEnv();
   const submittedCode = field(fields, "ownerCode");
+  if (
+    submittedOwnerCode(submittedCode) !== null &&
+    !(await withinLimit("owner-code", ip))
+  ) {
+    return { ok: false, error: TOO_MANY_ATTEMPTS };
+  }
   const right = signupRight({
     mode: env.SIGNUP,
     invited: invited.invite !== null,

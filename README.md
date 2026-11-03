@@ -100,14 +100,15 @@ Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base
 
 2. **Vercel** : créer le projet depuis votre copie du dépôt, sans le déployer.
    - `npx vercel link` crée le projet ; `.vercel/project.json` donne `orgId` et `projectId`.
-   - Variables d'environnement **Production** : `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET` et `BETTER_AUTH_SECRET` (chacun `openssl rand -hex 32`), `BETTER_AUTH_URL` (l'adresse de production, la même que `PROD_URL`), et au besoin `SIGNUP` et `OWNER_CODE` (voir « Les comptes »). Ne pas les donner aux previews : elles écriraient dans la même base.
+   - Variables d'environnement **Production** : `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET` et `BETTER_AUTH_SECRET` (chacun `openssl rand -hex 32`), `BETTER_AUTH_URL` (l'adresse de production, la même que `PROD_URL` au caractère près, sans `/` final : la vérification d'après déploiement le contrôle), `SIGNUP=invite` (conseillé : sinon n'importe qui connaissant l'adresse crée un compte) et, le temps de créer le premier compte, `OWNER_CODE` (voir « Les comptes »). Ne pas les donner aux previews : elles écriraient dans la même base.
    - `ACCESS_CODE`, l'ancien code partagé, reste dans Vercel jusqu'à la 2.1 : un retour arrière vers la 1.3.x en a encore besoin. La 2.0 l'ignore.
    - Un jeton dans Account Settings → Tokens.
    - La région des fonctions (`vercel.json`, `dub1` = Dublin) se règle au plus près de la base.
 3. **GitHub** (Settings → Secrets and variables → Actions) :
-   - secrets : `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET` ;
-   - variable : `PROD_URL`, l'adresse de production (par exemple `https://votre-projet.vercel.app`).
-4. **Pousser sur `main`** : la CI crée les tables au premier passage, puis chaque push déploie. Avant chaque migration, elle sauvegarde les listes et les groupes (artefact GitHub gardé 90 jours).
+   - secrets : `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET`, et `BACKUP_KEY`, la clé qui chiffre les sauvegardes : 64 caractères hexadécimaux (`openssl rand -hex 32`), dont vous gardez une copie hors ligne (gestionnaire de mots de passe). Sans elle, la CI refuse de sauvegarder, donc de migrer et de déployer ; perdue, plus aucune sauvegarde ne se relit ;
+   - variable : `PROD_URL`, l'adresse de production (par exemple `https://votre-projet.vercel.app`) ;
+   - variable facultative : `EXPECT_SIGNUP`. La vérification d'après déploiement exige par défaut que l'écran de connexion annonce l'inscription sur invitation (`SIGNUP=invite`) ; mettez `open` si vous ouvrez l'inscription exprès.
+4. **Pousser sur `main`** : la CI crée les tables au premier passage, puis chaque push déploie. Avant chaque migration, elle sauvegarde la base, chiffrée (voir « Vos données »). Après la mise en ligne, elle vérifie la prod : connexion, en-têtes de sécurité, clés d'accès liées à la bonne adresse, routes inutilisées fermées, requêtes d'un autre site refusées, rafraîchissement quotidien ; un échec remet la version d'avant.
 
 ## Les comptes
 
@@ -115,14 +116,23 @@ Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre a
 
 - **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis « CRÉER MON COMPTE » et le verrou de l'appareil. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
 - **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est dans le panneau de la pastille du groupe et dans « MON COMPTE ». Se déconnecter oublie aussi le groupe affiché : le compte suivant sur ce téléphone repart de ses propres groupes.
-- **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et un compte ne se crée que de deux façons : depuis un **lien d'invitation** d'un groupe (le nouveau compte en devient membre), ou avec le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée. Un lien d'invitation marche aussi en mode `open`.
+- **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, **conseillé pour une instance en ligne**, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et un compte ne se crée que de deux façons : depuis un **lien d'invitation** d'un groupe (le nouveau compte en devient membre), ou avec le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée. Un lien d'invitation marche aussi en mode `open`. Une fois les comptes du couple créés et dans « NOUS DEUX », **retirer `OWNER_CODE` de Vercel** (puis redéployer) : le code ne sert qu'au premier compte, et tant qu'il existe, quiconque le connaît entre dans « NOUS DEUX » sans invitation.
 - **Le groupe « NOUS DEUX »** : la liste d'avant les comptes (1.x) y est gardée telle quelle, films, statuts et dates. Un compte créé avec le code propriétaire le rejoint aussitôt ; ensuite, on y invite par son lien, comme dans tout groupe. En mode `open`, le lien « J’AI UN CODE PROPRIÉTAIRE » reste proposé, avec un code facultatif.
 - Un navigateur trop ancien pour les passkeys affiche « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS… » à la place des boutons.
 - Les passkeys sont liées à l'adresse de l'appli (`BETTER_AUTH_URL`) : changer d'adresse oblige à recréer les comptes.
 
+- **Tentatives limitées** : la connexion, la création de compte, le code propriétaire et les actions sensibles (créer ou rejoindre un groupe, changer de prénom, supprimer une clé ou son compte) sont limités par adresse IP ou par compte, sur une fenêtre de 10 minutes à une heure. Au-delà, l'écran répond « TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT. ».
+
 - **Le lien d'invitation est un secret** : qui l'a peut entrer dans le groupe. L'appli ne l'écrit jamais dans ses journaux et ne le transmet pas aux sites ouverts depuis la page (`Referrer-Policy: no-referrer`), mais l'hébergeur peut journaliser les adresses visitées : s'il a trop circulé, « RÉGÉNÉRER LE LIEN ».
 
 > À venir : la connexion avec Google (on pourra alors supprimer sa dernière clé d'accès).
+
+## Vos données
+
+- **Ce qui est gardé** : votre prénom, vos clés d'accès (leur partie publique : la partie secrète ne quitte jamais l'appareil), vos groupes et leurs listes, et pour chaque appareil connecté sa session (navigateur et adresse IP). Ni email, ni mot de passe. Les compteurs de tentatives (par adresse IP ou par compte) s'effacent au bout d'un jour, les sessions expirées aussi. Un compte supprimé part tout de suite de la base (voir « MON COMPTE »).
+- **Sauvegardes chiffrées** : avant chaque mise à jour de la base, la CI sauvegarde les listes, les groupes et les comptes (prénom, clés publiques), **jamais** les sessions ni aucun jeton. Le fichier est chiffré (AES-256-GCM, clé `BACKUP_KEY`) : sans la clé, il est illisible. Il est gardé **90 jours** comme artefact GitHub, puis effacé ; un compte supprimé peut donc y rester jusqu'à 90 jours (son prénom et ses clés publiques).
+- **Restaurer** : une sauvegarde se remet dans une base neuve, jamais par-dessus des données ; la marche à suivre est dans [`docs/bascule-2.0.md`](docs/bascule-2.0.md) (§7). Après une restauration, chacun se reconnecte avec sa clé d'accès, et chaque groupe régénère son lien d'invitation.
+- **En-têtes de sécurité** sur chaque page : une politique de contenu stricte (`Content-Security-Policy` : scripts, styles et polices de l'appli seule, images de l'appli et de TMDB, aucune intégration dans un autre site), `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy`, `Permissions-Policy` (ni caméra, ni micro, ni position).
 
 ## L'installer comme une appli
 

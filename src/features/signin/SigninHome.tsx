@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Button } from "@/ui/Button";
+import { CLOSED_ERROR } from "./messages";
 import { PasskeyActions } from "./PasskeyActions";
 import styles from "./SigninScreen.module.css";
 import { SigninTicket } from "./SigninTicket";
@@ -41,9 +42,7 @@ export function SigninHome({
   return (
     <div className={styles.form}>
       <SigninTicket title={title} error={error}>
-        {!canCreate && (
-          <p className={styles.note}>WEWATCH SE REJOINT SUR INVITATION</p>
-        )}
+        {!canCreate && <p className={styles.note}>{CLOSED_ERROR}</p>}
       </SigninTicket>
       <PasskeyActions>
         <Button

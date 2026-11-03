@@ -1,12 +1,20 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/cron/refresh-movies/route";
+import { session, verification } from "@/db/auth-schema";
 import type { Database } from "@/db/create-database";
+import { rateLimit } from "@/db/rate-limit-schema";
 import { getGroupList } from "@/server/container";
 import { aSnapshot } from "../helpers/movies";
 import { CRON_SECRET, startServerStack } from "../helpers/functional";
 import { aGroup, aUser } from "../helpers/groups";
 
 const PARASITE = 496243;
+const NOTHING_PURGED = {
+  verifications: 0,
+  signupTickets: 0,
+  sessions: 0,
+  rateLimits: 0,
+};
 
 let db: Database;
 let reset: () => Promise<void>;
@@ -40,6 +48,7 @@ describe("rafraîchissement quotidien (fonctionnel)", () => {
       total: 1,
       refreshed: 1,
       failed: [],
+      purged: NOTHING_PURGED,
     });
     const [movie] = await getGroupList().listByStatus(groupId, "to_watch");
     expect(movie).toMatchObject({
@@ -74,11 +83,54 @@ describe("rafraîchissement quotidien (fonctionnel)", () => {
       total: 1,
       refreshed: 1,
       failed: [],
+      purged: NOTHING_PURGED,
     });
     for (const groupId of [ours, his]) {
       const [movie] = await getGroupList().listByStatus(groupId, "to_watch");
       expect(movie?.title).toBe("Parasite");
     }
+  });
+
+  it("fait d'abord le ménage : vérifications, sessions et compteurs périmés", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    const past = new Date(Date.now() - 60_000);
+    const future = new Date(Date.now() + 60_000);
+    await db.insert(verification).values([
+      { id: "v-old", identifier: "i", value: "x", expiresAt: past },
+      { id: "v-new", identifier: "i", value: "x", expiresAt: future },
+    ]);
+    await db.insert(session).values({
+      id: "s-old",
+      token: "t-old",
+      expiresAt: past,
+      updatedAt: past,
+      userId: "user-1",
+    });
+    await db.insert(rateLimit).values({
+      key: "signup:203.0.113.1",
+      count: 4,
+      windowStart: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    });
+
+    const response = await cron(`Bearer ${CRON_SECRET}`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      total: 0,
+      refreshed: 0,
+      failed: [],
+      purged: {
+        verifications: 1,
+        signupTickets: 0,
+        sessions: 1,
+        rateLimits: 1,
+      },
+    });
+    expect(await db.select({ id: verification.id }).from(verification)).toEqual(
+      [{ id: "v-new" }],
+    );
+    expect(await db.select().from(session)).toEqual([]);
+    expect(await db.select().from(rateLimit)).toEqual([]);
   });
 
   it("refuse un appel sans le secret du cron", async () => {

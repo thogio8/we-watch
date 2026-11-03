@@ -2,6 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CLOSED_ERROR } from "./messages";
 import { SigninScreen } from "./SigninScreen";
 import { SignupForm } from "./SignupForm";
 
@@ -21,6 +22,7 @@ const SIGN_IN = "SE CONNECTER";
 const CREATE = "CRÉER MON COMPTE";
 const OWNER_CODE = "J’AI UN CODE PROPRIÉTAIRE";
 const CANCELLED = "VALIDATION ANNULÉE, RÉESSAIE";
+const TOO_MANY = "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.";
 const HINT = "Face ID, empreinte ou code de ton téléphone";
 const UNSUPPORTED =
   "CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL.";
@@ -67,6 +69,17 @@ async function openForm(
   await user.click(screen.getByRole("button", { name: label }));
 }
 
+/** Signs up as Léa, on a valid ticket, the passkey ceremony ending in `outcome`. */
+async function signUpLeaWith(outcome: () => Promise<unknown>) {
+  prepareSignup.mockResolvedValue({ ok: true, ticket: "le-ticket" });
+  addPasskey.mockImplementation(outcome);
+  const user = renderScreen();
+  await openForm(user);
+
+  await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
+  await user.click(screen.getByRole("button", { name: CREATE }));
+}
+
 describe("SigninScreen, accueil", () => {
   it("inscriptions ouvertes : se connecter ou créer un compte", () => {
     renderScreen("open");
@@ -88,9 +101,8 @@ describe("SigninScreen, accueil", () => {
   it("sur invitation : le message d'invitation, pas de CRÉER UN COMPTE", () => {
     renderScreen("invite");
 
-    expect(
-      screen.getByText("WEWATCH SE REJOINT SUR INVITATION"),
-    ).toBeInTheDocument();
+    // The text the production smoke test looks for (scripts/smoke-prod.sh).
+    expect(screen.getByText(CLOSED_ERROR)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "CRÉER UN COMPTE" }),
     ).not.toBeInTheDocument();
@@ -122,6 +134,19 @@ describe("SigninScreen, accueil", () => {
       "AUCUN COMPTE SUR CET APPAREIL",
     );
     expect(screen.getByRole("button", { name: SIGN_IN })).toHaveFocus();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("une connexion refusée pour trop d’essais (429) : TROP D’ESSAIS", async () => {
+    signInPasskey.mockResolvedValue({
+      data: null,
+      error: { status: 429, message: "Too many requests." },
+    });
+    const user = renderScreen();
+
+    await user.click(screen.getByRole("button", { name: SIGN_IN }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(TOO_MANY);
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -198,6 +223,18 @@ describe("SigninScreen, création de compte", () => {
     expect(replace).toHaveBeenCalledWith("/");
   });
 
+  it("trop d’essais : TROP D’ESSAIS, sans cérémonie", async () => {
+    prepareSignup.mockResolvedValue({ ok: false, error: TOO_MANY });
+    const user = renderScreen("open");
+    await openForm(user);
+
+    await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
+    await user.click(screen.getByRole("button", { name: CREATE }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(TOO_MANY);
+    expect(addPasskey).not.toHaveBeenCalled();
+  });
+
   it("inscriptions ouvertes : un mauvais code donne MAUVAIS CODE", async () => {
     prepareSignup.mockResolvedValue({ ok: false, error: "MAUVAIS CODE" });
     const user = renderScreen("open");
@@ -236,13 +273,7 @@ describe("SigninScreen, création de compte", () => {
   it.each(FAILED_CEREMONIES)(
     "une cérémonie %s : VALIDATION ANNULÉE, et le prénom reste",
     async (_label, outcome) => {
-      prepareSignup.mockResolvedValue({ ok: true, ticket: "le-ticket" });
-      addPasskey.mockImplementation(outcome);
-      const user = renderScreen();
-      await openForm(user);
-
-      await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
-      await user.click(screen.getByRole("button", { name: CREATE }));
+      await signUpLeaWith(outcome);
 
       expect(await screen.findByRole("alert")).toHaveTextContent(CANCELLED);
       expect(screen.queryByText(/raw text/)).not.toBeInTheDocument();
@@ -251,6 +282,18 @@ describe("SigninScreen, création de compte", () => {
       expect(replace).not.toHaveBeenCalled();
     },
   );
+
+  it("une inscription refusée pour trop d’essais (429) : TROP D’ESSAIS", async () => {
+    await signUpLeaWith(() =>
+      Promise.resolve({
+        data: null,
+        error: { status: 429, message: "Too many requests." },
+      }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(TOO_MANY);
+    expect(replace).not.toHaveBeenCalled();
+  });
 
   it("un refus de prepareSignup s'affiche et aucune passkey n'est créée", async () => {
     prepareSignup.mockResolvedValue({

@@ -18,6 +18,8 @@ import {
   verification,
 } from "../src/db/auth-schema";
 import { createDatabase } from "../src/db/create-database";
+import { createRateLimits } from "../src/db/rate-limit";
+import { rateLimit } from "../src/db/rate-limit-schema";
 import {
   group,
   groupMovie,
@@ -28,6 +30,7 @@ import {
 } from "../src/db/group-schema";
 import { movies } from "../src/db/schema";
 import { GROUP_COOKIE } from "../src/domain/group";
+import { watchSecurity } from "./csp";
 import { appUrl, databaseOf, E2E_AUTH_SECRET } from "./env";
 
 const databases = new Map<number, ReturnType<typeof createDatabase>>();
@@ -42,8 +45,9 @@ function db() {
 }
 
 /**
- * Empties the worker's database (lists, groups, movies and every Better Auth
- * table), the children before the rows they point to.
+ * Empties the worker's database (lists, groups, movies, every Better Auth
+ * table and the attempt counters), the children before the rows they point
+ * to.
  */
 async function wipe() {
   for (const table of [
@@ -60,6 +64,7 @@ async function wipe() {
     verification,
     signupTicketUse,
     user,
+    rateLimit,
   ]) {
     await db().delete(table);
   }
@@ -80,6 +85,7 @@ async function authHelpers() {
     db: db(),
     secret: E2E_AUTH_SECRET,
     baseURL: appUrl(worker),
+    rateLimits: createRateLimits(db()),
     plugins: [testUtils()],
   });
   return (await auth.$context).test;
@@ -196,15 +202,20 @@ async function secondDevices(
   ) => Promise<void>,
 ) {
   const devices: BrowserContext[] = [];
+  const checks: (() => void)[] = [];
   await use(async (setUp) => {
     const device = await browser.newContext();
     devices.push(device);
+    checks.push(await watchSecurity(device));
     const page = await device.newPage();
     await setUp(page);
     return page;
   });
   for (const device of devices) {
     await device.close();
+  }
+  for (const check of checks) {
+    check();
   }
 }
 
@@ -228,6 +239,12 @@ export const test = base.extend<{
 }>({
   baseURL: async ({}, use, testInfo) => {
     await use(appUrl(testInfo.parallelIndex));
+  },
+  // Every test fails on a CSP violation or an unknown auth path (e2e/csp.ts).
+  context: async ({ context }, use) => {
+    const check = await watchSecurity(context);
+    await use(context);
+    check();
   },
   app: async ({ page }, use) => {
     await wipe();
