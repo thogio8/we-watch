@@ -160,7 +160,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Open or update the release PR
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
@@ -174,7 +174,7 @@ jobs:
           fi
       - name: Tag and publish the release
         if: steps.merge.outputs.merged == 'true'
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
