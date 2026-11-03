@@ -147,3 +147,18 @@ test.describe("onglets sans JavaScript", () => {
     await context.close();
   });
 });
+
+test.describe("adresse inconnue", () => {
+  test("une page qui n'existe pas : 404, dans la DA, et un chemin vers l'accueil", async ({
+    app,
+  }) => {
+    const response = await app.goto("/nulle-part");
+
+    expect(response?.status()).toBe(404);
+    await expect(
+      app.getByRole("heading", { name: /RIEN À L’AFFICHE ICI/ }),
+    ).toBeVisible();
+    await app.getByRole("link", { name: "ALLER À L’ACCUEIL" }).click();
+    await expect(app).toHaveURL("/");
+  });
+});

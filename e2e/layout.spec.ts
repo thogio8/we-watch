@@ -67,7 +67,8 @@ async function* account(page: Page) {
 }
 
 /**
- * Every page, the group panel, the members screen, my account, then signed out (cookies
+ * Every page, the group panel, the members screen, my account, an unknown
+ * address, then signed out (cookies
  * cleared): an invite link, the sign-in home, its signup form showing an
  * error.
  */
@@ -79,6 +80,11 @@ async function* visitAll(page: Page) {
   yield* groupPanel(page);
   yield* members(page);
   yield* account(page);
+  await page.goto("/nulle-part");
+  await expect(
+    page.getByRole("heading", { name: /RIEN À L’AFFICHE/ }),
+  ).toBeVisible();
+  yield "/nulle-part (404)";
   await page.context().clearCookies();
   await page.goto(await leasInvitation());
   await expect(
