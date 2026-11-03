@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { parseDisplayName } from "@/domain/display-name";
 import { isTooManyAttempts, TOO_MANY_ATTEMPTS } from "@/domain/rate-limit";
 import type { PrepareSignupResult } from "./actions";
 import { authClient } from "./authClient";
-import { CANCELLED_ERROR, signinFailure } from "./messages";
+import { CANCELLED_ERROR, NAME_ERROR, signinFailure } from "./messages";
 
 export type PrepareSignup = (
   formData: FormData,
@@ -31,6 +32,11 @@ async function signUpWithPasskey(
   prepareSignup: PrepareSignup,
   formData: FormData,
 ): Promise<string | null> {
+  // The server's rule, checked here first: each prepareSignup counts
+  // against the signup limit, even with a name it refuses.
+  if (parseDisplayName(formData.get("name")) === null) {
+    return NAME_ERROR;
+  }
   const prepared = await prepareSignup(formData);
   if (!prepared.ok) {
     return prepared.error;

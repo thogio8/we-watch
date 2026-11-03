@@ -75,6 +75,16 @@ async function openForm(
   await user.click(screen.getByRole("button", { name: label }));
 }
 
+/** On invitation, Léa submits the form with a wrong code. */
+async function wrongCodeAsLea() {
+  prepareSignup.mockResolvedValue({ ok: false, error: "MAUVAIS CODE" });
+  const user = renderScreen("invite");
+  await openForm(user, "invite");
+  await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
+  await user.click(screen.getByRole("button", { name: CREATE }));
+  return user;
+}
+
 /** Signs up as Léa, on a valid ticket, the passkey ceremony ending in `outcome`. */
 async function signUpLeaWith(outcome: () => Promise<unknown>) {
   prepareSignup.mockResolvedValue({ ok: true, ticket: "le-ticket" });
@@ -314,6 +324,28 @@ describe("SigninScreen, création de compte", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["vide", ""],
+    ["fait d’espaces", "   "],
+    ["trop long", "L".repeat(31)],
+  ])(
+    "un prénom %s : refusé ici, sans dépenser un essai d’inscription",
+    async (_, typed) => {
+      const user = renderScreen();
+      await openForm(user);
+
+      if (typed !== "") {
+        await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), typed);
+      }
+      await user.click(screen.getByRole("button", { name: CREATE }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "UN PRÉNOM DE 1 À 30 CARACTÈRES",
+      );
+      expect(prepareSignup).not.toHaveBeenCalled();
+    },
+  );
+
   it("un refus de prepareSignup s'affiche et aucune passkey n'est créée", async () => {
     prepareSignup.mockResolvedValue({
       ok: false,
@@ -322,6 +354,7 @@ describe("SigninScreen, création de compte", () => {
     const user = renderScreen();
     await openForm(user);
 
+    await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
     await user.click(screen.getByRole("button", { name: CREATE }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -334,12 +367,7 @@ describe("SigninScreen, création de compte", () => {
   });
 
   it("un mauvais code met le champ du code en erreur", async () => {
-    prepareSignup.mockResolvedValue({ ok: false, error: "MAUVAIS CODE" });
-    const user = renderScreen("invite");
-    await openForm(user, "invite");
-
-    await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Léa");
-    await user.click(screen.getByRole("button", { name: CREATE }));
+    await wrongCodeAsLea();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("MAUVAIS CODE");
     const code = screen.getByLabelText("CODE PROPRIÉTAIRE");
@@ -377,10 +405,7 @@ describe("SigninScreen, création de compte", () => {
   );
 
   it("RETOUR revient à l'accueil, sans l'erreur", async () => {
-    prepareSignup.mockResolvedValue({ ok: false, error: "MAUVAIS CODE" });
-    const user = renderScreen("invite");
-    await openForm(user, "invite");
-    await user.click(screen.getByRole("button", { name: CREATE }));
+    const user = await wrongCodeAsLea();
     await screen.findByText("MAUVAIS CODE");
 
     await user.click(screen.getByRole("button", { name: "← RETOUR" }));
