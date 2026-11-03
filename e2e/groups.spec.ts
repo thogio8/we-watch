@@ -145,4 +145,29 @@ test.describe("groupes", () => {
       app.getByRole("heading", { name: "FILM INTROUVABLE" }),
     ).toBeVisible();
   });
+
+  test("deux onglets : un groupe créé dans l’un, l’autre bascule sa pile avec sa pastille", async ({
+    app,
+  }) => {
+    const other = await app.context().newPage();
+    await other.goto("/swipe");
+    await expect(pill(other, "NOUS DEUX")).toBeVisible();
+    await expect(topCard(other)).toHaveText("Whiplash");
+
+    await app.goto("/list");
+    await createGroup(app, "LA COLOC");
+    // Saved in « NOUS DEUX », the deck on screen; the save re-renders the
+    // tab on the displayed group, « LA COLOC », cards included.
+    await decide(other, "keep");
+    await expect(pill(other, "LA COLOC")).toBeVisible();
+    await expect(topCard(other)).toHaveText("Whiplash");
+    await decide(other, "keep");
+    await settled(other);
+
+    await app.goto("/list");
+    await expect(listTitles(app)).toHaveText(["Whiplash"]);
+    await chooseGroup(app, "NOUS DEUX");
+    await expect(listTitles(app)).toHaveText(["Whiplash"]);
+    await other.close();
+  });
 });

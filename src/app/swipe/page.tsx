@@ -21,7 +21,11 @@ async function SwipeData({ deck }: { deck: DeckId }) {
   // Same path as the client's later loads: a TMDB error gives { ok: false }.
   const initial = await loadMoreCards(groupId, deck, 1);
   return (
+    // Keyed by group: re-rendered on another group (chosen in another tab),
+    // the deck starts afresh on that group's cards, never sending one
+    // group's cards to the other.
     <SwipeDeck
+      key={groupId}
       deck={deck}
       initial={initial}
       decide={decideSwipe.bind(null, groupId)}
