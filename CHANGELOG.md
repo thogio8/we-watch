@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.0.0](https://github.com/thogio8/we-watch/compare/v1.3.2...v2.0.0) (2026-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **groups:** one list per group
+* **auth:** accounts with passkeys
+
+### Nouveautés
+
+* **account:** my account ([a99f653](https://github.com/thogio8/we-watch/commit/a99f65361ff3718a231428aad09311ed5f06e60e))
+* **auth:** accounts with passkeys ([98765b3](https://github.com/thogio8/we-watch/commit/98765b355b6960c73995ad65320aad97ea61cef1))
+* **brand:** name the app WeWatch ([1b43087](https://github.com/thogio8/we-watch/commit/1b430878b60f2a736bce37a204c2e7d2afd1931e))
+* **groups:** invitations and members ([1bf24a8](https://github.com/thogio8/we-watch/commit/1bf24a8c7db655c12ee1d4967732aea6e8274660))
+* **groups:** one list per group ([806dbc1](https://github.com/thogio8/we-watch/commit/806dbc161ab9c9ad980f780eb8032193c0900d15))
+* **security:** hardening and cutover readiness ([2217597](https://github.com/thogio8/we-watch/commit/22175977636242429698e84b03295034b8f1f344))
+
+
+### Corrections
+
+* **db:** replay the 1.3.x list changes made during the rollback ([16588eb](https://github.com/thogio8/we-watch/commit/16588ebb624931a0bc92b86718844ea98fcfc81f))
+
 ## [1.3.2](https://github.com/thogio8/we-watch/compare/v1.3.1...v1.3.2) (2026-10-28)
 
 
