@@ -168,7 +168,7 @@ Branche `release/2.0.0` depuis `main` ; un morceau = une branche `feat/v2-…` �
 6. **Blindage et bascule** : limites de tentatives, en-têtes, audit, README et `CLAUDE.md` à jour, répétition de la migration sur une copie de la prod, puis fusion de `release/2.0.0` dans `main` (commit de fusion, avec au moins un commit `feat!` pour que release-please publie la **2.0.0**).
 
 - Livré (morceau 6, avant la bascule) : limites, chemins et en-têtes (§12), ménage du cron, test de fumée 2.0 (connexion, en-têtes, `rpId`, inscription sur invitation, autre origine refusée, cron), mise en ligne qui attend que la prod serve le nouveau déploiement, sauvegarde chiffrée, restauration et rattrapage d'un retour en 1.3.x, répétition de la migration sur la sauvegarde de prod du 2026-10-28 (208 films, tous copiés à l'identique), audit. La bascule suit le déroulé `docs/bascule-2.0.md`, sur l'accord explicite du mainteneur.
-- **En attente du mainteneur** : Google (morceau 4) avant ou après la bascule. Le déroulé (§1.1) demande l'un des deux : « 2.0.0 livrée sans Google », décision notée ici, ou morceau 4 fusionné dans `release/2.0.0`. Rien n'est décidé à ce jour.
+- **2.0.0 livrée sans Google** (décision du mainteneur, 2026-11-03) : les passkeys suffisent à la bascule ; le morceau 4 (Google) viendra après, dans une version 2.x, sans rupture (un chemin de plus dans `AUTH_PATHS`, ses identifiants OAuth dans Vercel, le test sur un vrai iPhone). D'ici là, la dernière passkey ne se supprime pas.
 
 ## 14. Tests
 
