@@ -1,6 +1,8 @@
 # Audit de sécurité · WeWatch 2.0
 
 > Note du 2026-11-03 : le déroulé de bascule cité ici (`docs/bascule-2.0.md`) et les scripts de répétition ont été retirés après la bascule ; la restauration est dans `docs/restauration.md`, et le code propriétaire ne fait plus rejoindre aucun groupe.
+>
+> Note du 2026-11-03 (constat complémentaire, gravité basse, corrigé) : `requireSession: false` (`src/auth/passkey-signup.ts`, nécessaire à l'inscription) coupait le contrôle de « session récente » du plugin passkey (`freshSessionMiddleware`). Une session de 59 jours (elles durent 60) pouvait donc ajouter une clé, supprimer celles du propriétaire ou supprimer le compte : il suffisait de tenir une minute un téléphone déverrouillé et connecté. Corrigé : ces trois opérations exigent une session ouverte depuis moins de 10 minutes (`RECENT_SIGN_IN_SECONDS`, `src/domain/recent-sign-in.ts`), âge lu en base (`createdAt`), jamais dans le cookie de cache. Ajouter une clé : 403 `SESSION_NOT_FRESH` dès `/passkey/generate-register-options` (hook `before`, `src/auth/passkey-registration.ts`) ; `deletePasskey` et `deleteAccount` : résultat `reason: "stale"` (`assertRecentlySignedIn`, `src/server/session.ts`). « MON COMPTE » redemande alors la clé d'accès de l'appareil, remplace la session de cet appareil puis rejoue l'opération. Non-régression : `tests/functional/recent-sign-in.test.ts`.
 
 - **Date** : 2026-11-02
 - **Périmètre** : branche `feat/v2-blindage` (= `release/2.0.0` + morceau 6), commit `8f1c1e6`. Code applicatif (`src/`), configuration (`next.config.ts`, `vercel.json`), scripts d'exploitation (`scripts/`), CI (`.github/workflows/ci.yml`), historique Git complet (`git log -p --all`).

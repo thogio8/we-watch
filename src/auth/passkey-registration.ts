@@ -1,10 +1,12 @@
 import type { BetterAuthPlugin } from "better-auth";
 import {
+  APIError,
   createAuthMiddleware,
   getAuthoritativeSessionFromCtx,
   getSessionFromCtx,
 } from "better-auth/api";
 import { deviceLabel } from "@/domain/device";
+import { isRecentSignIn, STALE_SESSION_CODE } from "@/domain/recent-sign-in";
 
 const OPTIONS_PATH = "/passkey/generate-register-options";
 const VERIFY_PATH = "/passkey/verify-registration";
@@ -38,17 +40,36 @@ function withoutSessionCookies(ctx: HookContext): Headers {
  * normally instead of being tied to the revoked one.
  */
 async function authoritativeSignIn(ctx: HookContext) {
-  const signedIn = (await getAuthoritativeSessionFromCtx(ctx)) !== null;
+  const session = await getAuthoritativeSessionFromCtx(ctx);
+  const signedIn = session !== null;
   return {
+    session,
     signedIn,
     request: signedIn ? {} : { headers: withoutSessionCookies(ctx) },
   };
 }
 
-/** Register options are made for the session the database vouches for. */
-const signedOutWhenRevoked = createAuthMiddleware(async (ctx) => ({
-  context: (await authoritativeSignIn(ctx)).request,
-}));
+/**
+ * Register options are made for the session the database vouches for, and
+ * only a recent one adds a passkey: the plugin's own freshness check is off
+ * with `requireSession: false` (passkeySignup), and a phone left unlocked
+ * must not let anyone add theirs. The client recognises the refusal
+ * (isStaleSession), asks the device lock again, then retries. A signup has
+ * no session and is not concerned.
+ */
+const recentSessionOptions = createAuthMiddleware(async (ctx) => {
+  const { session, request } = await authoritativeSignIn(ctx);
+  if (
+    session !== null &&
+    !isRecentSignIn(new Date(session.session.createdAt), new Date())
+  ) {
+    throw new APIError("FORBIDDEN", {
+      message: "Session is not fresh",
+      code: STALE_SESSION_CODE,
+    });
+  }
+  return { context: request };
+});
 
 const isCreationOptions = (value: unknown): value is CreationOptions =>
   typeof value === "object" &&
@@ -105,7 +126,7 @@ export const passkeyRegistration = {
     before: [
       {
         matcher: (ctx) => ctx.path === OPTIONS_PATH,
-        handler: signedOutWhenRevoked,
+        handler: recentSessionOptions,
       },
       {
         matcher: (ctx) => ctx.path === VERIFY_PATH,

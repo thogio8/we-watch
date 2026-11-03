@@ -5,11 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AddPasskey } from "./AddPasskey";
 
 const addPasskey = vi.fn();
+const signInPasskey = vi.fn();
 const refresh = vi.fn();
+const revoke = vi.fn();
 
 vi.mock("@/features/signin/authClient", () => ({
   authClient: {
     passkey: { addPasskey: (...args: unknown[]) => addPasskey(...args) },
+    signIn: { passkey: () => signInPasskey() },
   },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -19,6 +22,8 @@ const onAdded = vi.fn();
 
 beforeEach(() => {
   addPasskey.mockReset();
+  signInPasskey.mockReset().mockResolvedValue({ data: {}, error: null });
+  revoke.mockReset().mockResolvedValue(true);
   refresh.mockReset();
   onAdded.mockReset();
   vi.stubGlobal("PublicKeyCredential", class {});
@@ -29,7 +34,12 @@ afterEach(() => {
 });
 
 function renderAdd() {
-  render(<AddPasskey onAdded={onAdded} />);
+  render(
+    <AddPasskey
+      onAdded={onAdded}
+      reconfirm={{ sessionId: "old-session", revoke }}
+    />,
+  );
   return userEvent.setup();
 }
 
@@ -94,6 +104,58 @@ describe("AddPasskey", () => {
       "TROP D’ESSAIS. RÉESSAIE DANS UN MOMENT.",
     );
     expect(onAdded).not.toHaveBeenCalled();
+  });
+
+  it("session trop ancienne (403) : la clé d’accès est redemandée, l’ancienne session déconnectée, puis la clé ajoutée sans recliquer", async () => {
+    addPasskey
+      .mockResolvedValueOnce({
+        data: null,
+        error: { status: 403, code: "SESSION_NOT_FRESH" },
+      })
+      .mockResolvedValueOnce({ data: { id: "pk-3" }, error: null });
+    const user = renderAdd();
+
+    await user.click(screen.getByRole("button", { name: ADD }));
+
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(signInPasskey).toHaveBeenCalledOnce();
+    expect(revoke).toHaveBeenCalledExactlyOnceWith("old-session");
+    expect(addPasskey).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("status")).toHaveTextContent("CLÉ AJOUTÉE");
+  });
+
+  it("session trop ancienne, clé d’accès annulée : « CONFIRME… », rien n’est rejoué", async () => {
+    addPasskey.mockResolvedValue({
+      data: null,
+      error: { status: 403, code: "SESSION_NOT_FRESH" },
+    });
+    signInPasskey.mockResolvedValue({ data: null, error: { code: "X" } });
+    const user = renderAdd();
+
+    await user.click(screen.getByRole("button", { name: ADD }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "CONFIRME AVEC TA CLÉ D’ACCÈS POUR CONTINUER",
+    );
+    expect(addPasskey).toHaveBeenCalledOnce();
+    expect(revoke).not.toHaveBeenCalled();
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+
+  it("session trop ancienne, la déconnexion de l’ancienne échoue : « VALIDATION ANNULÉE »", async () => {
+    addPasskey.mockResolvedValue({
+      data: null,
+      error: { status: 403, code: "SESSION_NOT_FRESH" },
+    });
+    revoke.mockRejectedValue(new Error("Failed to fetch"));
+    const user = renderAdd();
+
+    await user.click(screen.getByRole("button", { name: ADD }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "VALIDATION ANNULÉE, RÉESSAIE",
+    );
+    expect(screen.getByRole("button", { name: ADD })).toBeEnabled();
   });
 
   it("un navigateur sans clés d’accès voit le message existant à la place d’« AJOUTER »", () => {

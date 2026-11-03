@@ -9,6 +9,9 @@ import { PasskeyList } from "./PasskeyList";
 type Remove = (id: string) => Promise<DeletePasskeyResult>;
 
 const refresh = vi.fn();
+const signInPasskey = vi.fn();
+const revoke = vi.fn();
+const reconfirm = { sessionId: "old-session", revoke };
 
 vi.mock("./AddPasskey", () => ({
   AddPasskey: ({ onAdded }: { onAdded: () => void }) => (
@@ -18,6 +21,9 @@ vi.mock("./AddPasskey", () => ({
   ),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+vi.mock("@/features/signin/authClient", () => ({
+  authClient: { signIn: { passkey: () => signInPasskey() } },
+}));
 
 const IPHONE: MyPasskey = {
   id: "pk-1",
@@ -29,6 +35,8 @@ const LAST = "GARDE AU MOINS UNE CLÉ D’ACCÈS";
 
 beforeEach(() => {
   refresh.mockReset();
+  signInPasskey.mockReset().mockResolvedValue({ data: {}, error: null });
+  revoke.mockReset().mockResolvedValue(true);
 });
 
 /**
@@ -42,11 +50,17 @@ function renderList(
 ) {
   const remove = vi.fn(answer);
   const { rerender } = render(
-    <PasskeyList passkeys={passkeys} remove={remove} />,
+    <PasskeyList passkeys={passkeys} remove={remove} reconfirm={reconfirm} />,
   );
   if (afterRefresh) {
     refresh.mockImplementation(() =>
-      rerender(<PasskeyList passkeys={afterRefresh} remove={remove} />),
+      rerender(
+        <PasskeyList
+          passkeys={afterRefresh}
+          remove={remove}
+          reconfirm={reconfirm}
+        />,
+      ),
     );
   }
   return { user: userEvent.setup(), remove };
@@ -159,6 +173,58 @@ describe("PasskeyList", () => {
     ).not.toBeInTheDocument();
     expect(refresh).not.toHaveBeenCalled();
     expect(row("iPhone · Safari")).toBeVisible();
+  });
+
+  it("session trop ancienne : la clé d’accès est redemandée, l’ancienne session déconnectée, puis la suppression rejouée sans recliquer", async () => {
+    const answers: DeletePasskeyResult[] = [
+      { ok: false, reason: "stale" },
+      { ok: true },
+    ];
+    const { user, remove } = renderList([IPHONE, MAC], async () =>
+      answers.shift()!,
+    );
+
+    await removeIPhone(user);
+
+    expect(signInPasskey).toHaveBeenCalledOnce();
+    expect(revoke).toHaveBeenCalledExactlyOnceWith("old-session");
+    expect(remove).toHaveBeenCalledTimes(2);
+    expect(remove).toHaveBeenLastCalledWith("pk-1");
+    expect(screen.queryByRole("group")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(title()).toHaveFocus();
+  });
+
+  it("session trop ancienne, clé d’accès annulée : « CONFIRME… » dans le ticket, qui reste ouvert, rien n’est rejoué", async () => {
+    signInPasskey.mockResolvedValue({ data: null, error: { code: "X" } });
+    const { user, remove } = renderList([IPHONE, MAC], async () => ({
+      ok: false,
+      reason: "stale",
+    }));
+
+    await removeIPhone(user);
+
+    const ticket = screen.getByRole("group");
+    expect(within(ticket).getByRole("alert")).toHaveTextContent(
+      "CONFIRME AVEC TA CLÉ D’ACCÈS POUR CONTINUER",
+    );
+    expect(remove).toHaveBeenCalledOnce();
+    expect(revoke).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("refusée encore après la clé d’accès : « CONFIRME… » au-dessus de la liste, sans rechargement", async () => {
+    const { user } = renderList([IPHONE, MAC], async () => ({
+      ok: false,
+      reason: "stale",
+    }));
+
+    await removeIPhone(user);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "CONFIRME AVEC TA CLÉ D’ACCÈS POUR CONTINUER",
+    );
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("une suppression réussie efface le message précédent", async () => {

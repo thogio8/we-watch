@@ -2,17 +2,25 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AccountResult } from "./actions";
+import type { DeleteAccountResult } from "./actions";
 import { DeleteAccount } from "./DeleteAccount";
 
-type Remove = (formData: FormData) => Promise<AccountResult>;
+type Remove = (formData: FormData) => Promise<DeleteAccountResult>;
 
 const replace = vi.fn();
+const signInPasskey = vi.fn();
+const revoke = vi.fn();
+
+vi.mock("@/features/signin/authClient", () => ({
+  authClient: { signIn: { passkey: () => signInPasskey() } },
+}));
 const QUESTION = "SUPPRIMER TON COMPTE\u00A0?";
 const CONFIRM = "SUPPRIMER DÉFINITIVEMENT";
 
 beforeEach(() => {
   replace.mockReset();
+  signInPasskey.mockReset().mockResolvedValue({ data: {}, error: null });
+  revoke.mockReset().mockResolvedValue(true);
   vi.stubGlobal("location", { replace });
 });
 
@@ -23,7 +31,13 @@ afterEach(() => {
 async function openTicket(answer: Remove = async () => ({ ok: true })) {
   const remove = vi.fn(answer);
   const user = userEvent.setup();
-  render(<DeleteAccount name="Léa" remove={remove} />);
+  render(
+    <DeleteAccount
+      name="Léa"
+      remove={remove}
+      reconfirm={{ sessionId: "old-session", revoke }}
+    />,
+  );
   await user.click(
     screen.getByRole("button", { name: "SUPPRIMER MON COMPTE" }),
   );
@@ -103,6 +117,48 @@ describe("DeleteAccount", () => {
       await user.click(confirm());
 
       expect(screen.getByRole("alert")).toHaveTextContent(error);
+      expect(replace).not.toHaveBeenCalled();
+    },
+  );
+
+  it("session trop ancienne : la clé d’accès est redemandée, l’ancienne session déconnectée, puis la suppression rejouée sans recliquer", async () => {
+    const answers: DeleteAccountResult[] = [
+      { ok: false, reason: "stale" },
+      { ok: true },
+    ];
+    const { user, remove } = await openTicket(async () => answers.shift()!);
+
+    await user.type(typed(), "Léa");
+    await user.click(confirm());
+
+    expect(signInPasskey).toHaveBeenCalledOnce();
+    expect(revoke).toHaveBeenCalledExactlyOnceWith("old-session");
+    expect(remove).toHaveBeenCalledTimes(2);
+    expect(remove.mock.calls[1]?.[0].get("name")).toBe("Léa");
+    expect(replace).toHaveBeenCalledWith("/connexion");
+  });
+
+  it.each([
+    ["la clé d’accès annulée", { data: null, error: { code: "X" } }, 1],
+    ["refusée encore après la clé d’accès", { data: {}, error: null }, 2],
+  ])(
+    "session trop ancienne, %s : « CONFIRME… », le ticket et le prénom tapé restent",
+    async (_, signedIn, calls) => {
+      signInPasskey.mockResolvedValue(signedIn);
+      const { user, remove } = await openTicket(async () => ({
+        ok: false,
+        reason: "stale",
+      }));
+
+      await user.type(typed(), "Léa");
+      await user.click(confirm());
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "CONFIRME AVEC TA CLÉ D’ACCÈS POUR CONTINUER",
+      );
+      expect(remove).toHaveBeenCalledTimes(calls);
+      expect(typed()).toHaveValue("Léa");
+      expect(confirm()).toBeEnabled();
       expect(replace).not.toHaveBeenCalled();
     },
   );

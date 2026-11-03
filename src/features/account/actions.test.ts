@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { withinLimit } from "@/server/rate-limit";
 import { revalidateListPages } from "@/server/revalidate";
-import { assertSignedIn } from "@/server/session";
+import { assertRecentlySignedIn, assertSignedIn } from "@/server/session";
 import { signOutThisDevice } from "@/server/sign-out";
 import { expectLimitedFirst } from "../../../tests/helpers/limited";
 import {
@@ -57,6 +57,13 @@ const aForm = (name: unknown) => {
   return form;
 };
 
+/** This session was opened more than 10 minutes ago. */
+const stale = () =>
+  vi.mocked(assertRecentlySignedIn).mockResolvedValueOnce({
+    ...LEA,
+    recent: false,
+  });
+
 const signedOut = () =>
   vi.mocked(assertSignedIn).mockRejectedValue(new Error("not signed in"));
 
@@ -105,6 +112,18 @@ describe("deletePasskey", () => {
 
     await expect(deletePasskey("p-1")).rejects.toThrow("not signed in");
     expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("session trop ancienne : « stale », avant la limite et la validation, sans rien supprimer", async () => {
+    stale();
+
+    await expect(deletePasskey("")).resolves.toEqual({
+      ok: false,
+      reason: "stale",
+    });
+    expect(withinLimit).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it("trop d’essais : « too_many » après la session, avant de valider l’id, sans rien supprimer", () =>
@@ -247,6 +266,18 @@ describe("deleteAccount", () => {
 
     await expect(deleteAccount(aForm("Léa"))).rejects.toThrow("not signed in");
     expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("session trop ancienne : « stale », avant la limite, même avec le bon prénom, sans rien supprimer", async () => {
+    stale();
+
+    await expect(deleteAccount(aForm("Léa"))).resolves.toEqual({
+      ok: false,
+      reason: "stale",
+    });
+    expect(withinLimit).not.toHaveBeenCalled();
+    expect(deleteUser).not.toHaveBeenCalled();
+    expect(signOutThisDevice).not.toHaveBeenCalled();
   });
 
   it("trop d’essais : refusé après la session, même avec le bon prénom, sans rien supprimer", () =>

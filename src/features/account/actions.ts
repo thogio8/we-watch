@@ -8,27 +8,41 @@ import { NAME_ERROR } from "@/features/signin/messages";
 import { getAccount, getAuth } from "@/server/container";
 import { withinLimit } from "@/server/rate-limit";
 import { revalidateListPages } from "@/server/revalidate";
-import { assertSignedIn } from "@/server/session";
+import { assertRecentlySignedIn, assertSignedIn } from "@/server/session";
 import { signOutThisDevice } from "@/server/sign-out";
 import { assertId } from "@/server/validate";
 import { WRONG_NAME } from "./messages";
 
 export type AccountResult = { ok: true } | { ok: false; error: string };
 
+/**
+ * Refused: this session was opened too long ago for something that could
+ * lock me out (assertRecentlySignedIn). The client asks the device lock
+ * again, then replays the action (features/account/recent-sign-in.ts).
+ */
+type Stale = { ok: false; reason: "stale" };
+
 export type DeletePasskeyResult =
-  { ok: true } | { ok: false; reason: "last" | "not_found" | "too_many" };
+  | { ok: true }
+  | { ok: false; reason: "last" | "not_found" | "too_many" }
+  | Stale;
+
+export type DeleteAccountResult = AccountResult | Stale;
 
 const TOO_MANY: AccountResult = { ok: false, error: TOO_MANY_ATTEMPTS };
+const STALE: Stale = { ok: false, reason: "stale" };
 
 /**
  * « SUPPRIMER » a passkey of mine. Both refusals are expected and told apart
  * by the client: the last one is kept; someone else's, an unknown one or one
  * already deleted (another tab) is "not_found", past the attempt limit
- * "too_many". No write either way; only an unexpected failure (network,
- * database) throws.
+ * "too_many", a session not recent enough "stale" (checked before the
+ * limit: the replay after the device lock is the attempt that counts). No
+ * write either way; only an unexpected failure (network, database) throws.
  */
 export async function deletePasskey(id: string): Promise<DeletePasskeyResult> {
-  const { userId } = await assertSignedIn();
+  const { userId, recent } = await assertRecentlySignedIn();
+  if (!recent) return STALE;
   if (!(await withinLimit("delete-passkey", userId))) {
     return { ok: false, reason: "too_many" };
   }
@@ -82,12 +96,14 @@ export async function renameMe(formData: FormData): Promise<AccountResult> {
 /**
  * « SUPPRIMER DÉFINITIVEMENT », once my name is typed (confirmsName): my account and
  * everything mine alone (db/account-deletion.ts), then this device is
- * signed out; the client goes to /connexion.
+ * signed out; the client goes to /connexion. A session not recent enough is
+ * refused ("stale"), before the limit, as for deletePasskey.
  */
 export async function deleteAccount(
   formData: FormData,
-): Promise<AccountResult> {
-  const { userId, name } = await assertSignedIn();
+): Promise<DeleteAccountResult> {
+  const { userId, name, recent } = await assertRecentlySignedIn();
+  if (!recent) return STALE;
   if (!(await withinLimit("delete-account", userId))) return TOO_MANY;
   if (!confirmsName(field(formData, "name"), name)) {
     return { ok: false, error: WRONG_NAME };

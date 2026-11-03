@@ -12,3 +12,10 @@ export const getCurrentUser = vi.fn(
   async (): Promise<CurrentUser | null> => LEA,
 );
 export const assertSignedIn = vi.fn(async (): Promise<CurrentUser> => LEA);
+// Whoever assertSignedIn answers (or its refusal), signed in recently.
+export const assertRecentlySignedIn = vi.fn(
+  async (): Promise<CurrentUser & { recent: boolean }> => ({
+    ...(await assertSignedIn()),
+    recent: true,
+  }),
+);

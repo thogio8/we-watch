@@ -4,7 +4,11 @@ import { SignOutButton } from "@/features/signin/SignOutButton";
 import { Headline } from "@/ui/Headline";
 import sheet from "@/ui/Sheet.module.css";
 import styles from "./Account.module.css";
-import type { AccountResult, DeletePasskeyResult } from "./actions";
+import type {
+  AccountResult,
+  DeleteAccountResult,
+  DeletePasskeyResult,
+} from "./actions";
 import { DeleteAccount } from "./DeleteAccount";
 import { DeviceList } from "./DeviceList";
 import type { MyPasskey, MySession } from "./load";
@@ -16,7 +20,7 @@ interface AccountActions {
   rename: (formData: FormData) => Promise<AccountResult>;
   removePasskey: (id: string) => Promise<DeletePasskeyResult>;
   revokeSession: (id: string) => Promise<boolean>;
-  deleteAccount: (formData: FormData) => Promise<AccountResult>;
+  deleteAccount: (formData: FormData) => Promise<DeleteAccountResult>;
 }
 
 interface AccountScreenProps {
@@ -39,17 +43,30 @@ export function AccountScreen({
   sessions,
   actions,
 }: AccountScreenProps) {
+  // Asked again for an old session: this device's one is then replaced.
+  const reconfirm = {
+    sessionId: sessions.find(({ current }) => current)?.id,
+    revoke: actions.revokeSession,
+  };
   return (
     <main className={sheet.screen}>
       <Headline lines={TITLE} size="medium" />
       <div className={sheet.sheet}>
         <NameForm name={name} rename={actions.rename} />
       </div>
-      <PasskeyList passkeys={passkeys} remove={actions.removePasskey} />
+      <PasskeyList
+        passkeys={passkeys}
+        remove={actions.removePasskey}
+        reconfirm={reconfirm}
+      />
       <DeviceList sessions={sessions} revoke={actions.revokeSession} />
       <div className={styles.end}>
         <SignOutButton />
-        <DeleteAccount name={name} remove={actions.deleteAccount} />
+        <DeleteAccount
+          name={name}
+          remove={actions.deleteAccount}
+          reconfirm={reconfirm}
+        />
       </div>
     </main>
   );

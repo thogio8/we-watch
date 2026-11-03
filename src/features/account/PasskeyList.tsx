@@ -12,18 +12,26 @@ import { AddPasskey } from "./AddPasskey";
 import { ListSection } from "./ListSection";
 import {
   addedOn,
+  CONFIRM_WITH_PASSKEY,
   GONE_PASSKEY,
   LAST_PASSKEY,
   REMOVE_PASSKEY_FAILED,
   REMOVE_PASSKEY_WARNING,
   removePasskeyQuestion,
 } from "./messages";
+import {
+  confirmThenReplay,
+  refusedAsStale,
+  type Reconfirm,
+} from "./recent-sign-in";
 import { useListNotice } from "./useListNotice";
 
 const REFUSALS = {
   last: LAST_PASSKEY,
   not_found: GONE_PASSKEY,
   too_many: TOO_MANY_ATTEMPTS,
+  // Only if the replay, after the device lock, were refused again.
+  stale: CONFIRM_WITH_PASSKEY,
 } as const;
 
 interface PasskeyRowProps {
@@ -31,6 +39,7 @@ interface PasskeyRowProps {
   /** The only one left: kept, so no « SUPPRIMER ». */
   last: boolean;
   remove: (id: string) => Promise<DeletePasskeyResult>;
+  reconfirm: Reconfirm;
   /** The outcome to show above the list (null: none), the row may go. */
   onSettled: (notice: string | null) => void;
   onDone: () => void;
@@ -40,6 +49,7 @@ function PasskeyRow({
   passkey,
   last,
   remove,
+  reconfirm,
   onSettled,
   onDone,
 }: PasskeyRowProps) {
@@ -47,7 +57,14 @@ function PasskeyRow({
   const nameId = useId();
   const removeIt = async () => {
     // A throw (network, database) is left to the ticket: REMOVE_PASSKEY_FAILED.
-    const result = await remove(passkey.id);
+    const confirmed = await confirmThenReplay(
+      () => remove(passkey.id),
+      refusedAsStale,
+      reconfirm,
+    );
+    // The device lock not given: the ticket stays open, with why.
+    if (!confirmed.done) return confirmed.error;
+    const result = confirmed.outcome;
     if (result.ok) {
       onSettled(null);
       return;
@@ -55,8 +72,10 @@ function PasskeyRow({
     onSettled(REFUSALS[result.reason]);
     // Refused (the last one, another tab) or gone already: the list is
     // stale, and reloading it may take this row along with the ticket.
-    // Past the attempt limit, nothing changed.
-    if (result.reason !== "too_many") router.refresh();
+    // Past the attempt limit (or stale), nothing changed.
+    if (result.reason === "last" || result.reason === "not_found") {
+      router.refresh();
+    }
   };
   return (
     <li className={sheet.row} aria-labelledby={nameId}>
@@ -87,10 +106,12 @@ function PasskeyRow({
 interface PasskeyListProps {
   passkeys: MyPasskey[];
   remove: (id: string) => Promise<DeletePasskeyResult>;
+  /** An old session asks the device lock again (confirmThenReplay). */
+  reconfirm: Reconfirm;
 }
 
 /** « TES CLÉS D’ACCÈS »: each one, then a new one from this device. */
-export function PasskeyList({ passkeys, remove }: PasskeyListProps) {
+export function PasskeyList({ passkeys, remove, reconfirm }: PasskeyListProps) {
   const { title, notice, setNotice, focusTitle } = useListNotice();
   const last = passkeys.length === 1;
   return (
@@ -104,7 +125,7 @@ export function PasskeyList({ passkeys, remove }: PasskeyListProps) {
             <p className={styles.last}>{LAST_PASSKEY}</p>
           )}
           {/* A new key settles any earlier outcome (e.g. « GARDE AU MOINS… »). */}
-          <AddPasskey onAdded={() => setNotice(null)} />
+          <AddPasskey onAdded={() => setNotice(null)} reconfirm={reconfirm} />
         </>
       }
     >
@@ -114,6 +135,7 @@ export function PasskeyList({ passkeys, remove }: PasskeyListProps) {
           passkey={passkey}
           last={last}
           remove={remove}
+          reconfirm={reconfirm}
           onSettled={setNotice}
           // The row may go with its button: the focus goes to the title.
           onDone={focusTitle}
