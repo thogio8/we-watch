@@ -154,7 +154,12 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: echo "id=$(bash scripts/vercel-prod.sh current)" >> "$GITHUB_OUTPUT"
+        # Never an empty id: the rollback step below needs it. Unknown → red
+        # here, before anything is put online.
+        run: |
+          id="$(bash scripts/vercel-prod.sh current)"
+          [ -n "$id" ] || { echo "✕ current production unknown"; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
 
       - name: Put the new deployment online
         env:

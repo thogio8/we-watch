@@ -19,6 +19,8 @@ let states: ({ production: string; job: AliasJob } | "blip")[];
 let promoteStatus: number;
 let promoteBody: unknown;
 let polls: number;
+/** The deployment lookup never answers (a stalled Vercel API). */
+let lookupHangs: boolean;
 let server: Server;
 let api: string;
 
@@ -26,6 +28,7 @@ beforeEach(async () => {
   promoteStatus = 202;
   promoteBody = {};
   polls = 0;
+  lookupHangs = false;
   states = [
     { production: NEW, job: { toDeploymentId: NEW, jobStatus: "succeeded" } },
   ];
@@ -36,7 +39,9 @@ beforeEach(async () => {
     const path = request.url?.split("?")[0] ?? "";
     const send = (status: number, body: unknown) =>
       response.writeHead(status).end(JSON.stringify(body));
-    if (path.startsWith("/v13/deployments/")) return send(200, { id: NEW });
+    if (path.startsWith("/v13/deployments/")) {
+      return lookupHangs ? undefined : send(200, { id: NEW });
+    }
     if (path === `/v10/projects/prj_1/promote/${NEW}`) {
       return send(promoteStatus, promoteBody);
     }
@@ -56,9 +61,12 @@ beforeEach(async () => {
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   api = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterEach(() => new Promise((resolve) => server.close(resolve)));
+afterEach(() => {
+  server.closeAllConnections();
+  return new Promise((resolve) => server.close(resolve));
+});
 
-async function promote() {
+async function run(...args: string[]) {
   const env = {
     ...process.env,
     VERCEL_API_URL: api,
@@ -67,11 +75,12 @@ async function promote() {
     VERCEL_PROJECT_ID: "prj_1",
     VERCEL_PROMOTE_TIMEOUT: "2",
     VERCEL_POLL_INTERVAL: "0.05",
+    VERCEL_MAX_TIME: "1",
   };
   try {
     const { stdout } = await promisify(execFile)(
       "bash",
-      ["scripts/vercel-prod.sh", "promote", `https://we-watch-abc.vercel.app`],
+      ["scripts/vercel-prod.sh", ...args],
       { env },
     );
     return { code: 0, printed: stdout };
@@ -80,6 +89,8 @@ async function promote() {
     return { code: Number(code), printed: `${stdout}${stderr}` };
   }
 }
+
+const promote = () => run("promote", "https://we-watch-abc.vercel.app");
 
 const pending = {
   production: OLD,
@@ -187,6 +198,48 @@ describe("mise en ligne d'un déploiement (vercel-prod.sh promote)", () => {
 
     expect(code).toBe(1);
     expect(printed).toContain(`✕ promote ${NEW} answered 403`);
+    expect(polls).toBe(0);
+    expect(printed).not.toContain(TOKEN);
+  });
+});
+
+describe("le déploiement en prod avant la mise en ligne (vercel-prod.sh current)", () => {
+  it("affiche l'id du déploiement en prod", async () => {
+    const { code, printed } = await run("current");
+
+    expect(code).toBe(0);
+    expect(printed.trim()).toBe(NEW);
+  });
+
+  it("l'API répond une erreur : rouge, sans corps ni jeton (le retour arrière en dépend)", async () => {
+    states = ["blip"];
+
+    const { code, printed } = await run("current");
+
+    expect(code).toBe(1);
+    expect(printed).toContain("✕ current production");
+    expect(printed).not.toContain("Bad Gateway");
+    expect(printed).not.toContain(TOKEN);
+  });
+
+  it("le projet ne dit aucun déploiement en prod : rouge, jamais un id vide", async () => {
+    states = [{ production: "", job: null }];
+
+    const { code, printed } = await run("current");
+
+    expect(code).toBe(1);
+    expect(printed).toContain("✕ current production");
+  });
+});
+
+describe("une API Vercel bloquée (vercel-prod.sh promote)", () => {
+  it("la recherche du déploiement ne répond pas : rouge à l'échéance de la requête", async () => {
+    lookupHangs = true;
+
+    const { code, printed } = await promote();
+
+    expect(code).toBe(1);
+    expect(printed).toContain("✕ deployment we-watch-abc.vercel.app");
     expect(polls).toBe(0);
     expect(printed).not.toContain(TOKEN);
   });
