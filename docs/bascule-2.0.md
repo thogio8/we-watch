@@ -6,6 +6,7 @@ Ces règles valent pour toute la page :
 
 - **La prod ne se migre et ne se déploie que par la CI** (push sur `main`). Jamais `vercel --prod`, jamais `npm run db:migrate` ni un SQL lancé à la main sur la base de prod.
 - **Aucun secret à l'écran ni dans un fichier suivi** : les commandes ci-dessous les lisent par une invite masquée (`read -rs`), les passent d'une commande à l'autre par un tube ou une variable (`openssl … |`, `"$(turso …)"`), ou les comparent sans les afficher. Jamais un secret en argument de commande (il resterait dans l'historique).
+- **Un accès qui échoue arrête tout** : `x="$(turso …)"` ne s'arrête pas seul sur un échec (et `export x="$(…)"` masque même le code d'erreur), ce qui laisserait une valeur vide filer vers la commande suivante. Les blocs entre `( … )` tournent donc dans un sous-shell en `set -euo pipefail` : la première commande qui échoue arrête le bloc (pas le terminal), et ses variables, secrets compris, disparaissent avec lui. Hors d'un tel bloc, une ligne `✓ …` / `✕ …` vérifie les valeurs avant de continuer.
 - Les commandes se lancent depuis la racine du dépôt. Celles qui visent l'adresse de prod commencent par la lire :
 
   ```bash
@@ -233,9 +234,15 @@ Le mainteneur l'approuve et la lance lui-même.
 - [ ] Facultatif : la valeur de `PRAGMA foreign_keys` sur Turso, en lecture seule. Le code ne compte plus sur les cascades : 0 comme 1 conviennent, c'est pour la noter en §0.
 
   ```bash
-  export DATABASE_AUTH_TOKEN="$(turso db tokens create <base> --read-only --expiration 1h)"
-  DATABASE_URL="$(turso db show <base> --url)" node scripts/rehearse-migration.mjs --probe
-  unset DATABASE_AUTH_TOKEN
+  (
+    set -euo pipefail
+    trap 'echo "✕ arrêt : la commande ci-dessus a échoué" >&2' ERR
+    base=<base>
+    url="$(turso db show "$base" --url)"
+    tok="$(turso db tokens create "$base" --read-only --expiration 1h)"
+    [ -n "$url" ] && [ -n "$tok" ] || { echo "✕ accès Turso non obtenus"; exit 1; }
+    DATABASE_URL="$url" DATABASE_AUTH_TOKEN="$tok" node scripts/rehearse-migration.mjs --probe
+  )
   ```
 
   Attendu : `foreign_keys: 0` ou `foreign_keys: 1`, rien d'autre. Le jeton expire seul au bout d'une heure.
@@ -312,10 +319,13 @@ La restauration n'a été testée que sur des fichiers SQLite locaux. **Conseill
 
    ```bash
    turso db create we-watch-<date> --location aws-eu-west-1
-   export DATABASE_URL="$(turso db show we-watch-<date> --url)"
-   export DATABASE_AUTH_TOKEN="$(turso db tokens create we-watch-<date>)"
+   DATABASE_URL="$(turso db show we-watch-<date> --url)" && export DATABASE_URL
+   DATABASE_AUTH_TOKEN="$(turso db tokens create we-watch-<date>)" && export DATABASE_AUTH_TOKEN
    read -rs BACKUP_KEY && export BACKUP_KEY   # la clé en place le jour de l'artefact, depuis le gestionnaire de mots de passe
+   [[ "$DATABASE_URL" == libsql://* && -n "$DATABASE_AUTH_TOKEN" && -n "$BACKUP_KEY" ]] && echo "✓ accès prêts" || echo "✕ un accès manque : ne pas continuer, refaire ces lignes"
    ```
+
+   Attendu : `✓ accès prêts`. Ces variables servent jusqu'à l'étape 4 : rester dans **ce** terminal.
 
    Puis, **selon la sauvegarde**, avant toute migration de la base neuve :
    - **D'avant les groupes** : le `movies.json` de la 1.3.x, ou le `db.json.enc` **du jour de la bascule** (sauvegardé avant la migration, il n'a que `movies`). `restore-db` la refuserait (« sauvegarde d'avant 2.0 »). La répétition migre elle-même la base, **ne pas** lancer `npm run db:migrate` :
@@ -342,12 +352,21 @@ La restauration n'a été testée que sur des fichiers SQLite locaux. **Conseill
 4. [ ] Brancher l'appli sur la nouvelle base, dans les secrets GitHub **et** dans Vercel Production, sans rien afficher :
 
    ```bash
-   for name in DATABASE_URL DATABASE_AUTH_TOKEN; do
-     printf %s "${!name}" | gh secret set "$name"
-     npx --no -- vercel env rm "$name" production --yes
-     printf %s "${!name}" | npx --no -- vercel env add "$name" production
-   done
+   (
+     set -euo pipefail
+     trap 'echo "✕ arrêt : la commande ci-dessus a échoué" >&2' ERR
+     : "${DATABASE_URL:?absente, étape 2 à refaire dans ce terminal}" "${DATABASE_AUTH_TOKEN:?absent, étape 2 à refaire dans ce terminal}"
+     [[ "$DATABASE_URL" == libsql://* ]] || { echo "✕ DATABASE_URL n'est pas une base Turso : rien n'est changé"; exit 1; }
+     for name in DATABASE_URL DATABASE_AUTH_TOKEN; do
+       printf %s "${!name}" | gh secret set "$name"
+       npx --no -- vercel env rm "$name" production --yes
+       printf %s "${!name}" | npx --no -- vercel env add "$name" production
+     done
+     echo "✓ GitHub et Vercel branchés sur la nouvelle base"
+   )
    ```
+
+   Sans les deux variables (nouveau terminal, étape 2 en échec), le bloc s'arrête avant d'avoir rien changé : il ne retire jamais les valeurs de prod pour en écrire des vides. Les messages nomment la variable, jamais sa valeur.
 
 5. [ ] Relancer la CI pour reconstruire et remettre en ligne avec ce nouvel environnement : `gh workflow run ci.yml --ref main`, puis la suivre (§2).
 6. [ ] Les sessions ne sont jamais sauvegardées : chacun se reconnecte avec sa passkey (elles sont restaurées).
