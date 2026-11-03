@@ -131,6 +131,19 @@ jobs:
       # binding) work without them.
       - run: npm ci --ignore-scripts
 
+      - name: Remember the deployment in production
+        id: previous
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        # Never an empty id: the rollback step below needs it. Unknown → red
+        # here, first, before anything is backed up, migrated or put online.
+        run: |
+          id="$(bash scripts/vercel-prod.sh current)"
+          [ -n "$id" ] || { echo "✕ current production unknown"; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
       # Encrypted with BACKUP_KEY, set on this step only. Missing or malformed
       # key: this step fails, so nothing is migrated nor deployed.
       - name: Backup every app table (encrypted)
@@ -151,19 +164,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
         run: npm run db:migrate
-
-      - name: Remember the deployment in production
-        id: previous
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        # Never an empty id: the rollback step below needs it. Unknown → red
-        # here, before anything is put online.
-        run: |
-          id="$(bash scripts/vercel-prod.sh current)"
-          [ -n "$id" ] || { echo "✕ current production unknown"; exit 1; }
-          echo "id=$id" >> "$GITHUB_OUTPUT"
 
       - name: Put the new deployment online
         env:

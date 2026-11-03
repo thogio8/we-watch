@@ -251,10 +251,11 @@ Le mainteneur l'approuve et la lance lui-même.
 
 `checks`, `e2e` et `build` en parallèle (`build` construit et envoie le déploiement 2.0 **sans le mettre en ligne**), puis, tous verts, `release` :
 
-1. **Sauvegarde chiffrée** de la base 1.3.x (`scripts/backup-db.mjs`) : `movies: <n> rows`, les autres tables `absent`, `saved to backup/db.json.enc (encrypted)`. Artefact `db-backup-<sha du commit de fusion>`, 90 jours. Sans `BACKUP_KEY` valide, le job s'arrête ici : rien n'est migré ni mis en ligne (régler le secret, puis `gh run rerun <id> --failed`).
-2. **Migration** `npm run db:migrate` : 0002 à 0010 (comptes, groupes, copie de la liste dans « NOUS DEUX », invitations, index, limites de tentatives). Additive : `movies` reste intacte.
-3. **Mise en ligne** du déploiement construit (`scripts/vercel-prod.sh promote`), qui attend jusqu'à 3 minutes que la prod le serve : `✓ <id> in production`.
-4. **Fumée** (`scripts/smoke-prod.sh`), huit lignes attendues, dans cet ordre :
+1. **Le déploiement en prod** (la 1.3.x) est noté, pour le retour arrière (`scripts/vercel-prod.sh current`). Vercel ne répond pas : le job s'arrête là, avant la sauvegarde, et rien ne change (relancer avec `gh run rerun <id> --failed`).
+2. **Sauvegarde chiffrée** de la base 1.3.x (`scripts/backup-db.mjs`) : `movies: <n> rows`, les autres tables `absent`, `saved to backup/db.json.enc (encrypted)`. Artefact `db-backup-<sha du commit de fusion>`, 90 jours. Sans `BACKUP_KEY` valide, le job s'arrête ici : rien n'est migré ni mis en ligne (régler le secret, puis `gh run rerun <id> --failed`).
+3. **Migration** `npm run db:migrate` : 0002 à 0010 (comptes, groupes, copie de la liste dans « NOUS DEUX », invitations, index, limites de tentatives). Additive : `movies` reste intacte.
+4. **Mise en ligne** du déploiement construit (`scripts/vercel-prod.sh promote`), qui attend jusqu'à 3 minutes que la prod le serve : `✓ <id> in production`.
+5. **Fumée** (`scripts/smoke-prod.sh`), huit lignes attendues, dans cet ordre :
    - `✓ /connexion 200`
    - `✓ / 307 → /connexion`
    - `✓ /connexion content-security-policy with frame-ancestors 'none'`
@@ -263,8 +264,8 @@ Le mainteneur l'approuve et la lance lui-même.
    - `✓ /api/auth/ok 404`
    - `✓ POST from another origin 403`
    - `✓ purge and refresh {…"failed":[]…,"purged":{…}}`
-5. **Fumée rouge** : la CI remet le déploiement d'avant (la 1.3.x). Voir §5.1.
-6. Tout vert : le job `version` publie la **2.0.0** (release-please : PR fusionnée seule, tag, release). Jamais de version à la main.
+6. **Fumée rouge** : la CI remet le déploiement d'avant (la 1.3.x). Voir §5.1.
+7. Tout vert : le job `version` publie la **2.0.0** (release-please : PR fusionnée seule, tag, release). Jamais de version à la main.
 
 ## 3. Après la bascule
 
