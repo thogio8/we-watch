@@ -14,7 +14,7 @@ import { allRows } from "../helpers/rows";
 
 const KEY = randomBytes(32).toString("hex");
 const PRE_2_0 =
-  "sauvegarde d'avant 2.0 : utiliser rehearse-migration --db <cible>";
+  "sauvegarde d'avant 2.0 (1.3.x) : la restauration ne la prend pas";
 
 let dir: string;
 let source: string;

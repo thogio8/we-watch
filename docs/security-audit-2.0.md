@@ -1,5 +1,7 @@
 # Audit de sécurité · WeWatch 2.0
 
+> Note du 2026-11-03 : le déroulé de bascule cité ici (`docs/bascule-2.0.md`) et les scripts de répétition ont été retirés après la bascule ; la restauration est dans `docs/restauration.md`, et le code propriétaire ne fait plus rejoindre aucun groupe.
+
 - **Date** : 2026-11-02
 - **Périmètre** : branche `feat/v2-blindage` (= `release/2.0.0` + morceau 6), commit `8f1c1e6`. Code applicatif (`src/`), configuration (`next.config.ts`, `vercel.json`), scripts d'exploitation (`scripts/`), CI (`.github/workflows/ci.yml`), historique Git complet (`git log -p --all`).
 - **Auditeur** : relecteur indépendant, qui n'a rien implémenté de la 2.0. Lecture du code tel qu'il est, pas du diff.

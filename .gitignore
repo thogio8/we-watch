@@ -56,8 +56,8 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 
-# migration rehearsal (a copy of production data: never committed)
-/.rehearsal/
+# a downloaded backup to restore (production data: never committed)
+/.restore/
 
 # backup-db.mjs output (production data, even encrypted: never committed)
 /backup/

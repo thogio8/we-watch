@@ -78,7 +78,7 @@ Bibliothèque : **Better Auth** (1.7.x, compatible Next 16 et Drizzle, stockage 
 - **Groupe affiché** : celui choisi dans la pastille (§9), mémorisé sur l'appareil ; par défaut le dernier utilisé, sinon le premier. *(Choix de conception.)*
 - **Aucun groupe** (nouveau compte en mode `open`, ou après avoir quitté le dernier) : écran « CRÉER TON PREMIER GROUPE ».
 - La session de tirage (pile « pas ce soir », filtres) est **propre à chaque groupe** : changer de groupe ne mélange pas les piles. *(Choix de conception.)*
-- Livré (morceau 3, décisions du mainteneur du 2026-10-29) : un membre qui quitte le groupe ou en est retiré perd ses « voulu » dans ce groupe ; ses ajouts et ses « marqué par » restent, avec son prénom. Le dernier membre qui part supprime le groupe avec sa liste (pas les instantanés TMDB ni les BOF) ; « NOUS DEUX » sans membre n'est jamais concerné, personne ne le quittant.
+- Livré (morceau 3, décisions du mainteneur du 2026-10-29) : un membre qui quitte le groupe ou en est retiré perd ses « voulu » dans ce groupe ; ses ajouts et ses « marqué par » restent, avec son prénom. Le dernier membre qui part supprime le groupe avec sa liste (pas les instantanés TMDB ni les BOF).
 
 ## 7. Invitations
 
@@ -110,8 +110,8 @@ Règle d'or : **un oui suffit, un BOF ne vaut que pour soi.**
 
 Toute la DA reste celle de la spec historique (§5) ; les nouveaux écrans sont des tickets riso comme `/unlock` aujourd'hui.
 
-- **Pastille du groupe (option A, choisie)** : au-dessus du titre de TIRER, SWIPER et LISTE, « ● NOUS DEUX ▾ ». La toucher ouvre un panneau : mes groupes (avec le nombre de membres, ✓ sur le groupe affiché), « + CRÉER UN GROUPE », « MEMBRES ET INVITATION », puis « MON COMPTE » et « SE DÉCONNECTER ». *(Ces deux dernières entrées : choix de conception.)*
-- **Connexion** : un ticket « ENTRE DANS WEWATCH », dessous une ligne discrète « Face ID, empreinte ou code de ton téléphone », puis « SE CONNECTER », « CONTINUER AVEC GOOGLE » (sauf PWA iPhone si §5 l'exige), et « CRÉER UN COMPTE ». En mode `invite`, « CRÉER UN COMPTE » n'apparaît qu'en arrivant par une invitation ; ailleurs, un message clair (« WEWATCH SE REJOINT SUR INVITATION ») et un lien discret « J'AI UN CODE PROPRIÉTAIRE », affiché seulement si `OWNER_CODE` est réglé (sinon tout code serait refusé ; retiré de Vercel après la bascule, il suffit de le remettre pour rouvrir cette porte). Validation annulée : « VALIDATION ANNULÉE, RÉESSAIE ». Un navigateur sans passkeys (pas de WebAuthn) voit, à la place des boutons, « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL. »
+- **Pastille du groupe (option A, choisie)** : au-dessus du titre de TIRER, SWIPER et LISTE, « ● NOM DU GROUPE ▾ ». La toucher ouvre un panneau : mes groupes (avec le nombre de membres, ✓ sur le groupe affiché), « + CRÉER UN GROUPE », « MEMBRES ET INVITATION », puis « MON COMPTE » et « SE DÉCONNECTER ». *(Ces deux dernières entrées : choix de conception.)*
+- **Connexion** : un ticket « ENTRE DANS WEWATCH », dessous une ligne discrète « Face ID, empreinte ou code de ton téléphone », puis « SE CONNECTER », « CONTINUER AVEC GOOGLE » (sauf PWA iPhone si §5 l'exige), et « CRÉER UN COMPTE ». En mode `invite`, « CRÉER UN COMPTE » n'apparaît qu'en arrivant par une invitation ; ailleurs, un message clair (« WEWATCH SE REJOINT SUR INVITATION ») et un lien discret « J'AI UN CODE PROPRIÉTAIRE », affiché seulement si `OWNER_CODE` est réglé (sinon tout code serait refusé ; il suffit de le remettre dans Vercel pour rouvrir cette porte). Validation annulée : « VALIDATION ANNULÉE, RÉESSAIE ». Un navigateur sans passkeys (pas de WebAuthn) voit, à la place des boutons, « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS. METS-LE À JOUR OU ESSAIE UN AUTRE APPAREIL. »
 - **Créer un compte** : nom affiché, la même ligne discrète, puis « CRÉER MON COMPTE » (Face ID, empreinte ou code du téléphone ; sur un ordinateur sans rien de tout ça, le navigateur propose un QR code à scanner avec son téléphone) ; ensuite « CRÉER TON PREMIER GROUPE » si on n'en a aucun.
 - **Invitation** (`/invitation/<jeton>`) : « TU ES INVITÉ·E DANS « … » » + REJOINDRE.
   - Livré : connecté sans être membre, « REJOINDRE » (le groupe devient l'affiché) et « PAS MAINTENANT » (retour à l'accueil) ; déjà membre, « TU ES DÉJÀ DANS « … » » + « Y ALLER » (bascule sur ce groupe) ; sans compte, la connexion en variante invitation ; lien invalide, « CE LIEN N’EST PLUS VALABLE » + « ALLER À L’ACCUEIL ».
@@ -131,18 +131,11 @@ Le détail visuel de ces écrans est laissé au builder, dans la DA, vérifié s
 - Supprime le compte, ses passkeys, ses sessions, ses BOF ; le retire de ses groupes (un groupe devenu vide disparaît).
 - Les films qu'il a ajoutés restent dans les listes de ses groupes, attribués à « un ancien membre ».
 - Livré (morceau 5) : en **une transaction**, pour chaque groupe la même sortie que « QUITTER » (ses « voulu » partent, le groupe aussi s'il se vide), puis ses BOF, ses « ajouté par » et « marqué par » remis à personne (« un ancien membre »), ses passkeys, ses sessions et le compte. Rien d'un autre membre ni d'un autre groupe n'est touché. L'appareil est ensuite déconnecté et va sur la connexion.
-- Comportement documenté : un propriétaire seul dans « NOUS DEUX » qui supprime son compte supprime aussi ce groupe et sa liste, comme tout groupe qui se vide ; un compte créé ensuite avec `OWNER_CODE` ne rejoint alors rien.
 
 ## 11. Bascule de la prod (1.3.x → 2.0.0)
 
-- La liste actuelle devient **un groupe « NOUS DEUX »** (renommable), avec tous ses films, statuts et dates.
-- Les anciens films **refusés** (BOF ou retirés) deviennent des films **écartés pour ce groupe** : rien ne réapparaît au swipe. *(Choix de conception.)*
-- Les anciens ajouts n'ont pas d'auteur (« ajouté le 12 octobre »).
-- Ce groupe n'a d'abord **aucun membre** ; les comptes créés avec le **code propriétaire** (`OWNER_CODE`) le **rejoignent automatiquement**. Le mainteneur crée son compte avec ce code, puis invite l'autre membre par le lien du groupe (ou lui donne le code). *(Choix de conception.)*
-- Le code d'accès est retiré ; les anciens cookies sont ignorés (on arrive sur la connexion).
-- Migration **additive** : les données sont **copiées** dans les nouvelles tables, la table `movies` actuelle reste intacte. Ainsi, si le test de fumée échoue, le retour arrière automatique de la CI remet la 1.3.x sur une base qu'elle sait encore lire. L'ancienne table et le code d'accès sont supprimés dans une version suivante (2.1). *(Choix de conception.)*
-- Le test de fumée (`scripts/smoke-prod.sh`) vise `/unlock` : il est adapté à la 2.0 (page de connexion).
-- Sauvegarde habituelle de la CI avant migration ; le builder répète la migration sur une copie de la base de prod avant la bascule.
+- Faite le 2026-11-03 : la liste d'avant les comptes est devenue un groupe comme les autres, sans auteur pour ses anciens ajouts (« ajouté avant les comptes »). Restes à supprimer en 2.1 : la table `movies`, les colonnes `legacy` / `watched_legacy` et `ACCESS_CODE` dans Vercel.
+- Le code propriétaire (`OWNER_CODE`) n'ouvre plus qu'une inscription, sans groupe : il amorce une instance neuve, puis se retire de Vercel.
 
 ## 12. Sécurité
 
@@ -167,7 +160,7 @@ Branche `release/2.0.0` depuis `main` ; un morceau = une branche `feat/v2-…` �
 5. **Mon compte** : nom, passkeys (ajouter / supprimer), Google, appareils connectés, suppression du compte.
 6. **Blindage et bascule** : limites de tentatives, en-têtes, audit, README et `CLAUDE.md` à jour, répétition de la migration sur une copie de la prod, puis fusion de `release/2.0.0` dans `main` (commit de fusion, avec au moins un commit `feat!` pour que release-please publie la **2.0.0**).
 
-- Livré (morceau 6, avant la bascule) : limites, chemins et en-têtes (§12), ménage du cron, test de fumée 2.0 (connexion, en-têtes, `rpId`, inscription sur invitation, autre origine refusée, cron), mise en ligne qui attend que la prod serve le nouveau déploiement, sauvegarde chiffrée, restauration et rattrapage d'un retour en 1.3.x, répétition de la migration sur la sauvegarde de prod du 2026-10-28 (208 films, tous copiés à l'identique), audit. La bascule suit le déroulé `docs/bascule-2.0.md`, sur l'accord explicite du mainteneur.
+- Livré (morceau 6, avant la bascule) : limites, chemins et en-têtes (§12), ménage du cron, test de fumée 2.0 (connexion, en-têtes, `rpId`, inscription sur invitation, autre origine refusée, cron), mise en ligne qui attend que la prod serve le nouveau déploiement, sauvegarde chiffrée, restauration et rattrapage d'un retour en 1.3.x, répétition de la migration sur la sauvegarde de prod du 2026-10-28 (208 films, tous copiés à l'identique), audit. Restauration : `docs/restauration.md`.
 - **2.0.0 livrée sans Google** (décision du mainteneur, 2026-11-03) : les passkeys suffisent à la bascule ; le morceau 4 (Google) viendra après, dans une version 2.x, sans rupture (un chemin de plus dans `AUTH_PATHS`, ses identifiants OAuth dans Vercel, le test sur un vrai iPhone). D'ici là, la dernière passkey ne se supprime pas.
 
 ## 14. Tests

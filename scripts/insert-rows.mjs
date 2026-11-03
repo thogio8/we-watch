@@ -1,7 +1,7 @@
-// Inserts saved rows back into a table (scripts/restore-db.mjs,
-// scripts/rehearse-migration.mjs), on the columns both the rows and the
-// current schema have: an absent column takes its default, an unknown one is
-// ignored and named on stderr (its name, never a value).
+// Inserts saved rows back into a table (scripts/restore-db.mjs), on the
+// columns both the rows and the current schema have: an absent column takes
+// its default, an unknown one is ignored and named on stderr (its name, never
+// a value).
 
 /** A SQL identifier, quoted. */
 export const quote = (name) => `"${name.replaceAll('"', '""')}"`;

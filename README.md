@@ -39,7 +39,7 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 
 **👥 LES GROUPES** : une liste par groupe
 
-- La pastille « ● NOUS DEUX ▾ », en haut de TIRER, SWIPER et LISTE, dit quel groupe est affiché. Son panneau liste mes groupes (nombre de membres, ✓ sur celui affiché), propose « + CRÉER UN GROUPE », « MEMBRES ET INVITATION », « MON COMPTE » et « SE DÉCONNECTER ».
+- La pastille « ● NOM DU GROUPE ▾ », en haut de TIRER, SWIPER et LISTE, dit quel groupe est affiché. Son panneau liste mes groupes (nombre de membres, ✓ sur celui affiché), propose « + CRÉER UN GROUPE », « MEMBRES ET INVITATION », « MON COMPTE » et « SE DÉCONNECTER ».
 - Chaque groupe a sa liste et sa soirée (la pile « PAS CE SOIR », les filtres). Le groupe choisi est retenu sur l'appareil.
 - **ON LE VEUT ♥** met le film dans la liste du groupe et ajoute mon nom à « voulu par ». **✕ BOF** ne vaut que pour moi : le film disparaît de ma pile de swipe, dans tous mes groupes, sans toucher la liste ni la pile des autres. Ajouter un film depuis la recherche efface mon BOF ; **✕** dans la liste l'écarte pour tout le groupe.
 - Un compte sans groupe arrive sur **CRÉER TON PREMIER GROUPE**.
@@ -82,7 +82,7 @@ Dans `.env.local` (`BETTER_AUTH_URL` et `SIGNUP` sont déjà préremplis par `.e
 - `BETTER_AUTH_SECRET` : le secret des sessions, 32 caractères au moins (`openssl rand -hex 32`) ;
 - `BETTER_AUTH_URL` : l'adresse de l'appli, `http://localhost:3000` en local ;
 - `SIGNUP` : `open` (par défaut, tout le monde peut créer un compte) ou `invite` ;
-- `OWNER_CODE` : le code propriétaire, qui ouvre l'inscription avec `SIGNUP=invite` et fait rejoindre le groupe « NOUS DEUX » (voir « Les comptes »).
+- `OWNER_CODE` : le code propriétaire, qui ouvre l'inscription avec `SIGNUP=invite` pour amorcer une instance (voir « Les comptes »).
 
 L'appli s'ouvre sur **ENTRE DANS WEWATCH** : « CRÉER UN COMPTE », un prénom, « CRÉER MON COMPTE » (Face ID, empreinte ou code du téléphone), puis **CRÉER TON PREMIER GROUPE** : un nom, et c'est parti sur TIRER. La liste est vide, direction SWIPER.
 
@@ -101,7 +101,7 @@ Tout tient dans les offres gratuites de **Vercel** (l'appli), **Turso** (la base
 2. **Vercel** : créer le projet depuis votre copie du dépôt, sans le déployer.
    - `npx vercel link` crée le projet ; `.vercel/project.json` donne `orgId` et `projectId`.
    - Variables d'environnement **Production** : `TMDB_ACCESS_TOKEN`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CRON_SECRET` et `BETTER_AUTH_SECRET` (chacun `openssl rand -hex 32`), `BETTER_AUTH_URL` (l'adresse de production, la même que `PROD_URL` au caractère près, sans `/` final : la vérification d'après déploiement le contrôle), `SIGNUP=invite` (conseillé : sinon n'importe qui connaissant l'adresse crée un compte) et, le temps de créer le premier compte, `OWNER_CODE` (voir « Les comptes »). Ne pas les donner aux previews : elles écriraient dans la même base.
-   - `ACCESS_CODE`, l'ancien code partagé, reste dans Vercel jusqu'à la 2.1 : un retour arrière vers la 1.3.x en a encore besoin. La 2.0 l'ignore.
+   - `BETTER_AUTH_URL` et `SIGNUP` sont lus au build : les créer **non « Sensitive »** (`vercel env add … --no-sensitive`), sinon le build reçoit `[SENSITIVE]` à leur place et échoue.
    - Un jeton dans Account Settings → Tokens.
    - La région des fonctions (`vercel.json`, `dub1` = Dublin) se règle au plus près de la base.
 3. **GitHub** (Settings → Secrets and variables → Actions) :
@@ -116,8 +116,7 @@ Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre a
 
 - **Créer un compte** : un prénom ou un surnom (30 caractères au plus), puis « CRÉER MON COMPTE » et le verrou de l'appareil. La passkey reste sur l'appareil, ou se synchronise avec le trousseau (iCloud, Google).
 - **Revenir** : « SE CONNECTER ». La session dure 60 jours et se prolonge toute seule tant qu'on revient ; « SE DÉCONNECTER » est dans le panneau de la pastille du groupe et dans « MON COMPTE ». Se déconnecter oublie aussi le groupe affiché : le compte suivant sur ce téléphone repart de ses propres groupes.
-- **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, **conseillé pour une instance en ligne**, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et un compte ne se crée que de deux façons : depuis un **lien d'invitation** d'un groupe (le nouveau compte en devient membre), ou avec le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée. Un lien d'invitation marche aussi en mode `open`. Une fois les comptes du couple créés et dans « NOUS DEUX », **retirer `OWNER_CODE` de Vercel** (puis redéployer) : le code ne sert qu'au premier compte, et tant qu'il existe, quiconque le connaît entre dans « NOUS DEUX » sans invitation.
-- **Le groupe « NOUS DEUX »** : la liste d'avant les comptes (1.x) y est gardée telle quelle, films, statuts et dates. Un compte créé avec le code propriétaire le rejoint aussitôt ; ensuite, on y invite par son lien, comme dans tout groupe. En mode `open`, le lien « J’AI UN CODE PROPRIÉTAIRE » reste proposé, avec un code facultatif.
+- **Ouvert ou sur invitation** : avec `SIGNUP=open` (par défaut), n'importe qui connaissant l'adresse peut créer un compte. Avec `SIGNUP=invite`, **conseillé pour une instance en ligne**, l'écran affiche « WEWATCH SE REJOINT SUR INVITATION » et un compte ne se crée que de deux façons : depuis un **lien d'invitation** d'un groupe (le nouveau compte en devient membre), ou avec le **code propriétaire** (`OWNER_CODE`, 12 caractères au moins) : choisissez **une phrase de plusieurs mots** (« pop corn sous la couette »), longue plutôt que compliquée. Un lien d'invitation marche aussi en mode `open`. Le compte créé avec ce code arrive sans groupe et crée le sien, puis y invite les autres par son lien. Une fois ce premier compte créé, **retirer `OWNER_CODE` de Vercel** (puis redéployer) : le code ne sert qu'à amorcer, tant qu'il existe quiconque le connaît crée un compte sans invitation, et sans lui le lien « J’AI UN CODE PROPRIÉTAIRE » disparaît.
 - Un navigateur trop ancien pour les passkeys affiche « CE NAVIGATEUR NE GÈRE PAS LES CLÉS D’ACCÈS… » à la place des boutons.
 - Les passkeys sont liées à l'adresse de l'appli (`BETTER_AUTH_URL`) : changer d'adresse oblige à recréer les comptes.
 
@@ -131,7 +130,7 @@ Chacun a son compte, et **aucun mot de passe** : le compte se crée et s'ouvre a
 
 - **Ce qui est gardé** : votre prénom, vos clés d'accès (leur partie publique : la partie secrète ne quitte jamais l'appareil), vos groupes et leurs listes, et pour chaque appareil connecté sa session (navigateur et adresse IP). Ni email, ni mot de passe. Les compteurs de tentatives (par adresse IP ou par compte) s'effacent au bout d'un jour, les sessions expirées aussi. Un compte supprimé part tout de suite de la base (voir « MON COMPTE »).
 - **Sauvegardes chiffrées** : avant chaque mise à jour de la base, la CI sauvegarde les listes, les groupes et les comptes (prénom, clés publiques), **jamais** les sessions ni aucun jeton. Le fichier est chiffré (AES-256-GCM, clé `BACKUP_KEY`) : sans la clé, il est illisible. Il est gardé **90 jours** comme artefact GitHub, puis effacé ; un compte supprimé peut donc y rester jusqu'à 90 jours (son prénom et ses clés publiques).
-- **Restaurer** : une sauvegarde se remet dans une base neuve, jamais par-dessus des données ; la marche à suivre est dans [`docs/bascule-2.0.md`](docs/bascule-2.0.md) (§7). Après une restauration, chacun se reconnecte avec sa clé d'accès, et chaque groupe régénère son lien d'invitation.
+- **Restaurer** : une sauvegarde se remet dans une base neuve, jamais par-dessus des données ; la marche à suivre est dans [`docs/restauration.md`](docs/restauration.md). Après une restauration, chacun se reconnecte avec sa clé d'accès, et chaque groupe régénère son lien d'invitation.
 - **En-têtes de sécurité** sur chaque page : une politique de contenu stricte (`Content-Security-Policy` : scripts, styles et polices de l'appli seule, images de l'appli et de TMDB, aucune intégration dans un autre site), `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy`, `Permissions-Policy` (ni caméra, ni micro, ni position).
 
 ## L'installer comme une appli

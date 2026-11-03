@@ -5,8 +5,8 @@
 // first), in one write transaction: the check and every insert, all or
 // nothing. Columns: those both the backup and the current schema have (an
 // absent one takes its default; an unknown one is ignored and named).
-// A 1.3.x backup (movies, no groups) goes through the 2.0 migrations
-// instead: scripts/rehearse-migration.mjs --db <target>.
+// A 1.3.x backup (movies, no groups) is refused: nothing restores it since
+// the 2.0 cutover.
 // Prints row counts only, never data nor the key.
 // Usage: BACKUP_KEY=… DATABASE_URL=… node scripts/restore-db.mjs <backup>
 import { createClient } from "@libsql/client";
@@ -17,7 +17,7 @@ import { readBackup } from "./read-backup.mjs";
 const ORDER = Object.keys(TABLES);
 const MIGRATIONS = "__drizzle_migrations";
 const PRE_2_0 =
-  "sauvegarde d'avant 2.0 : utiliser rehearse-migration --db <cible>";
+  "sauvegarde d'avant 2.0 (1.3.x) : la restauration ne la prend pas";
 
 /** Refuses anything but a 2.0 backup of the tables a restore knows. */
 function checkBackup(backup) {
