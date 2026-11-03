@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 import {
   box,
   emptyNameRefused,
@@ -7,6 +7,7 @@ import {
   leasInvitation,
   swipe,
   test,
+  topCard,
 } from "./fixtures";
 import { COPY_LINK, pill } from "./groups";
 
@@ -248,37 +249,60 @@ async function* longAccountName(page: Page) {
   yield "/compte (supprimer, prénom long)";
 }
 
-test.describe("TIRER tient sur un écran", () => {
+/** Each element whole between the nav and the screen's other edge, unscrolled. */
+async function expectOnScreen(
+  page: Page,
+  viewport: Viewport,
+  elements: readonly (readonly [string, Locator])[],
+) {
+  const nav = await box(
+    page.getByRole("navigation", { name: "Navigation principale" }),
+  );
+  // The nav sits at the bottom on phones, at the top on wide screens.
+  const navAtBottom = nav.y > viewport.height / 2;
+  const top = navAtBottom ? 0 : nav.y + nav.height;
+  const bottom = navAtBottom ? nav.y : viewport.height;
+  for (const [name, element] of elements) {
+    const { y, height } = await box(element);
+    expect(y, `${name} commence sous la nav`).toBeGreaterThanOrEqual(top);
+    expect(
+      y + height,
+      `${name} finit avant la nav ou le bas de l’écran`,
+    ).toBeLessThanOrEqual(bottom);
+  }
+}
+
+test.describe("un écran sans défiler", () => {
   test.beforeEach(async ({ app }) => {
     test.skip(test.info().project.name !== "desktop");
     await swipe(app, ["keep", "keep"]);
   });
 
   for (const viewport of VIEWPORTS.filter(({ name }) => name !== "iPad")) {
-    test(`le bouton et l’heure, sans défiler ni passer sous la nav : ${viewport.name}`, async ({
+    test(`TIRER : le bouton et l’heure, ni sous la nav ni à défiler : ${viewport.name}`, async ({
       app,
     }) => {
       await app.setViewportSize(viewport);
       await app.goto("/");
       const clock = app.getByText(/^Il est \d/);
       await expect(clock).toBeVisible();
-      const nav = await box(
-        app.getByRole("navigation", { name: "Navigation principale" }),
-      );
-      // The nav sits at the bottom on phones, at the top on wide screens.
-      const navAtBottom = nav.y > viewport.height / 2;
-      const top = navAtBottom ? 0 : nav.y + nav.height;
-      const bottom = navAtBottom ? nav.y : viewport.height;
-      for (const [name, element] of [
+      await expectOnScreen(app, viewport, [
         ["TIRER", app.getByRole("button", { name: "TIRER UN FILM" })],
         ["l’heure", clock],
-      ] as const) {
-        const { y, height } = await box(element);
-        expect(y, `${name} commence sous la nav`).toBeGreaterThanOrEqual(top);
-        expect(y + height, `${name} finit avant la nav`).toBeLessThanOrEqual(
-          bottom,
-        );
-      }
+      ]);
+    });
+
+    test(`SWIPER : la carte et ses deux boutons, ni sous la nav ni à défiler : ${viewport.name}`, async ({
+      app,
+    }) => {
+      await app.setViewportSize(viewport);
+      await app.goto("/swipe");
+      await expect(topCard(app)).toBeVisible();
+      await expectOnScreen(app, viewport, [
+        ["la pastille", pill(app, "NOUS DEUX")],
+        ["✕ BOF", app.getByRole("button", { name: "✕ BOF" })],
+        ["ON LE VEUT ♥", app.getByRole("button", { name: "ON LE VEUT ♥" })],
+      ]);
     });
   }
 });

@@ -46,7 +46,8 @@
  */
 @container shell (min-width: 640px) {
   .adaptive {
-    --poster-w: clamp(120px, min(30cqi, (100dvh - 250px) * 2 / 3), 300px);
+    /* The floor only binds under 430 px of height: a phone held sideways. */
+    --poster-w: clamp(90px, min(30cqi, (100dvh - 250px) * 2 / 3), 300px);
 
     display: grid;
     grid-template-columns: var(--poster-w) 1fr;

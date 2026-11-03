@@ -206,9 +206,15 @@
     padding-inline: var(--gutter);
     overflow-x: auto;
     mask-image: var(--fade-edges);
+    margin-top: 0;
+    padding-block: 2px 6px;
+  }
+
+  .deck {
+    margin-top: 4px;
   }
 
   .actions {
-    margin-top: 14px;
+    margin-top: 10px;
   }
 }
