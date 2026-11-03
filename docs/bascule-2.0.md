@@ -115,13 +115,14 @@ Une variable d'environnement Vercel ne s'applique qu'aux **nouveaux** déploieme
   - `BETTER_AUTH_URL` = `PROD_URL` **au caractère près**, sans `/` final. Les passkeys sont liées à son nom d'hôte, et la fumée compare le `rpId` à l'hôte de `PROD_URL` : une différence fait échouer la fumée, donc revenir la prod en arrière. Le plus sûr est de le recopier :
 
     ```bash
-    printf %s "$PROD_URL" | npx --no -- vercel env add BETTER_AUTH_URL production
+    printf %s "$PROD_URL" | npx --no -- vercel env add BETTER_AUTH_URL production --no-sensitive
     ```
 
+  - `BETTER_AUTH_URL` et `SIGNUP` ne sont pas des secrets : **toujours `--no-sensitive`**. Une variable « Sensitive » (le défaut de la CLI) arrive au build en `[SENSITIVE]` (`vercel pull` ne peut pas la lire), et le client Better Auth lit `BETTER_AUTH_URL` dès le build : le job `build` échoue sur « Invalid base URL » (2026-11-03).
   - `SIGNUP=invite` :
 
     ```bash
-    printf invite | npx --no -- vercel env add SIGNUP production
+    printf invite | npx --no -- vercel env add SIGNUP production --no-sensitive
     ```
 
   - `OWNER_CODE` : 12 caractères au moins, une phrase de plusieurs mots, gardée dans le gestionnaire de mots de passe (c'est elle qu'on tapera dans l'appli). La coller à l'invite masquée :
