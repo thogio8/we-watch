@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/thogio8/we-watch/compare/v2.0.0...v2.0.1) (2026-11-03)
+
+
+### Corrections
+
+* **signin:** offer the owner code only when one is set ([ca050c6](https://github.com/thogio8/we-watch/commit/ca050c602c51e28bb0c821e66c126d82c20f751e))
+
 ## [2.0.0](https://github.com/thogio8/we-watch/compare/v1.3.2...v2.0.0) (2026-11-03)
 
 
