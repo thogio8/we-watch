@@ -12,6 +12,10 @@ import { revalidateGroupPages } from "@/server/revalidate";
 import { assertSignedIn } from "@/server/session";
 import { GROUP_NAME_ERROR, INVITE_INVALID } from "./messages";
 
+/** A public endpoint: anything may come in place of the form. */
+const groupNameOf = (formData: unknown) =>
+  formData instanceof FormData ? parseGroupName(formData.get("name")) : null;
+
 export type CreateGroupResult =
   { ok: true; groupId: string } | { ok: false; error: string };
 
@@ -23,9 +27,7 @@ export async function createGroup(
   if (!(await withinLimit("create-group", userId))) {
     return { ok: false, error: TOO_MANY_ATTEMPTS };
   }
-  // A public endpoint: anything may come in place of the form.
-  const name =
-    formData instanceof FormData ? parseGroupName(formData.get("name")) : null;
+  const name = groupNameOf(formData);
   if (name === null) {
     return { ok: false, error: GROUP_NAME_ERROR };
   }
@@ -51,8 +53,7 @@ export async function renameGroup(
   formData: FormData,
 ): Promise<RenameResult> {
   await assertMember(groupId);
-  const name =
-    formData instanceof FormData ? parseGroupName(formData.get("name")) : null;
+  const name = groupNameOf(formData);
   if (name === null) {
     return { ok: false, error: GROUP_NAME_ERROR };
   }
