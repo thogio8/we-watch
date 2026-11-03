@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { signupOffer } from "@/access/signup";
 import { getServerEnv } from "@/env";
 import { chooseGroup, joinGroup } from "@/features/groups/actions";
 import { InvitationScreen } from "@/features/invitation/InvitationScreen";
@@ -22,7 +23,7 @@ async function Invitation({
     <InvitationScreen
       invitation={invitation}
       token={token}
-      signup={getServerEnv().SIGNUP}
+      {...signupOffer(getServerEnv())}
       actions={{
         join: joinGroup.bind(null, token),
         choose: chooseGroup,

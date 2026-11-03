@@ -12,6 +12,8 @@ interface SigninHomeProps {
   title: readonly string[];
   /** Whether « CRÉER UN COMPTE » is offered (signup open, or an invite link). */
   canCreate: boolean;
+  /** Whether « J’AI UN CODE PROPRIÉTAIRE » is offered (an owner code is set). */
+  canUseCode: boolean;
   error: string | null;
   pending: boolean;
   /** Back from the form: focus returns to the main button. */
@@ -23,11 +25,12 @@ interface SigninHomeProps {
 
 /**
  * Passkey sign-in, then a way to create an account (or the invitation note),
- * and in either mode the owner code, which joins « NOUS DEUX ».
+ * and, when one is set, the owner code, which joins « NOUS DEUX ».
  */
 export function SigninHome({
   title,
   canCreate,
+  canUseCode,
   error,
   pending,
   returning,
@@ -65,14 +68,16 @@ export function SigninHome({
             CRÉER UN COMPTE
           </Button>
         )}
-        <button
-          type="button"
-          className={styles.textAction}
-          disabled={pending}
-          onClick={() => onOpenForm(true)}
-        >
-          J’AI UN CODE PROPRIÉTAIRE
-        </button>
+        {canUseCode && (
+          <button
+            type="button"
+            className={styles.textAction}
+            disabled={pending}
+            onClick={() => onOpenForm(true)}
+          >
+            J’AI UN CODE PROPRIÉTAIRE
+          </button>
+        )}
       </PasskeyActions>
     </div>
   );

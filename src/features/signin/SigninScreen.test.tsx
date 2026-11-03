@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CLOSED_ERROR } from "./messages";
@@ -54,8 +54,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderScreen(signup: "open" | "invite" = "open") {
-  render(<SigninScreen signup={signup} prepareSignup={prepareSignup} />);
+function renderScreen(signup: "open" | "invite" = "open", ownerCode = true) {
+  render(
+    <SigninScreen
+      signup={signup}
+      ownerCode={ownerCode}
+      prepareSignup={prepareSignup}
+    />,
+  );
   return userEvent.setup();
 }
 
@@ -194,6 +200,19 @@ describe("SigninScreen, création de compte", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: CREATE })).toBeEnabled();
     expect(screen.getByText(HINT)).toBeInTheDocument();
+  });
+
+  it("sans code propriétaire configuré, aucun lien vers un code que tout refuserait", () => {
+    for (const signup of ["open", "invite"] as const) {
+      renderScreen(signup, false);
+      expect(
+        screen.queryByRole("button", { name: OWNER_CODE }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "SE CONNECTER" }),
+      ).toBeVisible();
+      cleanup();
+    }
   });
 
   it("J’AI UN CODE PROPRIÉTAIRE montre le champ du code", async () => {
@@ -421,10 +440,11 @@ describe("SigninScreen, arrivé par un lien d’invitation", () => {
     addPasskey.mockResolvedValue({ data: { id: "p1" }, error: null });
   });
 
-  function renderInvited(signup: "open" | "invite") {
+  function renderInvited(signup: "open" | "invite", ownerCode = true) {
     render(
       <SigninScreen
         signup={signup}
+        ownerCode={ownerCode}
         prepareSignup={prepareSignup}
         invite={INVITE}
       />,
@@ -437,6 +457,17 @@ describe("SigninScreen, arrivé par un lien d’invitation", () => {
     await user.type(screen.getByLabelText("TON PRÉNOM OU SURNOM"), "Hugo");
     await user.click(screen.getByRole("button", { name: CREATE }));
   }
+
+  it("sur invitation, sans code propriétaire configuré : CRÉER UN COMPTE seul", () => {
+    renderInvited("invite", false);
+
+    expect(
+      screen.getByRole("button", { name: "CRÉER UN COMPTE" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: OWNER_CODE }),
+    ).not.toBeInTheDocument();
+  });
 
   it("le ticket nomme le groupe qui invite, sans le message de fermeture", () => {
     renderInvited("invite");

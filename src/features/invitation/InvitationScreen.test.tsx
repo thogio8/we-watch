@@ -41,6 +41,7 @@ function renderScreen(invitation: Invitation) {
       invitation={invitation}
       token={TOKEN}
       signup="invite"
+      ownerCode
       actions={actions}
     />,
   );

@@ -42,3 +42,18 @@ export function signupRight({
   }
   return { ok: false, reason: "wrong_code" };
 }
+
+/** What the sign-in screens offer: the signup mode, and the owner code link. */
+export type SignupOffer = { signup: "open" | "invite"; ownerCode: boolean };
+
+/**
+ * Read from the environment on each request. The owner code link shows only
+ * when a code is set: without one, every code would be refused. The code
+ * itself never leaves the server.
+ */
+export function signupOffer(env: {
+  SIGNUP: "open" | "invite";
+  OWNER_CODE?: string;
+}): SignupOffer {
+  return { signup: env.SIGNUP, ownerCode: env.OWNER_CODE !== undefined };
+}

@@ -23,4 +23,7 @@ export const e2eEnv = (worker: number) => ({
   // The e2e runs in open mode. Invite mode is covered by the functional tests
   // (tests/functional/invite-signup.test.ts) and SigninScreen's tests.
   SIGNUP: "open",
+  // A code is set, so the screens offer « J’AI UN CODE PROPRIÉTAIRE » (the
+  // captures show it); without one, the link is hidden (unit tests).
+  OWNER_CODE: "e2e-owner-code-0123",
 });

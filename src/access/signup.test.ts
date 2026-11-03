@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { signupRight } from "./signup";
+import { signupOffer, signupRight } from "./signup";
 
 const OWNER_CODE = "code-proprietaire-123";
 
@@ -128,4 +128,21 @@ describe("signupRight", () => {
       ).toEqual(expected);
     },
   );
+});
+
+describe("signupOffer", () => {
+  it("propose le code propriétaire seulement s'il en existe un, sans jamais le donner", () => {
+    expect(signupOffer({ SIGNUP: "invite", OWNER_CODE })).toEqual({
+      signup: "invite",
+      ownerCode: true,
+    });
+    expect(signupOffer({ SIGNUP: "invite" })).toEqual({
+      signup: "invite",
+      ownerCode: false,
+    });
+    expect(signupOffer({ SIGNUP: "open" })).toEqual({
+      signup: "open",
+      ownerCode: false,
+    });
+  });
 });

@@ -23,6 +23,8 @@ interface InvitationScreenProps {
   /** From the link's path: sent along when an account is created. */
   token: string;
   signup: "open" | "invite";
+  /** An owner code is set: the sign-in offers it. */
+  ownerCode: boolean;
   actions: InvitationActions;
 }
 
@@ -31,6 +33,7 @@ export function InvitationScreen({
   invitation,
   token,
   signup,
+  ownerCode,
   actions,
 }: InvitationScreenProps) {
   switch (invitation.state) {
@@ -46,6 +49,7 @@ export function InvitationScreen({
       return (
         <SigninScreen
           signup={signup}
+          ownerCode={ownerCode}
           prepareSignup={actions.prepareSignup}
           invite={{ token, groupName: invitation.groupName }}
         />

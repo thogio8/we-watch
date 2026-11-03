@@ -11,6 +11,8 @@ import { type PrepareSignup, useSignin } from "./useSignin";
 
 interface SigninScreenProps {
   signup: "open" | "invite";
+  /** An owner code is set: « J’AI UN CODE PROPRIÉTAIRE » is offered. */
+  ownerCode: boolean;
   prepareSignup: PrepareSignup;
   /** Opened from an invite link: the group is named, an account can be created. */
   invite?: { token: string; groupName: string };
@@ -19,6 +21,7 @@ interface SigninScreenProps {
 /** The only page without a session: sign in with a passkey, or create an account. */
 export function SigninScreen({
   signup,
+  ownerCode,
   prepareSignup,
   invite,
 }: SigninScreenProps) {
@@ -37,6 +40,7 @@ export function SigninScreen({
             invite ? invitedTitle(invite.groupName) : ["ENTRE DANS", "WEWATCH"]
           }
           canCreate={signup === "open" || invite !== undefined}
+          canUseCode={ownerCode}
           error={error}
           pending={pending}
           returning={view.returning}
