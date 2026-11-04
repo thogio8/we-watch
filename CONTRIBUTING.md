@@ -38,6 +38,8 @@ Un changement de comportement vient avec son test, au bon niveau : unitaire pour
 2. Ouvrez la pull request (`gh pr create`) : elle doit passer `checks`, `e2e` (4 machines) et la revue des dépendances, et être à jour avec `main`.
 3. Une fois la CI verte, le mainteneur la fusionne en **rebase** (`gh pr merge --rebase`) : ni squash ni merge, pour que chaque commit garde son type. Sur `main`, la CI déploie puis publie la version.
 
+Si `main` avance pendant ce temps (chaque version ajoute un commit de release), remettez la branche à jour avec `gh pr update-branch --rebase` (pas le bouton « Update branch » de l'interface, qui ajoute un commit de fusion) ; pour une PR Dependabot, commentez `@dependabot rebase`.
+
 Une PR = une version : regroupez les commits d'une même fonctionnalité dans une seule PR.
 
 ## La CI d'une pull request
