@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #fff4d6; --ink: #1b1b6b; --pink: #ff3fa4; --yellow: #ffe600; --blue: #2f6bff; --white: #fff;
+    --display: "Archivo Black", sans-serif; --mono: "Space Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9e4d6; color: var(--ink); font-family: var(--mono); padding: 28px 20px 60px; }
+  h1.page { font-family: var(--display); font-size: 26px; margin: 0 0 6px; }
+  p.lead { margin: 0 0 20px; max-width: 920px; font-size: 14px; line-height: 1.5; }
+  h2.step { font-family: var(--display); font-size: 18px; margin: 34px 0 6px; }
+  p.why { margin: 0 0 16px; max-width: 920px; font-size: 13px; line-height: 1.5; }
+  .row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+  .opt { cursor: pointer; border: 3px solid transparent; border-radius: 26px; padding: 8px; transition: border-color .15s; }
+  .opt.selected { border-color: var(--pink); }
+  .opt h3 { font-family: var(--display); font-size: 14px; margin: 4px 6px 10px; }
+  .opt p.note { font-size: 12px; max-width: 320px; margin: 10px 6px 0; line-height: 1.45; }
+
+  .phone { width: 320px; background: var(--paper); background-image: radial-gradient(rgba(27,27,107,.09) 1px, transparent 1px); background-size: 6px 6px;
+    border: 3px solid var(--ink); border-radius: 22px; padding: 16px 14px 0; overflow: hidden; position: relative; }
+  .pill { display: flex; justify-content: center; margin-bottom: 10px; }
+  .pill span { display: inline-flex; gap: 7px; align-items: center; border: 3px solid var(--ink); border-radius: 99px; background: #fff; padding: 6px 14px;
+    font-family: var(--display); font-size: 11px; box-shadow: 3px 3px 0 var(--ink); }
+  .pill i { width: 9px; height: 9px; border-radius: 50%; background: var(--pink); border: 2px solid var(--ink); }
+  .title { font-family: var(--display); font-size: 26px; text-align: center; color: var(--pink); text-shadow: 2px 2px 0 var(--blue); margin: 2px 0 10px; line-height: 1; }
+  .kicker { text-align: center; font-size: 11px; opacity: .75; margin: 0 0 10px; }
+  .search { border: 3px solid var(--ink); border-radius: 12px; background: #fff; box-shadow: 4px 4px 0 var(--ink); padding: 10px 12px; font-size: 12px; margin-bottom: 12px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 4px; }
+  .tab { flex: 1; text-align: center; border: 3px solid var(--ink); border-radius: 10px; background: #fff; padding: 8px 4px; font-family: var(--display); font-size: 11px; }
+  .tab.on { background: var(--pink); box-shadow: 3px 3px 0 var(--ink); }
+  .item { display: flex; gap: 10px; align-items: center; border: 3px solid var(--ink); border-radius: 12px; background: #fff; padding: 8px; margin-bottom: 9px; position: relative; }
+  .item.fav { background: #ffe1f0; box-shadow: 4px 4px 0 var(--pink); }
+  .item.edge { border-left-width: 10px; border-left-color: var(--pink); }
+  .thumb { width: 36px; height: 52px; flex: none; border: 2px solid var(--ink); border-radius: 6px; background: linear-gradient(135deg, var(--yellow) 0 40%, var(--blue) 40% 70%, var(--pink) 70%); position: relative; }
+  .thumb .mini { position: absolute; right: -9px; bottom: -7px; width: 22px; height: 22px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink);
+    display: grid; place-items: center; font-size: 12px; color: var(--pink); transform: rotate(-8deg); box-shadow: 1px 1px 0 var(--ink); }
+  .meta { flex: 1; min-width: 0; }
+  .meta b { display: block; font-family: var(--display); font-size: 12px; font-weight: 400; }
+  .meta small { display: block; font-size: 10px; opacity: .8; margin-top: 3px; text-transform: uppercase; }
+  .btn { flex: none; width: 34px; height: 34px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); display: grid; place-items: center; font-size: 15px; }
+  .btn.heart.on { background: var(--pink); }
+  .section { font-family: var(--display); font-size: 10px; margin: 12px 2px 8px; display: flex; align-items: center; gap: 8px; }
+  .section::after { content: ""; flex: 1; border-top: 2px dashed var(--ink); }
+  .nav { display: flex; gap: 8px; border-top: 3px solid var(--ink); margin: 14px -14px 0; padding: 12px 14px 16px; background: var(--paper); }
+  .nav span { flex: 1; text-align: center; border: 3px solid var(--ink); border-radius: 10px; background: #fff; padding: 8px 0; font-family: var(--display); font-size: 11px; }
+  .nav span.on { background: var(--yellow); }
+
+  .panel { border: 3px solid var(--ink); border-radius: 14px; background: #fff; box-shadow: 4px 4px 0 var(--ink); padding: 0 0 10px; }
+  .panel header { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 3px dashed var(--ink); font-family: var(--display); font-size: 11px; }
+  .panel header small { font-family: var(--mono); font-size: 9px; opacity: .7; margin-left: 6px; }
+  .grp { padding: 8px 12px 0; }
+  .grp label { display: block; font-size: 9.5px; font-weight: 700; margin-bottom: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 2px solid var(--ink); border-radius: 8px; padding: 5px 9px; font-family: var(--display); font-size: 9.5px; background: #fff; box-shadow: 2px 2px 0 var(--ink); }
+  .chip.on { background: var(--yellow); }
+  .chip.pink.on { background: var(--pink); }
+  .big { margin: 18px auto 0; width: 150px; height: 150px; border-radius: 50%; background: var(--yellow); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink), 0 0 40px rgba(255,230,0,.9);
+    display: grid; place-items: center; text-align: center; font-family: var(--display); font-size: 21px; line-height: 1.05; }
+  .big.pink { background: var(--pink); box-shadow: 6px 6px 0 var(--ink), 0 0 40px rgba(255,63,164,.7); font-size: 17px; }
+  .sub { text-align: center; font-size: 10px; margin-top: 4px; }
+
+  .ticket { border: 3px solid var(--ink); border-radius: 16px; overflow: hidden; box-shadow: 7px 7px 0 var(--blue); background: var(--pink); position: relative; }
+  .poster { height: 190px; background: linear-gradient(135deg, var(--yellow) 0 40%, var(--blue) 40% 70%, var(--pink) 70%); border-bottom: 3px dashed var(--ink); position: relative; }
+  .poster.short { height: 150px; }
+  .bigstamp { position: absolute; left: 12px; bottom: 14px; background: var(--paper); border: 3px solid var(--ink); border-radius: 8px; padding: 4px 9px;
+    font-family: var(--display); font-size: 12px; transform: rotate(-6deg); box-shadow: 3px 3px 0 var(--ink); color: var(--pink); }
+  .ghost { position: absolute; left: 12px; bottom: 14px; border: 3px dashed var(--ink); border-radius: 8px; padding: 4px 9px; background: rgba(255,244,214,.75);
+    font-family: var(--display); font-size: 12px; transform: rotate(-6deg); }
+  .yellowstamp { position: absolute; right: 10px; top: 10px; background: var(--yellow); border: 3px solid var(--ink); border-radius: 6px; padding: 3px 8px;
+    font-family: var(--display); font-size: 11px; transform: rotate(5deg); box-shadow: 3px 3px 0 var(--ink); z-index: 2; }
+  .netflix { position: absolute; right: 10px; top: 10px; background: #fff; border: 2px solid var(--ink); border-radius: 4px; padding: 1px 6px; font-family: var(--display); font-size: 10px; transform: rotate(4deg); }
+  .info { padding: 12px 14px 14px; }
+  .info b { font-family: var(--display); font-size: 20px; font-weight: 400; display: block; }
+  .info small { font-size: 11px; }
+  .actions { display: flex; gap: 10px; justify-content: center; margin: 16px 0 4px; }
+  .actions span { border: 3px solid var(--ink); border-radius: 12px; padding: 10px 14px; font-family: var(--display); font-size: 12px; background: #fff; box-shadow: 4px 4px 0 var(--ink); }
+  .actions span.y { background: var(--yellow); }
+  .actions span.sq { padding: 10px 13px; }
+  .actions span.sq.on { background: var(--pink); }
+  .back { font-family: var(--display); font-size: 10px; margin-bottom: 10px; }
+  .hint { font-size: 10px; text-align: center; margin-top: 8px; opacity: .8; }
+</style>
+</head>
+<body>
+<h1 class="page">♥ Coups de cœur : maquettes, v2</h1>
+<p class="lead">Ce que tu as choisi : LISTE en tête d'« À VOIR » sans le petit tampon sur chaque ligne, la fiche avec seulement le gros tampon sur l'affiche, le filtre de TIRER tel quel, et le tampon sur l'affiche du film tiré, filtre ou pas.
+Chaque section propose des variantes : cliquez sur celle que vous préférez (un clic sélectionne, un autre désélectionne).</p>
+
+<h2 class="step">1 · LISTE : la ligne d'un coup de cœur</h2>
+<p class="why">Les coups de cœur restent en haut d'« À VOIR », sous leur intertitre. Trois façons de marquer la ligne sans le tampon au-dessus du titre :</p>
+<div class="row">
+  <div class="opt" data-choice="ligne-rose" onclick="toggleSelect(this)">
+    <h3>L1 · Ligne rose</h3>
+    <div class="phone">
+      <div class="pill"><span><i></i>NOUS DEUX ▾</span></div>
+      <div class="title">NOTRE LISTE</div>
+      <div class="search">⌕ AJOUTER UN FILM…</div>
+      <div class="tabs"><div class="tab on">À VOIR · 5</div><div class="tab">VUS · 0</div></div>
+      <div class="section">♥ COUPS DE CŒUR · 2</div>
+      <div class="item fav"><div class="thumb"></div><div class="meta"><b>PARASITE</b><small>2H12 · PRIME VIDEO</small><small>voulu par Léa et Becca</small></div><div class="btn heart on">♥</div><div class="btn">✕</div></div>
+      <div class="item fav"><div class="thumb"></div><div class="meta"><b>WHIPLASH</b><small>1H47 · NETFLIX</small><small>voulu par Becca</small></div><div class="btn heart on">♥</div><div class="btn">✕</div></div>
+      <div class="section">LE RESTE · 3</div>
+      <div class="item"><div class="thumb"></div><div class="meta"><b>LE VOYAGE DE CHIHIRO</b><small>2H05 · NETFLIX</small><small>voulu par Léa</small></div><div class="btn heart">♡</div><div class="btn">✕</div></div>
+      <div class="nav"><span>TIRER</span><span>SWIPER</span><span class="on">LISTE</span></div>
+    </div>
+    <p class="note">Fond rose pâle, ombre rose, ♥ plein. Le plus simple : la v1 sans le tampon.</p>
+  </div>
+
+  <div class="opt" data-choice="mini-tampon" onclick="toggleSelect(this)">
+    <h3>L2 · Mini-tampon sur l'affiche</h3>
+    <div class="phone">
+      <div class="pill"><span><i></i>NOUS DEUX ▾</span></div>
+      <div class="title">NOTRE LISTE</div>
+      <div class="search">⌕ AJOUTER UN FILM…</div>
+      <div class="tabs"><div class="tab on">À VOIR · 5</div><div class="tab">VUS · 0</div></div>
+      <div class="section">♥ COUPS DE CŒUR · 2</div>
+      <div class="item fav"><div class="thumb"><span class="mini">♥</span></div><div class="meta"><b>PARASITE</b><small>2H12 · PRIME VIDEO</small><small>voulu par Léa et Becca</small></div><div class="btn heart on">♥</div><div class="btn">✕</div></div>
+      <div class="item fav"><div class="thumb"><span class="mini">♥</span></div><div class="meta"><b>WHIPLASH</b><small>1H47 · NETFLIX</small><small>voulu par Becca</small></div><div class="btn heart on">♥</div><div class="btn">✕</div></div>
+      <div class="section">LE RESTE · 3</div>
+      <div class="item"><div class="thumb"></div><div class="meta"><b>LE VOYAGE DE CHIHIRO</b><small>2H05 · NETFLIX</small><small>voulu par Léa</small></div><div class="btn heart">♡</div><div class="btn">✕</div></div>
+      <div class="nav"><span>TIRER</span><span>SWIPER</span><span class="on">LISTE</span></div>
+    </div>
+    <p class="note">Le gros tampon de la fiche, en miniature dans le coin de l'affiche : un rappel discret, cohérent avec la fiche et le tirage.</p>
+  </div>
+
+  <div class="opt" data-choice="liseré" onclick="toggleSelect(this)">
+    <h3>L3 · Liseré rose</h3>
+    <div class="phone">
+      <div class="pill"><span><i></i>NOUS DEUX ▾</span></div>
+      <div class="title">NOTRE LISTE</div>
+      <div class="search">⌕ AJOUTER UN FILM…</div>
+      <div class="tabs"><div class="tab on">À VOIR · 5</div><div class="tab">VUS · 0</div></div>
+      <div class="section">♥ COUPS DE CŒUR · 2</div>
+      <div class="item edge"><div class="thumb"></div><div class="meta"><b>PARASITE</b><small>2H12 · PRIME VIDEO</small><small>voulu par Léa et Becca</small></div><div class="btn heart on">♥</div><div class="btn">✕</div></div>
+      <div class="item edge"><div class="thumb"></div><div class="meta"><b>WHIPLASH</b><small>1H47 · NETFLIX</small><small>voulu par Becca</small></div><div class="btn heart on">♥</div><div class="btn">✕</div></div>
+      <div class="section">LE RESTE · 3</div>
+      <div class="item"><div class="thumb"></div><div class="meta"><b>LE VOYAGE DE CHIHIRO</b><small>2H05 · NETFLIX</small><small>voulu par Léa</small></div><div class="btn heart">♡</div><div class="btn">✕</div></div>
+      <div class="nav"><span>TIRER</span><span>SWIPER</span><span class="on">LISTE</span></div>
+    </div>
+    <p class="note">Fond blanc comme les autres, une bande rose épaisse à gauche : comme un ticket qu'on aurait marqué au surligneur.</p>
+  </div>
+</div>
+
+<h2 class="step">2 · La fiche : seulement le tampon</h2>
+<p class="why">Plus de pastille dans les infos. Il faut quand même un geste pour marquer ou démarquer : deux façons de faire.</p>
+<div class="row">
+  <div class="opt" data-choice="fiche-bouton" onclick="toggleSelect(this)">
+    <h3>F1 · Un bouton ♥ à côté des actions</h3>
+    <div class="row" style="gap:14px">
+      <div class="phone" style="width:300px">
+        <div class="back">← LA LISTE</div>
+        <div class="ticket"><div class="poster"><div class="bigstamp">♥ COUP DE CŒUR</div></div><div class="info"><b>PARASITE</b><small>2019 · 2H12 · ★8,2</small></div></div>
+        <div class="actions"><span>RETIRER</span><span class="sq on">♥</span><span class="y">ON L'A VU</span></div>
+        <div class="nav"><span>TIRER</span><span>SWIPER</span><span class="on">LISTE</span></div>
+      </div>
+      <div class="phone" style="width:300px">
+        <div class="back">← LA LISTE</div>
+        <div class="ticket"><div class="poster"></div><div class="info"><b>LE VOYAGE DE CHIHIRO</b><small>2001 · 2H05 · ★8,5</small></div></div>
+        <div class="actions"><span>RETIRER</span><span class="sq">♡</span><span class="y">ON L'A VU</span></div>
+        <div class="nav"><span>TIRER</span><span>SWIPER</span><span class="on">LISTE</span></div>
+      </div>
+    </div>
+    <p class="note">Le ♥ entre RETIRER et ON L'A VU, comme le ♡ de la liste : le tampon apparaît ou disparaît sur l'affiche.</p>
+  </div>
+
+  <div class="opt" data-choice="fiche-tampon" onclick="toggleSelect(this)">
+    <h3>F2 · On tape sur le tampon lui-même</h3>
+    <div class="row" style="gap:14px">
+      <div class="phone" style="width:300px">
+        <div class="back">← LA LISTE</div>
+        <div class="ticket"><div class="poster"><div class="bigstamp">♥ COUP DE CŒUR</div></div><div class="info"><b>PARASITE</b><small>2019 · 2H12 · ★8,2</small></div></div>
+        <div class="actions"><span>RETIRER</span><span class="y">ON L'A VU</span></div>
+        <div class="nav"><span>TIRER</span><span>SWIPER</span><span class="on">LISTE</span></div>
+      </div>
+      <div class="phone" style="width:300px">
+        <div class="back">← LA LISTE</div>
+        <div class="ticket"><div class="poster"><div class="ghost">♡ COUP DE CŒUR ?</div></div><div class="info"><b>LE VOYAGE DE CHIHIRO</b><small>2001 · 2H05 · ★8,5</small></div></div>
+        <div class="actions"><span>RETIRER</span><span class="y">ON L'A VU</span></div>
+        <div class="nav"><span>TIRER</span><span>SWIPER</span><span class="on">LISTE</span></div>
+      </div>
+    </div>
+    <p class="note">Pas marqué : un tampon en pointillés, à moitié transparent, à taper. Marqué : le vrai tampon (le retaper l'enlève). Plus joli, mais moins évident à découvrir.</p>
+  </div>
+</div>
+
+<h2 class="step">3 · TIRER : le filtre, puis le film tiré</h2>
+<p class="why">Le filtre « ON TIRE PARMI » ne change pas. Le film tiré porte le tampon sur son affiche dès qu'il est coup de cœur, filtre actif ou non. En variante : le gros bouton qui passe au rose quand le filtre est actif.</p>
+<div class="row">
+  <div class="opt" data-choice="bouton-jaune" onclick="toggleSelect(this)">
+    <h3>T1 · Le bouton reste jaune</h3>
+    <div class="phone">
+      <div class="pill"><span><i></i>NOUS DEUX ▾</span></div>
+      <div class="title">CE SOIR<br>ON REGARDE</div>
+      <div class="sub">5 FILMS À REGARDER · DONT 2 ♥ · 0 VU</div>
+      <div style="height:10px"></div>
+      <div class="panel">
+        <header><span>LA SOIRÉE<small>COUPS DE CŒUR</small></span><span>▴</span></header>
+        <div class="grp"><label>ON TIRE PARMI</label><div class="chips"><span class="chip">TOUTE LA LISTE</span><span class="chip pink on">♥ NOS COUPS DE CŒUR · 2</span></div></div>
+        <div class="grp"><label>FINI AVANT</label><div class="chips"><span class="chip on">PEU IMPORTE</span><span class="chip">22H30</span><span class="chip">23H</span></div></div>
+      </div>
+      <div class="big">TIRER<br>UN<br>FILM</div>
+      <div class="nav"><span class="on">TIRER</span><span>SWIPER</span><span>LISTE</span></div>
+    </div>
+  </div>
+  <div class="opt" data-choice="bouton-rose" onclick="toggleSelect(this)">
+    <h3>T2 · Le bouton passe au rose</h3>
+    <div class="phone">
+      <div class="pill"><span><i></i>NOUS DEUX ▾</span></div>
+      <div class="title">CE SOIR<br>ON REGARDE</div>
+      <div class="sub">5 FILMS À REGARDER · DONT 2 ♥ · 0 VU</div>
+      <div style="height:10px"></div>
+      <div class="panel">
+        <header><span>LA SOIRÉE<small>COUPS DE CŒUR</small></span><span>▴</span></header>
+        <div class="grp"><label>ON TIRE PARMI</label><div class="chips"><span class="chip">TOUTE LA LISTE</span><span class="chip pink on">♥ NOS COUPS DE CŒUR · 2</span></div></div>
+        <div class="grp"><label>FINI AVANT</label><div class="chips"><span class="chip on">PEU IMPORTE</span><span class="chip">22H30</span><span class="chip">23H</span></div></div>
+      </div>
+      <div class="big pink">TIRER<br>UN COUP<br>DE CŒUR</div>
+      <div class="nav"><span class="on">TIRER</span><span>SWIPER</span><span>LISTE</span></div>
+    </div>
+  </div>
+  <div>
+    <h3 style="font-family:var(--display);font-size:14px;margin:12px 6px 10px">Le film tiré</h3>
+    <div class="phone">
+      <div class="pill"><span><i></i>NOUS DEUX ▾</span></div>
+      <div class="kicker">← RETOUR &nbsp;&nbsp;&nbsp; CE SOIR, CE SERA…</div>
+      <div class="ticket"><div class="poster short"><div class="bigstamp">♥ COUP DE CŒUR</div></div><div class="yellowstamp">FINI À 23H19</div><div class="info"><b>PARASITE</b><small>2019 · 2H12 · ★8,2</small></div></div>
+      <div class="actions"><span>RETIRER</span><span class="y">ON LE REGARDE</span></div>
+      <div class="nav"><span class="on">TIRER</span><span>SWIPER</span><span>LISTE</span></div>
+    </div>
+    <p class="note" style="font-size:12px;max-width:320px;margin:10px 6px 0;line-height:1.45">Même tampon que sur la fiche, en bas à gauche de l'affiche ; « FINI À 23H19 » garde sa place en haut à droite.</p>
+  </div>
+</div>
+
+<h2 class="step">4 · SWIPER : si le film est déjà un coup de cœur</h2>
+<p class="why">Tu as écrit « quand on swipe ». J'ai compris le film tiré (section 3), mais au cas où : SWIPER montre aussi les films que l'autre a déjà gardés (pour qu'on les veuille à deux). Si Becca en a fait un coup de cœur, sa carte pourrait porter le tampon.</p>
+<div class="row">
+  <div class="opt" data-choice="swipe-tampon" onclick="toggleSelect(this)">
+    <h3>S1 · Le tampon aussi sur la carte</h3>
+    <div class="phone">
+      <div class="pill"><span><i></i>NOUS DEUX ▾</span></div>
+      <div class="kicker">LES MIEUX NOTÉS</div>
+      <div class="chips" style="margin-bottom:12px"><span class="chip on">LES MIEUX NOTÉS</span><span class="chip">ANNÉES 80</span><span class="chip">ANIMATION</span></div>
+      <div class="ticket"><div class="poster"><div class="netflix">NETFLIX</div><div class="bigstamp">♥ COUP DE CŒUR</div></div><div class="info"><b>WHIPLASH</b><small>2014 · 1H47 · ★8,2</small><br><small>voulu par Becca</small></div></div>
+      <div class="actions"><span>✕ BOF</span><span style="background:var(--pink)">ON LE VEUT ♥</span></div>
+      <div class="nav"><span>TIRER</span><span class="on">SWIPER</span><span>LISTE</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
