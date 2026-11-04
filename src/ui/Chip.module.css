@@ -25,6 +25,13 @@
   box-shadow: var(--shadow-offset-xs), var(--glow-yellow);
 }
 
+/* Ink on the pink, for contrast. */
+.pink[aria-pressed="true"] {
+  background: var(--pink);
+  box-shadow: var(--shadow-offset-xs), var(--glow-pink);
+  color: var(--on-pink);
+}
+
 .chip:active {
   transform: translate(1px, 1px);
   box-shadow: none;

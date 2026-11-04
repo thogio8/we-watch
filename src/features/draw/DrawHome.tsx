@@ -17,6 +17,7 @@ interface DrawHomeProps {
   counts: ListCounts;
   filters: TonightFilters;
   platforms: readonly Platform[];
+  favoriteCount: number;
   onFiltersChange: (filters: TonightFilters) => void;
   filtering: boolean;
   eligibleCount: number;
@@ -33,13 +34,14 @@ export function DrawHome(props: DrawHomeProps) {
     <div className={cx(styles.home, hasList && styles.split)}>
       <div className={styles.head}>
         <Headline lines={["CE SOIR", "ON REGARDE"]} className={styles.brand} />
-        <p className={styles.small}>{homeCounts(counts)}</p>
+        <p className={cx(styles.small, styles.counts)}>{homeCounts(counts)}</p>
       </div>
       {hasList && (
         <div className={styles.side}>
           <TonightPanel
             filters={filters}
             platforms={platforms}
+            favoriteCount={props.favoriteCount}
             onChange={onFiltersChange}
           />
         </div>
@@ -75,13 +77,18 @@ function DrawAction({
       </>
     );
   }
+  const { lines, tone } = drawButton(filters, eligibleCount);
   return (
     <button
       type="button"
-      className={cx(styles.big, hasList && styles.compact)}
+      className={cx(
+        styles.big,
+        hasList && styles.compact,
+        tone === "pink" && styles.pink,
+      )}
       onClick={onDraw}
     >
-      <Lines lines={drawButton(filters, eligibleCount).lines} />
+      <Lines lines={lines} />
     </button>
   );
 }

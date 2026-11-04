@@ -45,7 +45,11 @@ function screenFor({
     <DrawScreen
       groupId={groupId}
       toWatch={toWatch}
-      counts={{ toWatch: toWatch.length, watched, favorites: 0 }}
+      counts={{
+        toWatch: toWatch.length,
+        watched,
+        favorites: toWatch.filter((m) => m.favoriteAt !== null).length,
+      }}
       onWatched={onWatched ?? (() => Promise.resolve())}
       pill={pill}
     />
@@ -627,5 +631,133 @@ describe("DrawScreen : filtres « ce soir »", () => {
         name: "Bande-annonce de WHIPLASH (YouTube)",
       }),
     ).toBeVisible();
+  });
+});
+
+describe("DrawScreen : tirer parmi nos coups de cœur", () => {
+  const loved = (m: Movie): Movie => ({
+    ...m,
+    favoriteAt: new Date(2026, 9, 20),
+    favoriteBy: "Léa",
+  });
+  const amelie = loved(movie(194, "LE FABULEUX DESTIN D’AMÉLIE POULAIN"));
+  const parasite = loved(movie(496243, "PARASITE", { runtimeMinutes: 132 }));
+  const others = [
+    CHIHIRO,
+    WHIPLASH,
+    movie(13, "FORREST GUMP", { runtimeMinutes: 142 }),
+  ];
+  const openPanel = (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole("button", { name: /^LA SOIRÉE/ }));
+  const among = () => screen.getByRole("group", { name: "ON TIRE PARMI" });
+  const choice = (name: string) =>
+    within(among()).getByRole("button", { name });
+
+  it("sans coup de cœur : ni ligne « ON TIRE PARMI », ni « dont », le bouton jaune de la 2.0", async () => {
+    const { user } = renderDraw({ toWatch: others });
+    await openPanel(user);
+
+    expect(screen.queryByText("ON TIRE PARMI")).not.toBeInTheDocument();
+    expect(screen.getByText("3 films à regarder · 0 vu")).toBeVisible();
+    expect(drawButton()).toBeVisible();
+  });
+
+  it("avec des coups de cœur : la ligne « ON TIRE PARMI » vient en premier", async () => {
+    const { user } = renderDraw({ toWatch: [...others, amelie, parasite] });
+    await openPanel(user);
+
+    expect(screen.getAllByRole("group")[0]).toBe(among());
+    expect(choice("TOUTE LA LISTE")).toHaveAttribute("aria-pressed", "true");
+    expect(choice("♥ NOS COUPS DE CŒUR · 2")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(
+      screen.getByText("5 films à regarder · dont 2 ♥ · 0 vu"),
+    ).toBeVisible();
+    expect(drawButton()).toBeVisible();
+  });
+
+  it("filtre actif : le bouton rose dit TIRER UN COUP DE CŒUR, le résumé COUPS DE CŒUR, seul un coup de cœur sort", async () => {
+    // Math.random() is 0: without the filter, CHIHIRO would come out.
+    const { user } = renderDraw({ toWatch: [...others, parasite] });
+    await openPanel(user);
+
+    await user.click(choice("♥ NOS COUPS DE CŒUR · 1"));
+    expect(choice("♥ NOS COUPS DE CŒUR · 1")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(choice("TOUTE LA LISTE")).toHaveAttribute("aria-pressed", "false");
+    const pink = screen.getByRole("button", { name: "TIRER UN COUP DE CŒUR" });
+    await openPanel(user);
+    expect(
+      screen.getByRole("button", { name: /^LA SOIRÉE/ }),
+    ).toHaveTextContent("COUPS DE CŒUR");
+
+    await user.click(pink);
+
+    expect(
+      await screen.findByRole("heading", { name: "PARASITE" }),
+    ).toBeVisible();
+  });
+
+  it("le film tiré porte le tampon dès qu’il est coup de cœur, filtre actif ou non ; ce n’est pas un bouton", async () => {
+    const { user } = renderDraw({ toWatch: [parasite] });
+
+    await user.click(drawButton());
+
+    const ticket = await screen.findByRole("article");
+    expect(within(ticket).getByText("COUP DE CŒUR")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Coup de cœur/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("FINI À 23H19")).toBeVisible();
+  });
+
+  it("un film tiré qui n’est pas coup de cœur ne porte pas le tampon", async () => {
+    const { user } = renderDraw({ toWatch: [CHIHIRO] });
+
+    await user.click(drawButton());
+
+    await screen.findByText("FINI À 23H12");
+    expect(screen.queryByText("COUP DE CŒUR")).not.toBeInTheDocument();
+  });
+
+  it("le dernier coup de cœur disparaît (rerender sans coup de cœur) : le filtre retombe et la ligne s’efface", async () => {
+    const { user, rerender } = renderDraw({ toWatch: [...others, parasite] });
+    await openPanel(user);
+    await user.click(choice("♥ NOS COUPS DE CŒUR · 1"));
+
+    rerender({ toWatch: [...others, { ...parasite, favoriteAt: null }] });
+
+    expect(
+      screen.queryByRole("group", { name: "ON TIRE PARMI" }),
+    ).not.toBeInTheDocument();
+    expect(drawButton()).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /^LA SOIRÉE/ }),
+    ).not.toHaveTextContent("COUPS DE CŒUR");
+  });
+
+  it("AUCUN FILM NE COLLE puis ENLEVER LES FILTRES remet aussi TOUTE LA LISTE", async () => {
+    const { user } = renderDraw({ toWatch: [...others, parasite] });
+    await openPanel(user);
+    await user.click(choice("♥ NOS COUPS DE CŒUR · 1"));
+    // PARASITE ends at 23:19: too late for 22:30.
+    await user.click(
+      within(screen.getByRole("group", { name: "FINI AVANT" })).getByRole(
+        "button",
+        { name: "22H30" },
+      ),
+    );
+    expect(screen.getByText("AUCUN FILM NE COLLE")).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", { name: "ENLEVER LES FILTRES" }),
+    );
+
+    expect(drawButton()).toBeVisible();
+    expect(choice("TOUTE LA LISTE")).toHaveAttribute("aria-pressed", "true");
   });
 });

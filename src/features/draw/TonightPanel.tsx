@@ -16,6 +16,8 @@ interface TonightPanelProps {
   filters: TonightFilters;
   /** Platforms found in the « à voir » list. */
   platforms: readonly Platform[];
+  /** « à voir » favourites: the « ON TIRE PARMI » row only shows past 0. */
+  favoriteCount: number;
   onChange: (filters: TonightFilters) => void;
 }
 
@@ -55,6 +57,7 @@ function TonightChoices({
   id,
   filters,
   platforms,
+  favoriteCount,
   onChange,
 }: TonightPanelProps & { id: string }) {
   const set = (patch: Partial<TonightFilters>) =>
@@ -62,6 +65,15 @@ function TonightChoices({
 
   return (
     <div id={id} className={styles.body}>
+      {favoriteCount > 0 && (
+        <FavoritesChoice
+          id={`${id}-among`}
+          favoritesOnly={filters.favoritesOnly}
+          count={favoriteCount}
+          onChange={(favoritesOnly) => set({ favoritesOnly })}
+        />
+      )}
+
       <ChipGroup id={`${id}-bedtime`} label="FINI AVANT">
         <Chip
           pressed={filters.bedtime === null}
@@ -112,6 +124,30 @@ function TonightChoices({
         </ChipGroup>
       )}
     </div>
+  );
+}
+
+/** Variant T2's first row: the whole list, or our favourites only. */
+function FavoritesChoice({
+  id,
+  favoritesOnly,
+  count,
+  onChange,
+}: {
+  id: string;
+  favoritesOnly: boolean;
+  count: number;
+  onChange: (favoritesOnly: boolean) => void;
+}) {
+  return (
+    <ChipGroup id={id} label="ON TIRE PARMI">
+      <Chip pressed={!favoritesOnly} onClick={() => onChange(false)}>
+        TOUTE LA LISTE
+      </Chip>
+      <Chip tone="pink" pressed={favoritesOnly} onClick={() => onChange(true)}>
+        {`♥ NOS COUPS DE CŒUR · ${count}`}
+      </Chip>
+    </ChipGroup>
   );
 }
 
