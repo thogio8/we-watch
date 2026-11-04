@@ -259,13 +259,16 @@ jobs:
             sha="$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json headRefOid -q .headRefOid)"
             state=success
             description="version files only"
-            if ! gh pr diff "$number" --repo "$GITHUB_REPOSITORY" --name-only | node scripts/release-pr-files.mjs; then
+            # Renames and deletions list both names; a failed call fails closed.
+            files="$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$number/files" --jq '.[] | .filename, (.previous_filename // empty)')" || files=""
+            if ! node scripts/release-pr-files.mjs <<<"$files"; then
               state=failure
               description="the release PR changes other files"
             fi
             gh api "repos/$GITHUB_REPOSITORY/statuses/$sha" -f state="$state" -f context=github-actions/release-files -f description="$description"
             if [ "$state" != success ]; then exit 1; fi
-            gh pr merge "$number" --repo "$GITHUB_REPOSITORY" --squash
+            # Only the head that was checked: a later push to the branch is refused.
+            gh pr merge "$number" --repo "$GITHUB_REPOSITORY" --rebase --match-head-commit "$sha"
             echo "merged=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Tag and publish the release
