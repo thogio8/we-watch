@@ -7,7 +7,7 @@ import {
   test as base,
 } from "@playwright/test";
 import { testUtils } from "better-auth/plugins";
-import { eq, sql } from "drizzle-orm";
+import { eq, isNotNull, sql } from "drizzle-orm";
 import { createAuth } from "../src/auth/create-auth";
 import {
   account,
@@ -360,6 +360,29 @@ export async function decidedOn(date: Date) {
     .set({
       decidedAt: sql`${groupMovie.decidedAt} - (select max(${groupMovie.decidedAt}) from ${groupMovie}) + ${date.getTime()}`,
     });
+}
+
+/**
+ * Moves every favourite's date to `date`: the server stamps them with today,
+ * and the movie page shows « coup de cœur de Léa le … ».
+ */
+export async function favoritedOn(date: Date) {
+  await db()
+    .update(groupMovie)
+    .set({ favoriteAt: date })
+    .where(isNotNull(groupMovie.favoriteAt));
+}
+
+/** The ♡ / ♥ button of a film, on its list row or on its page's poster. */
+export const heart = (page: Page, title: string) =>
+  page.getByRole("button", { name: `Coup de cœur\u00A0: ${title}` });
+
+/** Marks `title` from the list, once the page brings its ♥ back. */
+export async function markFromList(page: Page, title: string) {
+  await page.goto("/list");
+  await heart(page, title).click();
+  await expect(heart(page, title)).toHaveAttribute("aria-pressed", "true");
+  await settled(page);
 }
 
 /**
