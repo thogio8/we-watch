@@ -238,6 +238,7 @@ Règles retenues :
 - **Liste et recherche** : grille de lignes (`auto-fill`, 300 px min) en large.
 - **Thèmes du swipe** : défilement avec fondu au bord sur téléphone, sur plusieurs lignes centrées en large.
 - Bandeaux (« ↺ ANNULER », erreurs) : hors des boutons dans chaque disposition.
+- **Plus étroit que 330 px de colonne** (`@container shell (max-width: 329px)`, les plus petits téléphones) : sur la LISTE, les deux boutons d'une ligne (♥ au-dessus de ✕) s'empilent pour laisser son titre entier.
 
 ## 13. V1.2.2 et V1.2.3 : finitions et entretien (2026-10-27)
 

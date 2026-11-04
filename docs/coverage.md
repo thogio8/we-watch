@@ -1,6 +1,6 @@
 # Couverture et tests
 
-Date : 2026-10-23 · mise à jour : 2026-11-02 (V2.0, comptes, passkeys, groupes, invitations, « MON COMPTE » et blindage)
+Date : 2026-10-23 · mise à jour : 2026-11-04 (V2.1, coups de cœur)
 
 ## Les trois niveaux de tests
 
@@ -14,11 +14,11 @@ Tout tourne dans `npm run ci` (hook `pre-push`, et GitHub Actions en filet).
 
 ## Porte de couverture
 
-`npm run test:coverage` : 1532 tests, 140 fichiers, **100 %** partout.
+`npm run test:coverage` : 1697 tests, 158 fichiers, **100 %** partout.
 
 Périmètre (`vitest.config.ts`) : **tous les modules `.ts` de `src/`**, sauf les hooks React (`use*.ts`, couverts par les tests UI et e2e), le câblage (`server/container.ts`, `proxy.ts`, la route `/api/auth/*` et le client navigateur de Better Auth `features/signin/authClient.ts`), le manifeste PWA et les couleurs des icônes. Un nouveau module de logique y entre donc tout seul.
 
-Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys) ; 920 (+ 96 e2e, dont 44 captures visuelles) après la V2.0 (groupes) ; 1145 (+ 150 e2e, dont 60 captures visuelles) après la V2.0 (invitations) ; 1344 (+ 143 e2e exécutés, dont 68 captures visuelles) après la V2.0 (« MON COMPTE ») ; 1532 (+ 157 e2e exécutés, dont 68 captures visuelles) après la V2.0 (blindage).
+Historique : 84 tests à la porte V1 ; 246 après la V1.1 ; 369 après la V1.2 ; 388 après la V1.2.3 ; 454 (+ 35 e2e) après la V1.2.4 ; 485 (+ 45 e2e, dont 24 captures visuelles) après la V1.3 ; 715 (+ 61 e2e, dont 32 captures visuelles) après la V2.0 (comptes et passkeys) ; 920 (+ 96 e2e, dont 44 captures visuelles) après la V2.0 (groupes) ; 1145 (+ 150 e2e, dont 60 captures visuelles) après la V2.0 (invitations) ; 1344 (+ 143 e2e exécutés, dont 68 captures visuelles) après la V2.0 (« MON COMPTE ») ; 1532 (+ 157 e2e exécutés, dont 68 captures visuelles) après la V2.0 (blindage) ; 1697 après la V2.1 (coups de cœur).
 
 ## Seuils
 
@@ -57,6 +57,7 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/db/decisions.ts | 100% | 100% | 100% | 100% |
 | src/db/group-list.ts | 100% | 100% | 100% | 100% |
 | src/db/group-schema.ts | 100% | 100% | 100% | 100% |
+| src/db/favorites.ts | 100% | 100% | 100% | 100% |
 | src/db/groups.ts | 100% | 100% | 100% | 100% |
 | src/db/housekeeping.ts | 100% | 100% | 100% | 100% |
 | src/db/invitations.ts | 100% | 100% | 100% | 100% |
@@ -98,6 +99,7 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/features/list/searchAnswer.ts | 100% | 100% | 100% | 100% |
 | src/features/list/tabs.ts | 100% | 100% | 100% | 100% |
 | src/features/list/toWatchMeta.ts | 100% | 100% | 100% | 100% |
+| src/features/list/toWatchSections.ts | 100% | 100% | 100% | 100% |
 | src/features/movie/load.ts | 100% | 100% | 100% | 100% |
 | src/features/refresh/refresh-movies.ts | 100% | 100% | 100% | 100% |
 | src/features/signin/actions.ts | 100% | 100% | 100% | 100% |
@@ -121,5 +123,6 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/tmdb/schemas.ts | 100% | 100% | 100% | 100% |
 | src/tmdb/search-rank.ts | 100% | 100% | 100% | 100% |
 | src/ui/cx.ts | 100% | 100% | 100% | 100% |
+| src/ui/favorite.ts | 100% | 100% | 100% | 100% |
 | src/ui/movieMeta.ts | 100% | 100% | 100% | 100% |
 | src/ui/quoted.ts | 100% | 100% | 100% | 100% |

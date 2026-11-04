@@ -65,7 +65,7 @@ Toutes les couleurs dans `src/styles/tokens.css` (un rose pâle pour le fond de 
 - Onglet « VUS » : rien ne change (un film vu n'est jamais coup de cœur).
 
 ### 6.2 Fiche d'un film (variante F2)
-- Film « à voir » coup de cœur : gros tampon « ♥ COUP DE CŒUR » sur l'affiche, en bas à gauche, incliné, texte rose sur papier, contour encre, ombre décalée.
+- Film « à voir » coup de cœur : gros tampon « ♥ COUP DE CŒUR » sur l'affiche, en bas à gauche, incliné, mots à l'encre (du rose sur le papier ne passe pas le contraste : 2,95:1) et seul le glyphe ♥ en rose, contour encre, ombre décalée.
 - Film « à voir » pas coup de cœur : à la même place, un tampon **en pointillés**, semi-transparent, « ♡ COUP DE CŒUR ? ».
 - Le tampon **est le bouton** : taper le fantôme marque, taper le vrai tampon démarque. Un vrai `<button>` avec `aria-pressed` et un nom accessible explicite, focus visible. Pas d'autre bouton ni de pastille dans les infos (F1 et la pastille de la v1 refusées par le mainteneur). Le mainteneur trouvait F2 moins facile à découvrir : c'est accepté, car le marquage principal reste le ♡ de la liste, toujours visible.
 - Film « vu » : ni tampon ni fantôme.
@@ -96,7 +96,7 @@ Selon CLAUDE.md (« Définition de fini »), notamment :
 
 - Une seule pull request (branche `feat/coups-de-coeur` partie de `main` après la 2.0.3), fusionnée en `--rebase` une fois la CI verte : son commit `feat` fait publier la **2.1.0** par release-please (CLAUDE.md, « Livrer une version »).
 - La migration `0012` se génère sur cette branche à jour de `main` ; si `main` reçoit une migration avant la fusion, rebaser et régénérer `0012` (CLAUDE.md, « Migrations dans l'ordre »).
-- La suppression des restes d'avant les comptes (`movies`, `legacy`, `watched_legacy`, `ACCESS_CODE`) n'est **pas** dans cette version : CLAUDE.md, la spec v2 et le README la disent « en 2.1 », à corriger en « dans une version suivante » avec cette livraison.
+- La suppression des restes d'avant les comptes (`movies`, `legacy`, `watched_legacy`, `ACCESS_CODE`) n'est **pas** dans cette version : CLAUDE.md, la spec v2 et le README la disaient en 2.1 : corrigé en « dans une version suivante » avec cette livraison.
 
 ## 9. Laissé au builder
 
