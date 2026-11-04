@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import type {
   ListCounts,
   Movie,
@@ -33,13 +33,15 @@ interface ApplyInput {
 export interface GroupList {
   /** A movie of the group's list (« à voir » or « vu »), null otherwise. */
   findInList(groupId: string, tmdbId: number): Promise<Movie | null>;
-  /** to_watch: decidedAt desc; watched: watchedAt desc. */
+  /**
+   * to_watch: favourites first (favoriteAt desc), then decidedAt desc;
+   * watched: watchedAt desc.
+   */
   listByStatus(
     groupId: string,
     status: "to_watch" | "watched",
   ): Promise<Movie[]>;
-  // Task 3 adds the favourites count.
-  counts(groupId: string): Promise<Omit<ListCounts, "favorites">>;
+  counts(groupId: string): Promise<ListCounts>;
   /** Status in the group's list, set-aside movies included. */
   statusesOf(
     groupId: string,
@@ -86,21 +88,35 @@ export function createGroupList(db: Database): GroupList {
 
     listByStatus(groupId, status) {
       const order =
-        status === "watched" ? groupMovie.watchedAt : groupMovie.decidedAt;
-      return selectMovies(db, groupId, eq(groupMovie.status, status), [
-        desc(order),
-      ]);
+        status === "watched"
+          ? [desc(groupMovie.watchedAt)]
+          : [
+              sql`${groupMovie.favoriteAt} IS NULL`,
+              desc(groupMovie.favoriteAt),
+              desc(groupMovie.decidedAt),
+            ];
+      return selectMovies(db, groupId, eq(groupMovie.status, status), order);
     },
 
     async counts(groupId) {
       const rows = await db
-        .select({ status: groupMovie.status, n: count() })
+        .select({
+          status: groupMovie.status,
+          n: count(),
+          // Counts the non-null favourite dates only.
+          favorites: count(groupMovie.favoriteAt),
+        })
         .from(groupMovie)
         .where(eq(groupMovie.groupId, groupId))
         .groupBy(groupMovie.status);
       const of = (status: MovieStatus) =>
         rows.find((r) => r.status === status)?.n ?? 0;
-      return { toWatch: of("to_watch"), watched: of("watched") };
+      return {
+        toWatch: of("to_watch"),
+        watched: of("watched"),
+        // Only a movie still to watch is a favourite.
+        favorites: rows.find((r) => r.status === "to_watch")?.favorites ?? 0,
+      };
     },
 
     async statusesOf(groupId, ids) {

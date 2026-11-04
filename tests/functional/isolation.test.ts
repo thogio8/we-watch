@@ -200,6 +200,7 @@ describe("isolation des groupes (fonctionnel, sécurité)", () => {
     expect(await getGroupList().counts(other)).toEqual({
       toWatch: 0,
       watched: 0,
+      favorites: 0,
     });
   });
 });
