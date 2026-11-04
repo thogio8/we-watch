@@ -28,6 +28,8 @@ Chaque workflow se relance à la main (`workflow_dispatch`, onglet Actions → �
 
 **Sauvegarde et exercice de restauration** : la base de production est sauvegardée, chiffrée (artefact `db-backup-nightly-<run>`, 90 jours), puis la sauvegarde est restaurée dans une base SQLite locale jetable et comparée table par table (`scripts/verify-restore.mjs`). Elle prouve qu'une sauvegarde sert vraiment à restaurer : un compte de lignes différent, ou une sauvegarde sans aucune ligne, fait échouer le run. La sauvegarde prend le même groupe de concurrence que la mise en ligne : elle ne lit jamais la base au milieu d'une migration. Marche à suivre d'une vraie restauration : [`docs/restauration.md`](restauration.md).
 
+Le dépôt étant public, les artefacts de sauvegarde chiffrés (release et nuit, 90 jours) sont téléchargeables par tout utilisateur GitHub connecté : leur confidentialité repose entièrement sur `BACKUP_KEY` (AES-256-GCM, IV aléatoire), jamais commitée ni affichée.
+
 **Fumée de la production** : les mêmes vérifications qu'après une mise en ligne (connexion, en-têtes de sécurité, clés d'accès liées à la bonne adresse, routes fermées, requêtes d'un autre site refusées), sans le rafraîchissement quotidien, que Vercel lance déjà.
 
 **e2e répété** : toute la suite, trois fois, sans nouvelle tentative. Un test instable apparaît ici plutôt que lors d'une livraison. Résultat : onglet Actions, rapports Playwright en artefact en cas d'échec.

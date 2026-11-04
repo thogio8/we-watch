@@ -1,5 +1,5 @@
 # The only road to production (Vercel's Git auto-deploy is off, vercel.json).
-# Three jobs run side by side, the release waits for all of them:
+# Jobs side by side (dependency-review on pull requests only), the release waits for the others:
 #   checks  → format, lint, types, duplicates, dead code, unit tests
 #   e2e     → build + Playwright, split over four machines (the four jobs
 #             together = `npm run ci`, the local pre-push hook, lefthook.yml)
