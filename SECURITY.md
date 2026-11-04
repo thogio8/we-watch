@@ -6,7 +6,7 @@ Seule la **dernière version** (la dernière release GitHub, déployée en produ
 
 ## Signaler une faille
 
-**Pas d'issue publique pour une faille.** Utilisez le signalement privé de GitHub : onglet **Security** du dépôt → **Report a vulnerability**. Le message n'est lu que par le mainteneur.
+**Pas d'issue publique pour une faille.** Utilisez le signalement privé de GitHub : onglet **Security** du dépôt → **Report a vulnerability** ([lien direct](https://github.com/thogio8/we-watch/security/advisories/new)). Le message n'est lu que par le mainteneur.
 
 WeWatch est un projet personnel : visez **une semaine** pour une première réponse. Indiquez ce que vous avez observé, comment le reproduire et, si vous le savez, ce que cela permet. Merci de ne pas tester sur l'instance de production d'un tiers.
 
@@ -24,7 +24,7 @@ Le détail, les risques acceptés et les correctifs sont dans [`docs/security-au
 
 - **CodeQL** : analyse statique du code, onglet Security → Code scanning.
 - **Secret scanning et push protection** : un secret poussé par erreur est détecté, ou refusé avant le push.
-- **Dependabot** : alertes et mises à jour de sécurité des dépendances, et mises à jour hebdomadaires de la pile.
+- **Dependabot** : alertes et mises à jour de sécurité des dépendances, et pull request de mises à jour des dépendances npm chaque lundi (celles des actions GitHub : chaque mois).
 - **Revue des dépendances** sur chaque pull request : une dépendance ajoutée avec une faille connue de sévérité haute fait échouer ce contrôle.
 - **OpenSSF Scorecard** : l'hygiène du dépôt, mesurée chaque lundi.
 
