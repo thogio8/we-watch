@@ -20,6 +20,13 @@ const PARASITE = aMovie(496243, {
   trailerKey: "isOGD_7hNIY",
   decidedAt: new Date("2026-10-03T18:00:00Z"),
 });
+const BECCAS_FAVORITE: Movie = {
+  ...PARASITE,
+  addedBy: "Léa",
+  wantedBy: ["Léa", "Becca"],
+  favoriteAt: new Date("2026-11-04T19:00:00Z"),
+  favoriteBy: "Becca",
+};
 const CREDITS: MovieCredits = {
   directors: ["Bong Joon-ho"],
   cast: ["Song Kang-ho", "Lee Sun-kyun"],
@@ -33,6 +40,9 @@ function renderMovie(
     onWatched: vi.fn(() => Promise.resolve()),
     onUnwatch: vi.fn(() => Promise.resolve()),
     onRemove: vi.fn(() => Promise.resolve()),
+    onFavorite: vi.fn<(tmdbId: number, on: boolean) => Promise<void>>(() =>
+      Promise.resolve(),
+    ),
   };
   render(<MovieScreen movie={movie} credits={credits} actions={actions} />);
   return { user: userEvent.setup(), ...actions };
@@ -156,6 +166,68 @@ describe("fiche d'un film", () => {
     );
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "ON L’A VU" })).toBeEnabled();
+  });
+
+  it("à voir, pas coup de cœur : le tampon fantôme est un bouton non pressé qui marque", async () => {
+    const { user, onFavorite } = renderMovie();
+
+    // Testing Library folds the no-break space: match it with \s.
+    const button = screen.getByRole("button", {
+      name: /^Coup de cœur\s: Parasite$/,
+    });
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    expect(button).toHaveTextContent(/♡\s*COUP DE CŒUR\s\?/);
+    await user.click(button);
+
+    expect(onFavorite).toHaveBeenCalledExactlyOnceWith(496243, true);
+  });
+
+  it("coup de cœur : le vrai tampon est pressé, le taper démarque, sans quitter la fiche", async () => {
+    const { user, onFavorite } = renderMovie(BECCAS_FAVORITE);
+    push.mockClear();
+
+    const button = screen.getByRole("button", {
+      name: /^Coup de cœur\s: Parasite$/,
+    });
+    expect(button).toHaveAttribute("aria-pressed", "true");
+    expect(button).toHaveTextContent(/♥\s*COUP DE CŒUR/);
+    expect(button).not.toHaveTextContent("?");
+    await user.click(button);
+
+    await waitFor(() =>
+      expect(onFavorite).toHaveBeenCalledExactlyOnceWith(496243, false),
+    );
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("vu : ni tampon ni fantôme", () => {
+    renderMovie({ ...BECCAS_FAVORITE, status: "watched" });
+
+    expect(screen.queryByRole("button", { name: /^Coup de cœur/ })).toBeNull();
+    expect(screen.queryByText(/COUP DE CŒUR/i)).toBeNull();
+  });
+
+  it("CHEZ NOUS : « coup de cœur de Becca le 4 novembre 2026 » juste après « voulu par »", () => {
+    renderMovie(BECCAS_FAVORITE);
+
+    expect(lines("CHEZ NOUS")).toEqual([
+      "ajouté par Léa le 3 octobre 2026",
+      "voulu par Léa et Becca",
+      "coup de cœur de Becca le 4 novembre 2026",
+    ]);
+  });
+
+  it("un échec du tampon le dit et laisse réessayer", async () => {
+    const { user, onFavorite } = renderMovie();
+    onFavorite.mockRejectedValueOnce(new Error("offline"));
+    const button = screen.getByRole("button", { name: /^Coup de cœur/ });
+
+    await user.click(button);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "PAS RÉUSSI, RÉESSAIE",
+    );
+    expect(button).toBeEnabled();
   });
 
   it("un film hors de la liste : introuvable, avec le chemin du retour", () => {

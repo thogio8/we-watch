@@ -1,10 +1,11 @@
 import Link from "next/link";
-import type { Movie } from "@/domain/movie";
+import { isFavorite, type Movie } from "@/domain/movie";
 import type { MovieCredits } from "@/tmdb/credits";
 import { Headline } from "@/ui/Headline";
 import { Poster } from "@/ui/Poster";
 import { Ticket } from "@/ui/Ticket";
 import { TicketDetails } from "@/ui/TicketDetails";
+import { FavoriteToggle } from "./FavoriteToggle";
 import { MovieActions, type MovieActionsProps } from "./MovieActions";
 import { MovieFacts } from "./MovieFacts";
 import styles from "./MovieScreen.module.css";
@@ -12,7 +13,9 @@ import styles from "./MovieScreen.module.css";
 interface MovieScreenProps {
   movie: Movie;
   credits: MovieCredits | null;
-  actions: Pick<MovieActionsProps, "onWatched" | "onUnwatch" | "onRemove">;
+  actions: Pick<MovieActionsProps, "onWatched" | "onUnwatch" | "onRemove"> & {
+    onFavorite: (tmdbId: number, on: boolean) => Promise<unknown>;
+  };
 }
 
 const BackToList = () => (
@@ -23,6 +26,7 @@ const BackToList = () => (
 
 /** A movie of our list in full (spec §14.2). */
 export function MovieScreen({ movie, credits, actions }: MovieScreenProps) {
+  const { onFavorite, ...moveActions } = actions;
   return (
     <main className={styles.screen}>
       <BackToList />
@@ -31,13 +35,27 @@ export function MovieScreen({ movie, credits, actions }: MovieScreenProps) {
         posterHeight={340}
         adaptive
         poster={
-          <Poster path={movie.posterPath} title={movie.title} size="w500" />
+          <>
+            <Poster path={movie.posterPath} title={movie.title} size="w500" />
+            {movie.status === "to_watch" && (
+              <FavoriteToggle
+                tmdbId={movie.tmdbId}
+                title={movie.title}
+                favorite={isFavorite(movie)}
+                onFavorite={onFavorite}
+              />
+            )}
+          </>
         }
       >
         <TicketDetails movie={movie} platforms="all" fullOverview />
       </Ticket>
       <MovieFacts movie={movie} credits={credits} />
-      <MovieActions tmdbId={movie.tmdbId} status={movie.status} {...actions} />
+      <MovieActions
+        tmdbId={movie.tmdbId}
+        status={movie.status}
+        {...moveActions}
+      />
     </main>
   );
 }

@@ -4,7 +4,7 @@ import { cx } from "./cx";
 
 interface StampProps {
   children: ReactNode;
-  tone: "paper" | "yellow";
+  tone: "paper" | "yellow" | "heart" | "ghost";
   /** Rotation in degrees. */
   tilt: number;
   className?: string;

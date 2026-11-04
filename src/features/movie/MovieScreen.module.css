@@ -18,6 +18,65 @@
   margin-top: 6px;
 }
 
+/* The favourite stamp is the button: no chrome of its own. */
+.favorite {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.favorite:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.favorite:disabled {
+  cursor: progress;
+}
+
+.stampHolder {
+  display: block;
+}
+
+/* The stamp lands: pressed onto the poster, then still. */
+.posed {
+  animation: stamp-down 0.28s ease-out;
+}
+
+@keyframes stamp-down {
+  from {
+    opacity: 0;
+    scale: 1.6;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* Over the poster, where the stamp is: ink on pink. */
+.favoriteFailed {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  left: 10px;
+  z-index: 1;
+  margin: 0;
+  padding: 4px 8px;
+  border: var(--border);
+  border-radius: var(--radius-chip);
+  background: var(--pink);
+  color: var(--on-pink);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
 .facts {
   display: grid;
   gap: 12px;
@@ -82,5 +141,11 @@
   .facts {
     grid-template-columns: 1fr 1fr;
     column-gap: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .posed {
+    animation: none;
   }
 }

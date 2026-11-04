@@ -21,3 +21,22 @@
   box-shadow: var(--shadow-offset-sm);
   font-size: var(--text-lg);
 }
+
+/* « ♥ COUP DE CŒUR »: a favourite, printed on the poster. */
+.heart,
+.ghost {
+  padding: 4px 9px;
+  border-radius: var(--radius-chip);
+  font-size: var(--text-md);
+}
+
+.heart {
+  background: var(--paper);
+  box-shadow: var(--shadow-offset-sm);
+}
+
+/* « ♡ COUP DE CŒUR ? »: not yet; the paper shows the poster through. */
+.ghost {
+  border: var(--border-dashed);
+  background: var(--paper-veil);
+}
