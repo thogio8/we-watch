@@ -45,7 +45,7 @@ function screenFor({
     <DrawScreen
       groupId={groupId}
       toWatch={toWatch}
-      counts={{ toWatch: toWatch.length, watched }}
+      counts={{ toWatch: toWatch.length, watched, favorites: 0 }}
       onWatched={onWatched ?? (() => Promise.resolve())}
       pill={pill}
     />

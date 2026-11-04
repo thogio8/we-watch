@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { aSnapshot } from "../../tests/helpers/movies";
+import { aMovie } from "../../tests/helpers/movies";
 import {
   fitsBefore,
   filterTonight,
@@ -27,9 +27,11 @@ const movie = fc
       maxLength: 4,
     }),
     names: fc.uniqueArray(fc.constantFrom(...PROVIDER_NAMES), { maxLength: 3 }),
+    favoriteAt: fc.option(fc.date({ noInvalidDate: true }), { nil: null }),
   })
-  .map(({ runtime, genreIds, names }) =>
-    aSnapshot(0, {
+  .map(({ runtime, genreIds, names, favoriteAt }) =>
+    aMovie(0, {
+      favoriteAt,
       runtimeMinutes: runtime,
       genreIds,
       providers: names.map((name, id) => ({ id, name, logoPath: null })),
@@ -46,6 +48,7 @@ const filters: fc.Arbitrary<TonightFilters> = fc.record({
   platforms: fc.uniqueArray(
     fc.constantFrom(...PROVIDER_NAMES.map(platformKey)),
   ),
+  favoritesOnly: fc.boolean(),
 });
 
 const now = fc.date({
@@ -81,6 +84,7 @@ describe("filterTonight (propriétés)", () => {
           if (f.bedtime !== null) {
             expect(fitsBefore(m.runtimeMinutes, d, f.bedtime)).toBe(true);
           }
+          if (f.favoritesOnly) expect(m.favoriteAt).not.toBeNull();
           if (f.moods.length > 0) {
             expect(m.genreIds.some((g) => genres.includes(g))).toBe(true);
           }

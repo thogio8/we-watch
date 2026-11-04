@@ -19,7 +19,12 @@ describe("filtersSummary", () => {
 
   it("heure de coucher, humeurs puis plateformes, en majuscules", () => {
     const summary = filtersSummary(
-      { bedtime: 24 * 60, moods: ["laugh"], platforms: ["prime"] },
+      {
+        ...NO_FILTERS,
+        bedtime: 24 * 60,
+        moods: ["laugh"],
+        platforms: ["prime"],
+      },
       [NETFLIX, PRIME],
     );
     expect(summary).toBe("AVANT MINUIT · RIRE · PRIME VIDEO");
@@ -28,5 +33,16 @@ describe("filtersSummary", () => {
   it("ignore une plateforme absente de la liste", () => {
     const filters = { ...NO_FILTERS, platforms: ["canal"] };
     expect(filtersSummary(filters, [NETFLIX])).toBe("AUCUN FILTRE");
+  });
+});
+
+describe("filtersSummary coups de cœur", () => {
+  it("le filtre coups de cœur vient en premier : COUPS DE CŒUR · AVANT MINUIT", () => {
+    expect(
+      filtersSummary(
+        { ...NO_FILTERS, favoritesOnly: true, bedtime: 24 * 60 },
+        [],
+      ),
+    ).toBe("COUPS DE CŒUR · AVANT MINUIT");
   });
 });

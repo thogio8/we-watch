@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { aMovie } from "@tests/helpers/movies";
 import type { DrawSessionState } from "@/domain/draw-session";
-import { exhaustedText, plural, resolveView, viewKey } from "./drawView";
+import { NO_FILTERS, type TonightFilters } from "@/domain/tonight";
+import {
+  drawButton,
+  exhaustedText,
+  homeCounts,
+  plural,
+  resolveView,
+  viewKey,
+} from "./drawView";
 
 const A = aMovie(1);
 const B = aMovie(2);
@@ -85,5 +93,57 @@ describe("exhaustedText", () => {
     expect(exhaustedText(2, true)).toBe(
       "Les 2 films qui collaient sont passés à la trappe",
     );
+  });
+});
+
+describe("drawButton", () => {
+  it.each<
+    [TonightFilters, number, { lines: string[]; tone: "yellow" | "pink" }]
+  >([
+    [NO_FILTERS, 5, { lines: ["TIRER", "UN", "FILM"], tone: "yellow" }],
+    [
+      { ...NO_FILTERS, moods: ["laugh"] },
+      2,
+      { lines: ["TIRER", "PARMI 2"], tone: "yellow" },
+    ],
+    [
+      { ...NO_FILTERS, favoritesOnly: true },
+      2,
+      { lines: ["TIRER", "UN COUP", "DE CŒUR"], tone: "pink" },
+    ],
+    [
+      { ...NO_FILTERS, favoritesOnly: true, moods: ["laugh"] },
+      1,
+      { lines: ["TIRER", "PARMI 1"], tone: "pink" },
+    ],
+  ])("drawButton(%o, %i)", (filters, count, expected) => {
+    expect(drawButton(filters, count)).toEqual(expected);
+  });
+});
+
+describe("homeCounts", () => {
+  it("« dont k ♥ » seulement s’il y a des coups de cœur", () => {
+    expect(homeCounts({ toWatch: 3, watched: 0, favorites: 0 })).toBe(
+      "3 films à regarder · 0 vu",
+    );
+    expect(homeCounts({ toWatch: 5, watched: 1, favorites: 2 })).toBe(
+      "5 films à regarder · dont 2 ♥ · 1 vu",
+    );
+  });
+});
+
+describe("resolveView et coup de cœur", () => {
+  it("le film tiré qui cesse d’être coup de cœur reste affiché, à jour", () => {
+    const fav = aMovie(1, { favoriteAt: new Date(2026, 10, 4) });
+    const state = session("result", { currentId: 1 });
+    expect(resolveView(state, [fav], [fav])).toEqual({
+      phase: "result",
+      movie: fav,
+    });
+    const unmarked = aMovie(1);
+    expect(resolveView(state, [unmarked], [])).toEqual({
+      phase: "result",
+      movie: unmarked,
+    });
   });
 });

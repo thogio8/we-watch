@@ -123,10 +123,12 @@ export function useDrawSession(groupId: string): DrawSession {
     [groupDispatch, groupId],
   );
   // This session's choice wins over the stored one, even if it could not be
-  // saved (private browsing). The mood is per evening: never stored.
+  // saved (private browsing). The mood and the favourites filter are per
+  // evening: never stored.
   const filters = all.chosen[groupId] ?? {
     ...parseStoredTonight(stored),
     moods: [],
+    favoritesOnly: false,
   };
 
   const setFilters = (next: TonightFilters) => {

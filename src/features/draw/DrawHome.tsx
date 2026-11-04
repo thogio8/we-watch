@@ -1,5 +1,6 @@
 "use client";
 
+import type { ListCounts } from "@/domain/movie";
 import type { Platform, TonightFilters } from "@/domain/tonight";
 import { formatClock } from "@/domain/time";
 import { Button } from "@/ui/Button";
@@ -7,13 +8,13 @@ import { cx } from "@/ui/cx";
 import { Headline } from "@/ui/Headline";
 import { Lines } from "@/ui/Lines";
 import styles from "./DrawScreen.module.css";
-import { plural } from "./drawView";
+import { drawButton, homeCounts } from "./drawView";
 import { TonightPanel } from "./TonightPanel";
 
 interface DrawHomeProps {
   /** Whether the « à voir » list has movies: no panel to fill otherwise. */
   hasList: boolean;
-  counts: { toWatch: number; watched: number };
+  counts: ListCounts;
   filters: TonightFilters;
   platforms: readonly Platform[];
   onFiltersChange: (filters: TonightFilters) => void;
@@ -32,10 +33,7 @@ export function DrawHome(props: DrawHomeProps) {
     <div className={cx(styles.home, hasList && styles.split)}>
       <div className={styles.head}>
         <Headline lines={["CE SOIR", "ON REGARDE"]} className={styles.brand} />
-        <p className={styles.small}>
-          {plural(counts.toWatch, "film", "films")} à regarder ·{" "}
-          {plural(counts.watched, "vu", "vus")}
-        </p>
+        <p className={styles.small}>{homeCounts(counts)}</p>
       </div>
       {hasList && (
         <div className={styles.side}>
@@ -59,6 +57,7 @@ export function DrawHome(props: DrawHomeProps) {
 /** TIRER, or a way out when the filters leave no movie. */
 function DrawAction({
   hasList,
+  filters,
   filtering,
   eligibleCount,
   onDraw,
@@ -82,13 +81,7 @@ function DrawAction({
       className={cx(styles.big, hasList && styles.compact)}
       onClick={onDraw}
     >
-      <Lines
-        lines={
-          filtering
-            ? ["TIRER", `PARMI ${eligibleCount}`]
-            : ["TIRER", "UN", "FILM"]
-        }
-      />
+      <Lines lines={drawButton(filters, eligibleCount).lines} />
     </button>
   );
 }

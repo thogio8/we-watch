@@ -1,4 +1,9 @@
-import type { MovieSnapshot, StreamingProvider } from "./movie";
+import {
+  isFavorite,
+  type Movie,
+  type MovieSnapshot,
+  type StreamingProvider,
+} from "./movie";
 
 /**
  * « Ce soir » filters of the draw (spec §11.1). Every filter is optional and
@@ -31,12 +36,18 @@ export interface TonightFilters {
   moods: readonly MoodId[];
   /** Platform keys (see platformKey); empty means every platform. */
   platforms: readonly string[];
+  /** « ♥ NOS COUPS DE CŒUR »: per evening, never stored on the device. */
+  favoritesOnly: boolean;
 }
+
+/** A list movie as the draw sees it: its snapshot and its favourite mark. */
+export type TonightMovie = MovieSnapshot & Pick<Movie, "favoriteAt">;
 
 export const NO_FILTERS: TonightFilters = {
   bedtime: null,
   moods: [],
   platforms: [],
+  favoritesOnly: false,
 };
 
 const HOUR_MS = 3_600_000;
@@ -124,17 +135,19 @@ export function distinctPlatforms(
 }
 
 /**
- * Drops remembered platforms that no movie of the list has any more: their
- * chip is gone, so they could not be unselected.
+ * Drops remembered platforms that no movie of the list has any more (their
+ * chip is gone, so they could not be unselected) and the favourites filter
+ * once the list holds no favourite.
  */
 export function sanitizeFilters(
   filters: TonightFilters,
-  movies: readonly MovieSnapshot[],
+  movies: readonly TonightMovie[],
 ): TonightFilters {
   const known = new Set(tonightPlatforms(movies).map((p) => p.key));
   return {
     ...filters,
     platforms: filters.platforms.filter((key) => known.has(key)),
+    favoritesOnly: filters.favoritesOnly && movies.some(isFavorite),
   };
 }
 
@@ -142,12 +155,13 @@ export function isFiltering(filters: TonightFilters): boolean {
   return (
     filters.bedtime !== null ||
     filters.moods.length > 0 ||
-    filters.platforms.length > 0
+    filters.platforms.length > 0 ||
+    filters.favoritesOnly
   );
 }
 
 /** The movies that suit tonight; within a filter, choices are « or ». */
-export function filterTonight<M extends MovieSnapshot>(
+export function filterTonight<M extends TonightMovie>(
   movies: readonly M[],
   filters: TonightFilters,
   now: Date,
@@ -161,6 +175,7 @@ export function filterTonight<M extends MovieSnapshot>(
   const { bedtime } = filters;
   return movies.filter(
     (movie) =>
+      (!filters.favoritesOnly || isFavorite(movie)) &&
       (bedtime === null || fitsBefore(movie.runtimeMinutes, now, bedtime)) &&
       (genres.size === 0 || movie.genreIds.some((id) => genres.has(id))) &&
       (platforms.size === 0 ||
