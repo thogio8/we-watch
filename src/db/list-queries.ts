@@ -102,6 +102,10 @@ export async function selectMovies(
   );
   return rows.map((row) => ({
     ...row,
+    // Only a movie still to watch is a favourite, whatever the columns hold.
+    ...(row.status === "to_watch"
+      ? {}
+      : { favoriteAt: null, favoriteBy: null }),
     wantedBy: wanted.get(row.tmdbId) ?? [],
   }));
 }

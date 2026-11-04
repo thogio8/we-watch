@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
 import { aSnapshot, NETFLIX } from "@tests/helpers/movies";
@@ -14,6 +14,7 @@ import { groupMovie } from "./group-schema";
 const T0 = new Date(2026, 9, 1);
 const T1 = new Date(2026, 9, 2);
 const T2 = new Date(2026, 9, 3);
+const T3 = new Date(2026, 9, 4);
 
 let db: Database;
 let list: GroupList;
@@ -56,6 +57,18 @@ const search = (tmdbId: number, userId = lea, now = T1) =>
     snapshot: aSnapshot(tmdbId, { title: "Trouvé", providers: [NETFLIX] }),
     now,
   });
+
+// Writes the columns directly: the write repository comes later.
+const favorite = (
+  tmdbId: number,
+  userId: string | null,
+  at: Date,
+  groupId = groupA,
+) =>
+  db
+    .update(groupMovie)
+    .set({ favoriteAt: at, favoriteBy: userId })
+    .where(and(eq(groupMovie.groupId, groupId), eq(groupMovie.tmdbId, tmdbId)));
 
 const ids = (movies: { tmdbId: number }[]) => movies.map((m) => m.tmdbId);
 
@@ -106,8 +119,16 @@ describe("liste du groupe", () => {
     await act("remove", 3);
     await keep(4, groupB);
 
-    expect(await list.counts(groupA)).toEqual({ toWatch: 1, watched: 1 });
-    expect(await list.counts(groupB)).toEqual({ toWatch: 1, watched: 0 });
+    expect(await list.counts(groupA)).toEqual({
+      toWatch: 1,
+      watched: 1,
+      favorites: 0,
+    });
+    expect(await list.counts(groupB)).toEqual({
+      toWatch: 1,
+      watched: 0,
+      favorites: 0,
+    });
   });
 
   it("statusesOf donne le statut dans le groupe, écartés compris", async () => {
@@ -125,6 +146,69 @@ describe("liste du groupe", () => {
     );
   });
 
+  it("listByStatus met les coups de cœur en tête, le plus récent d’abord, puis le reste par date", async () => {
+    await keep(1, groupA, lea, T0);
+    await keep(2, groupA, lea, T1);
+    await keep(3, groupA, lea, T2);
+    await keep(4, groupA, lea, T3);
+    await favorite(1, hugo, T3);
+    await favorite(2, lea, T2);
+
+    const movies = await list.listByStatus(groupA, "to_watch");
+    // Favourites by the date they were marked, not the date they were added.
+    expect(ids(movies)).toEqual([1, 2, 4, 3]);
+    expect(movies[0]).toMatchObject({ favoriteAt: T3, favoriteBy: "Hugo" });
+    expect(movies[2]).toMatchObject({ favoriteAt: null, favoriteBy: null });
+  });
+
+  it("un film vu ou écarté n’est jamais coup de cœur, même si ses colonnes sont restées remplies", async () => {
+    await keep(1);
+    await keep(2);
+    await favorite(1, hugo, T1);
+    await favorite(2, hugo, T1);
+    await db
+      .update(groupMovie)
+      .set({ status: "watched", watchedAt: T2 })
+      .where(eq(groupMovie.tmdbId, 1));
+    await db
+      .update(groupMovie)
+      .set({ status: "rejected" })
+      .where(eq(groupMovie.tmdbId, 2));
+
+    expect(await list.findInList(groupA, 1)).toMatchObject({
+      status: "watched",
+      favoriteAt: null,
+      favoriteBy: null,
+    });
+    expect((await list.counts(groupA)).favorites).toBe(0);
+  });
+
+  it("counts compte les coups de cœur à voir du groupe seulement", async () => {
+    await keep(1);
+    await keep(2);
+    await keep(3, groupB);
+    await favorite(1, lea, T1);
+    await favorite(3, lea, T1, groupB);
+
+    expect(await list.counts(groupA)).toEqual({
+      toWatch: 2,
+      watched: 0,
+      favorites: 1,
+    });
+  });
+
+  it("coup de cœur d’un compte supprimé : la date reste, sans prénom", async () => {
+    await keep(1);
+    await favorite(1, hugo, T1);
+
+    await db.delete(user).where(eq(user.id, hugo));
+
+    expect(await list.findInList(groupA, 1)).toMatchObject({
+      favoriteAt: T1,
+      favoriteBy: null,
+    });
+  });
+
   it("un BOF n’apparaît jamais dans la liste du groupe", async () => {
     await decisions.swipe({
       groupId: groupA,
@@ -134,7 +218,11 @@ describe("liste du groupe", () => {
     });
 
     expect(await list.findInList(groupA, 1)).toBeNull();
-    expect(await list.counts(groupA)).toEqual({ toWatch: 0, watched: 0 });
+    expect(await list.counts(groupA)).toEqual({
+      toWatch: 0,
+      watched: 0,
+      favorites: 0,
+    });
     expect(await list.statusesOf(groupA, [1])).toEqual(new Map());
   });
 
