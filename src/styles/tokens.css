@@ -109,6 +109,8 @@
  * written out where needed; keep them in sync with this list, spec §12):
  * - @media (min-width: 760px): wide screens, nav at the top;
  * - @container shell (min-width: 640px): wide column, lying ticket, grids;
+ * - @container shell (max-width: 329px): narrowest phones (320 px), LISTE row
+ *   buttons stacked (♥ above ✕);
  * - @media (max-height: 520px): phone held sideways;
  * - @media (max-height: 700px) / (max-height: 620px): short / tiny screens.
  */

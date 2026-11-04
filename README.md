@@ -36,6 +36,7 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 **🎟️ TIRER** : le film de ce soir
 
 - Un gros bouton, un film tiré au sort dans la liste « à voir », avec l'heure à laquelle il finira si on le lance maintenant (« FINI À 23H12 »).
+- Dès que la liste a un coup de cœur, « ON TIRE PARMI » propose « TOUTE LA LISTE » ou « ♥ NOS COUPS DE CŒUR » : le bouton devient rose (« TIRER UN COUP DE CŒUR ») et seul un coup de cœur peut sortir.
 - **RETIRER** déchire le ticket et en tire un autre ; les tickets déchirés s'empilent (« PAS CE SOIR ») et ne ressortent pas de la soirée, sauf si on les **↺ RESSORT**.
 - **La soirée** : filtres facultatifs pour réduire le choix : heure de coucher (« FINI AVANT MINUIT »), envie du moment (RIRE, FRISSONNER, S'ÉMOUVOIR…), plateformes auxquelles on est abonnés.
 
@@ -48,7 +49,8 @@ Une petite appli web pour un couple (ou une coloc, ou une bande d'amis), install
 **📋 LISTE** : notre liste
 
 - Les films « à voir » et « vus », une recherche TMDB pour ajouter un film précis, et une fiche par film : résumé complet, genres, réalisation, têtes d'affiche, actions.
-- Qui a fait quoi : « voulu par Léa et Hugo », « ajouté par Léa le 12 octobre », « vu le 18/10 · marqué par Hugo » (sur la fiche, le bloc « CHEZ NOUS »).
+- **Coups de cœur** : le ♡ de chaque film « à voir » (ou le tampon de la fiche) le passe en ♥ ; les coups de cœur remontent en tête (« ♥ COUPS DE CŒUR · n », puis « LE RESTE · n »).
+- Qui a fait quoi : « voulu par Léa et Hugo », « ajouté par Léa le 12 octobre », « vu le 18/10 · marqué par Hugo », « coup de cœur de Becca le 4 novembre » (sur la fiche, le bloc « CHEZ NOUS »).
 - Sur chaque film, **les plateformes de streaming françaises** où il est disponible, ou « PAS EN STREAMING » : une information, jamais un filtre. C'est la liste qui compte, pas le catalogue d'une plateforme.
 - Les données des films (plateformes, durées…) se rafraîchissent chaque jour.
 

@@ -68,7 +68,7 @@ Bibliothèque : **Better Auth** (1.7.x, compatible Next 16 et Drizzle, stockage 
   - `invite` : on ne crée un compte **qu'en arrivant par un lien d'invitation**, ou avec le **code propriétaire** (`OWNER_CODE`, secret de l'instance, facultatif) : c'est ainsi que se créent les premiers comptes d'une instance. *(Choix de conception, remplace l'idée d'une liste d'emails.)*
   - `open` : n'importe qui crée un compte ; il atterrit sur « CRÉER TON PREMIER GROUPE ».
   - Valeur par défaut : `open` (comportement attendu d'une instance perso fraîchement déployée) ; l'instance du mainteneur fixe `invite`. *(Choix de conception.)*
-- Le code d'accès (`ACCESS_CODE`, cookie `ww_access`, `/unlock`) **disparaît** de l'appli (la variable est retirée en 2.1, §11).
+- Le code d'accès (`ACCESS_CODE`, cookie `ww_access`, `/unlock`) **disparaît** de l'appli (la variable est retirée dans une version suivante, §11).
 
 ## 6. Groupes
 
@@ -135,7 +135,7 @@ Le détail visuel de ces écrans est laissé au builder, dans la DA, vérifié s
 
 ## 11. Bascule de la prod (1.3.x → 2.0.0)
 
-- Faite le 2026-11-03 : la liste d'avant les comptes est devenue un groupe comme les autres, sans auteur pour ses anciens ajouts (« ajouté avant les comptes »). Restes à supprimer en 2.1 : la table `movies`, les colonnes `legacy` / `watched_legacy` et `ACCESS_CODE` dans Vercel.
+- Faite le 2026-11-03 : la liste d'avant les comptes est devenue un groupe comme les autres, sans auteur pour ses anciens ajouts (« ajouté avant les comptes »). Restes à supprimer dans une version suivante : la table `movies`, les colonnes `legacy` / `watched_legacy` et `ACCESS_CODE` dans Vercel.
 - Le code propriétaire (`OWNER_CODE`) n'ouvre plus qu'une inscription, sans groupe : il amorce une instance neuve, puis se retire de Vercel.
 
 ## 12. Sécurité
@@ -176,3 +176,8 @@ Branche `release/2.0.0` depuis `main` ; un morceau = une branche `feat/v2-…` �
 - Intégration de Better Auth (plugins, adaptateur Drizzle), dans les couches existantes.
 - Détail visuel des écrans, dans la DA.
 - Valeurs exactes des limites de tentatives et des durées.
+
+## 16. 2.1.0 · Coups de cœur
+
+- Un groupe marque des films « à voir » comme **coups de cœur** (♡ / ♥ sur la LISTE, tampon sur la fiche), les retrouve en tête de liste, et peut ne **tirer que parmi eux** (filtre « ♥ NOS COUPS DE CŒUR » de TIRER).
+- Spec détaillée : `2026-11-04-coups-de-coeur-design.md`, qui complète celle-ci. Migration additive `0012` (`group_movie.favorite_at`, `favorite_by`), action `setFavorite` non limitée.
