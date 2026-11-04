@@ -7,14 +7,14 @@ Mesures datées du 2026-11-04. Les scores bougent : ce document dit comment les 
 | Quand                         | Quoi                                                                                                                                          | Où                         |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
 | À chaque pull request         | `checks`, `e2e` (4 machines), revue des dépendances                                                                                           | `ci.yml`                   |
-| À chaque push sur `main`      | les mêmes, puis `build`, `release` (sauvegarde, migration, mise en ligne, fumée, retour arrière) et `version`                                 | `ci.yml`                   |
+| À chaque fusion sur `main`    | les mêmes, puis `build`, `release` (sauvegarde, migration, mise en ligne, fumée, retour arrière) et `version`                                 | `ci.yml`                   |
 | Chaque nuit (01h30 UTC)       | sauvegarde chiffrée, exercice de restauration, fumée de la prod, e2e répété trois fois                                                        | `nightly.yml`              |
 | Chaque lundi (03h00 UTC)      | tests de mutation, Lighthouse, OpenSSF Scorecard                                                                                              | `weekly.yml`               |
 | En continu, côté GitHub       | CodeQL, détection de secrets et push protection, alertes et mises à jour de sécurité Dependabot, signalement privé de failles                 | onglet Security            |
 
 Chaque workflow se relance à la main (`workflow_dispatch`, onglet Actions → « Run workflow »). GitHub coupe un workflow planifié après 60 jours sans activité sur le dépôt : un push, ou un lancement manuel, le réveille.
 
-## À chaque pull request et chaque push
+## À chaque pull request et chaque fusion sur `main`
 
 **`checks`** (`npm run ci:checks`) : format Prettier, ESLint (taille des fichiers et des fonctions, complexité, sens des couches), types TypeScript, jscpd (aucun bloc dupliqué), knip (aucun code mort), tests Vitest avec seuils de couverture. Il prouve que le code respecte les règles du projet. Résultat : l'onglet Actions. La couverture se lit dans [`docs/coverage.md`](coverage.md).
 
@@ -22,7 +22,7 @@ Chaque workflow se relance à la main (`workflow_dispatch`, onglet Actions → �
 
 **Revue des dépendances** (pull requests seulement) : refuse l'ajout d'une dépendance qui a une faille connue de sévérité haute.
 
-**`build`, `release`, `version`** (push sur `main` seulement, une fois le reste vert) : la nouvelle version est construite sans être mise en ligne, la base est sauvegardée puis migrée, la version est mise en ligne et vérifiée par un test de fumée, et retirée automatiquement si la fumée échoue. Le détail est dans `CLAUDE.md` (« Pièges »).
+**`build`, `release`, `version`** (fusion sur `main` seulement, une fois le reste vert) : la nouvelle version est construite sans être mise en ligne, la base est sauvegardée puis migrée, la version est mise en ligne et vérifiée par un test de fumée, et retirée automatiquement si la fumée échoue. Le détail est dans `CLAUDE.md` (« Pièges »).
 
 ## Chaque nuit
 
@@ -57,6 +57,6 @@ Résultat : résumé du job et artefact `lighthouse-report` (30 jours).
 - **Secret scanning et push protection** : un secret poussé est signalé, ou refusé avant le push.
 - **Dependabot** : alertes de sécurité, mises à jour de sécurité, et une pull request de mises à jour des dépendances npm chaque lundi (celles des actions GitHub : chaque mois).
 - **Signalement privé de failles** : voir [`SECURITY.md`](../SECURITY.md).
-- **Ruleset `protect-main`** : `main` ne se supprime pas et ne se réécrit pas.
+- **Ruleset `protect-main`** : `main` ne se supprime pas, ne se réécrit pas et n'accepte que des pull requests dont `checks`, `e2e` (1 à 4) et `dependency-review` sont verts, la branche à jour ; seule l'app GitHub Actions contourne, pour la PR de version.
 
 La CI d'un contributeur externe attend l'approbation du mainteneur ([`CONTRIBUTING.md`](../CONTRIBUTING.md)).

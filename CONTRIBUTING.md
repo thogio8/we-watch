@@ -18,7 +18,7 @@ npm run mutation        # tests de mutation : mesure la solidité des tests (env
 npm run test:lighthouse # Lighthouse sur les écrans connectés (Docker requis)
 ```
 
-`npm install` installe lefthook : le commit formate et lint les fichiers indexés, le push lance `npm run ci`. Ne poussez pas au rouge.
+`npm install` installe lefthook : le commit formate et lint les fichiers indexés, le push d'une branche lance `npm run ci`. Ne poussez pas au rouge.
 
 ## Les règles du projet
 
@@ -29,6 +29,16 @@ Un changement de comportement vient avec son test, au bon niveau : unitaire pour
 ## Les commits
 
 [Conventional Commits](https://www.conventionalcommits.org), en anglais, un header seul : `type(scope): description`. **Le type fixe le numéro de version** : `feat` publie une version mineure, `fix` un correctif, `feat!` ou `fix!` une version majeure ; `refactor`, `test`, `ci`, `docs` et `chore` ne publient rien. Un commit, un type honnête.
+
+## Proposer un changement
+
+`main` est protégée : pas de push direct, tout passe par une pull request.
+
+1. Créez une branche depuis `main`, faites vos commits, poussez-la.
+2. Ouvrez la pull request (`gh pr create`) : elle doit passer `checks`, `e2e` (4 machines) et la revue des dépendances, et être à jour avec `main`.
+3. Une fois la CI verte, le mainteneur la fusionne en **rebase** (`gh pr merge --rebase`) : ni squash ni merge, pour que chaque commit garde son type. Sur `main`, la CI déploie puis publie la version.
+
+Une PR = une version : regroupez les commits d'une même fonctionnalité dans une seule PR.
 
 ## La CI d'une pull request
 
