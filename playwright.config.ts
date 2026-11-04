@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import { appPort, appUrl, E2E_WORKERS, e2eEnv, workerIndexes } from "./e2e/env";
 
+const LIGHTHOUSE = /e2e\/lighthouse\//;
+
 /**
  * End-to-end tests: the production build, served on throwaway SQLite files
  * and a fake TMDB (e2e/global-setup.ts). `npm run test:e2e` builds first.
@@ -8,6 +10,8 @@ import { appPort, appUrl, E2E_WORKERS, e2eEnv, workerIndexes } from "./e2e/env";
  */
 export default defineConfig({
   testDir: "e2e",
+  // Lighthouse runs on its own: `npm run test:lighthouse`.
+  testIgnore: LIGHTHOUSE,
   globalSetup: "./e2e/global-setup.ts",
   workers: E2E_WORKERS,
   fullyParallel: true,
@@ -43,7 +47,7 @@ export default defineConfig({
       name: "iphone-webkit",
       use: { ...devices["iPhone 13"] },
       grepInvert: /@passkey/,
-      testIgnore: /visual\.spec\.ts/,
+      testIgnore: [LIGHTHOUSE, /visual\.spec\.ts/],
     },
   ],
   webServer: workerIndexes().map((worker) => ({
