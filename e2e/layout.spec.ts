@@ -5,6 +5,7 @@ import {
   emptyNameRefused,
   expect,
   leasInvitation,
+  markFromList,
   swipe,
   test,
   topCard,
@@ -249,6 +250,59 @@ async function* longAccountName(page: Page) {
   yield "/compte (supprimer, prénom long)";
 }
 
+const AMELIE = "Le Fabuleux Destin d'Amélie Poulain";
+
+/** On the draw's home, the favourites filter chosen in its panel. */
+async function favoritesOnly(page: Page) {
+  await page.getByRole("button", { name: /^LA SOIRÉE/ }).click();
+  await page.getByRole("button", { name: /^♥ NOS COUPS DE CŒUR · / }).click();
+  await expect(
+    page.getByRole("button", { name: "TIRER UN COUP DE CŒUR" }),
+  ).toBeVisible();
+}
+
+/**
+ * Whiplash and Amélie (the longest title) favourites among four: the list,
+ * a favourite's page, a ghost's page, the draw with its filter on, the
+ * favourite drawn.
+ */
+async function* favoriteScreens(page: Page) {
+  await page.goto("/list");
+  await expect(page.getByText("♥ COUPS DE CŒUR · 2")).toBeVisible();
+  yield "/list (coups de cœur)";
+  await page.goto("/list/194");
+  await expect(page.getByText(/coup de cœur de Léa le/)).toBeVisible();
+  yield "/list/194 (coup de cœur)";
+  await page.goto("/list/129");
+  await expect(page.getByText("♡ COUP DE CŒUR\u00A0?")).toBeVisible();
+  yield "/list/129 (fantôme)";
+  await page.goto("/");
+  await favoritesOnly(page);
+  yield "/ (filtre coups de cœur)";
+  await page.getByRole("button", { name: "TIRER UN COUP DE CŒUR" }).click();
+  await expect(page.getByText("♥ COUP DE CŒUR", { exact: true })).toBeVisible();
+  yield "/ (coup de cœur tiré)";
+}
+
+test.describe("mise en page et accessibilité, coups de cœur", () => {
+  test.beforeEach(async ({ app }) => {
+    test.skip(test.info().project.name !== "desktop");
+    await swipe(app, ["keep", "keep", "keep", "keep"]);
+    await markFromList(app, AMELIE);
+    await markFromList(app, "Whiplash");
+  });
+
+  for (const viewport of VIEWPORTS) {
+    test(`coups de cœur : ${viewport.name}`, async ({ app }) => {
+      await app.setViewportSize(viewport);
+      for await (const path of favoriteScreens(app)) {
+        await expectNoOverflow(app, path);
+        expect(await seriousViolations(app, path)).toEqual([]);
+      }
+    });
+  }
+});
+
 /** Each element whole between the nav and the screen's other edge, unscrolled. */
 async function expectOnScreen(
   page: Page,
@@ -288,6 +342,26 @@ test.describe("un écran sans défiler", () => {
       await expect(clock).toBeVisible();
       await expectOnScreen(app, viewport, [
         ["TIRER", app.getByRole("button", { name: "TIRER UN FILM" })],
+        ["l’heure", clock],
+      ]);
+    });
+
+    test(`TIRER avec le filtre coups de cœur : le bouton rose et l’heure : ${viewport.name}`, async ({
+      app,
+    }) => {
+      await markFromList(app, "Whiplash");
+      await app.setViewportSize(viewport);
+      await app.goto("/");
+      await favoritesOnly(app);
+      // Folded again, as the evening goes: the filter stays on.
+      await app.getByRole("button", { name: /^LA SOIRÉE/ }).click();
+      const clock = app.getByText(/^Il est \d/);
+      await expect(clock).toBeVisible();
+      await expectOnScreen(app, viewport, [
+        [
+          "TIRER UN COUP DE CŒUR",
+          app.getByRole("button", { name: "TIRER UN COUP DE CŒUR" }),
+        ],
         ["l’heure", clock],
       ]);
     });
