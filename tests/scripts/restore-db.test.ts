@@ -51,11 +51,13 @@ const EVERY_TABLE = [
      VALUES ('pk-1', 'iPhone', 'PUBLIC-KEY', 'u-1', 'CRED-1', 3, 'multiDevice', 1, 1)`,
   "INSERT INTO account (id, account_id, provider_id, user_id, updated_at) VALUES ('a-1', 'u-1', 'passkey', 'u-1', 3)",
   `INSERT INTO movie_snapshot (tmdb_id, title, overview, vote_average, providers)
-     VALUES (244786, 'Whiplash', 'Un batteur…', 8.4, '[{"id":8}]')`,
+     VALUES (244786, 'Whiplash', 'Un batteur…', 8.4, '[{"id":8}]'),
+            (129, 'Le Voyage de Chihiro', '', 8.5, '[]')`,
   "INSERT INTO app_group (id, name, created_at) VALUES ('nous-deux', 'NOUS DEUX', 1)",
   "INSERT INTO membership (group_id, user_id, joined_at, last_used_at) VALUES ('nous-deux', 'u-1', 2, 3)",
-  `INSERT INTO group_movie (group_id, tmdb_id, status, decided_at, watched_at, added_by, added_via, legacy, watched_legacy)
-     VALUES ('nous-deux', 244786, 'watched', 4, 5, 'u-1', 'swipe', 0, 1)`,
+  `INSERT INTO group_movie (group_id, tmdb_id, status, decided_at, watched_at, added_by, added_via, legacy, watched_legacy, favorite_at, favorite_by)
+     VALUES ('nous-deux', 244786, 'watched', 4, 5, 'u-1', 'swipe', 0, 1, NULL, NULL),
+            ('nous-deux', 129, 'to_watch', 4, NULL, 'u-1', 'search', 0, 0, 8, 'u-1')`,
   "INSERT INTO movie_want (group_id, tmdb_id, user_id, wanted_at) VALUES ('nous-deux', 244786, 'u-1', 6)",
   "INSERT INTO movie_rejection (user_id, tmdb_id, rejected_at) VALUES ('u-1', 129, 7)",
   `INSERT INTO movies (tmdb_id, title, overview, vote_average, status, decided_at)
@@ -107,7 +109,7 @@ describe("restauration d'une sauvegarde", () => {
     expect(result.stderr).toBe("");
     expect(result.status).toBe(0);
     expect(await snapshot(target)).toEqual(await snapshot(source));
-    expect(result.stdout).toContain("group_movie: 1 rows");
+    expect(result.stdout).toContain("group_movie: 2 rows");
     for (const secret of ["Léa", "Whiplash", "PUBLIC-KEY", KEY])
       expect(result.stdout).not.toContain(secret);
   });

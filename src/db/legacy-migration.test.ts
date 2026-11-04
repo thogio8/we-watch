@@ -1,16 +1,11 @@
-import {
-  cpSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createClient, type Client, type InStatement } from "@libsql/client";
 import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { migrationsUpTo } from "@tests/helpers/migrations";
 import { createDatabase } from "./create-database";
 import { group } from "./group-schema";
 
@@ -291,18 +286,6 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     let dir: string;
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-    // A copy of drizzle/ whose journal stops at 0004: the state of the
-    // database before the groups (2.0, piece 2), as recorded by the migrator.
-    function migrationsBeforeGroups() {
-      const folder = join(dir, "drizzle");
-      cpSync("drizzle", folder, { recursive: true });
-      writeFileSync(
-        join(folder, "meta/_journal.json"),
-        JSON.stringify({ ...journal, entries: journal.entries.slice(0, 5) }),
-      );
-      return folder;
-    }
-
     it("copie la liste à l’identique, en un lot sans clés étrangères", async () => {
       dir = mkdtempSync(join(tmpdir(), "ww-migrate-"));
       const url = `file:${join(dir, "app.db")}`;
@@ -315,7 +298,7 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
           )
         ).n;
 
-      await migrate(db, { migrationsFolder: migrationsBeforeGroups() });
+      await migrate(db, { migrationsFolder: migrationsUpTo(dir, 5) });
       expect(await recorded()).toBe(5);
       await client.batch(OLD_ROWS, "write");
       const movies = await allMovies();

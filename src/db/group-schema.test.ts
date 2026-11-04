@@ -166,6 +166,7 @@ describe("tables des groupes", () => {
 
     expect(keys.sort()).toEqual([
       "group_movie(added_by) → user(id) set null",
+      "group_movie(favorite_by) → user(id) set null",
       "group_movie(group_id) → app_group(id) cascade",
       "group_movie(tmdb_id) → movie_snapshot(tmdb_id) no action",
       "group_movie(watched_by) → user(id) set null",
