@@ -94,8 +94,8 @@ Selon CLAUDE.md (« Définition de fini »), notamment :
 
 ## 8. Livraison
 
-- Un seul push avec un commit `feat` → release-please publie la **2.1.0**. Ne pas pousser sans l'accord du mainteneur.
-- **Une 2.0.3 viendra peut-être avant** (à décider par le mainteneur) : la branche de cette fonctionnalité part alors de `main` **après** la 2.0.3, et la migration `0012` se génère après le dernier rebase (CLAUDE.md, « Migrations dans l'ordre » : si la 2.0.3 ajoute une migration, `0012` doit passer après elle).
+- Une seule pull request (branche `feat/coups-de-coeur` partie de `main` après la 2.0.3), fusionnée en `--rebase` une fois la CI verte : son commit `feat` fait publier la **2.1.0** par release-please (CLAUDE.md, « Livrer une version »).
+- La migration `0012` se génère sur cette branche à jour de `main` ; si `main` reçoit une migration avant la fusion, rebaser et régénérer `0012` (CLAUDE.md, « Migrations dans l'ordre »).
 - La suppression des restes d'avant les comptes (`movies`, `legacy`, `watched_legacy`, `ACCESS_CODE`) n'est **pas** dans cette version : CLAUDE.md, la spec v2 et le README la disent « en 2.1 », à corriger en « dans une version suivante » avec cette livraison.
 
 ## 9. Laissé au builder
