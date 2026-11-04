@@ -115,6 +115,9 @@ describe("plateformes (propriétés)", () => {
   it("platformKey est idempotent, même avec plusieurs suffixes d'offre", () =>
     fc.assert(
       fc.property(
+        // Single-spaced on purpose: names come from TMDB and keys are always
+        // derived by platformKey; several inner spaces would leave trailing
+        // blanks after the suffix strip (not idempotent, harmless).
         fc.array(
           fc.constantFrom(
             "Netflix",
