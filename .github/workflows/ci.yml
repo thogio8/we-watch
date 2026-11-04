@@ -1,8 +1,10 @@
 # The only road to production (Vercel's Git auto-deploy is off, vercel.json).
 # Three jobs run side by side, the release waits for all of them:
 #   checks  → format, lint, types, duplicates, dead code, unit tests
-#   e2e     → build + Playwright, split over two machines (the two jobs
+#   e2e     → build + Playwright, split over four machines (the four jobs
 #             together = `npm run ci`, the local pre-push hook, lefthook.yml)
+#   dependency-review → pull requests only: fails on a new dependency with a
+#             known high-severity vulnerability (not a `release` prerequisite)
 #   build   → main only: builds and uploads the production deployment
 #             without putting it online (--skip-domain)
 #   release → main only, once all are green: backup, migrate, put the new
@@ -51,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -60,7 +62,7 @@ jobs:
           cache: npm
       - run: npm ci
       # Runs in the Playwright Docker image (scripts/e2e.sh).
-      - run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
+      - run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
@@ -69,6 +71,19 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # Pull requests only, so never a prerequisite of `release`.
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
 
   build:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
