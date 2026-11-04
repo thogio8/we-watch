@@ -89,6 +89,9 @@ export const groupMovie = sqliteTable(
     watchedLegacy: integer("watched_legacy", { mode: "boolean" })
       .default(false)
       .notNull(),
+    /** Favourite (2.1.0): set only while « to_watch »; null = not a favourite. */
+    favoriteAt: timestamp("favorite_at"),
+    favoriteBy: author("favorite_by"),
   },
   (table) => [
     primaryKey({ columns: [table.groupId, table.tmdbId] }),
@@ -96,6 +99,7 @@ export const groupMovie = sqliteTable(
     // Account deletion finds the member's movies to hand to « un ancien membre ».
     index("group_movie_added_by_idx").on(table.addedBy),
     index("group_movie_watched_by_idx").on(table.watchedBy),
+    index("group_movie_favorite_by_idx").on(table.favoriteBy),
   ],
 );
 
