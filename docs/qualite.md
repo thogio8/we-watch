@@ -57,6 +57,6 @@ Résultat : résumé du job et artefact `lighthouse-report` (30 jours).
 - **Secret scanning et push protection** : un secret poussé est signalé, ou refusé avant le push.
 - **Dependabot** : alertes de sécurité, mises à jour de sécurité, et une pull request de mises à jour des dépendances npm chaque lundi (celles des actions GitHub : chaque mois).
 - **Signalement privé de failles** : voir [`SECURITY.md`](../SECURITY.md).
-- **Ruleset `protect-main`** : `main` ne se supprime pas, ne se réécrit pas et n'accepte que des pull requests dont `checks`, `e2e` (1 à 4) et `dependency-review` sont verts, la branche à jour ; seule l'app GitHub Actions contourne, pour la PR de version.
+- **Ruleset `protect-main`** : `main` ne se supprime pas, ne se réécrit pas et n'accepte que des pull requests, fusionnées en rebase ; personne ne contourne. On ne fusionne qu'une PR dont `checks`, `e2e` (1 à 4) et `dependency-review` sont verts : c'est une règle de travail, car GitHub ne peut pas l'imposer ici sans bloquer la PR de version (pas de CI sur elle, et un dépôt personnel ne peut pas laisser l'app GitHub Actions contourner).
 
 La CI d'un contributeur externe attend l'approbation du mainteneur ([`CONTRIBUTING.md`](../CONTRIBUTING.md)).
