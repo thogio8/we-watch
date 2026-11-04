@@ -18,41 +18,51 @@ async function expectInApp(page: Page) {
 }
 
 test.describe("comptes et passkeys", () => {
-  test("créer un compte avec une passkey ouvre l'appli", async ({
-    visitor,
-  }) => {
-    await signUpAs(visitor, "  Léa  ");
+  test(
+    "créer un compte avec une passkey ouvre l'appli",
+    { tag: "@passkey" },
+    async ({ visitor }) => {
+      await signUpAs(visitor, "  Léa  ");
 
-    await expectInApp(visitor);
-    expect(await accountNames()).toEqual(["Léa"]);
-  });
+      await expectInApp(visitor);
+      expect(await accountNames()).toEqual(["Léa"]);
+    },
+  );
 
-  test("se déconnecter puis revenir avec sa passkey", async ({ visitor }) => {
-    await signUpAs(visitor, "Léa");
-    await expectInApp(visitor);
+  test(
+    "se déconnecter puis revenir avec sa passkey",
+    { tag: "@passkey" },
+    async ({ visitor }) => {
+      await signUpAs(visitor, "Léa");
+      await expectInApp(visitor);
 
-    await visitor.goto("/list");
-    await visitor.getByRole("button", { name: "SE DÉCONNECTER" }).click();
-    await expect(visitor).toHaveURL("/connexion");
-    await visitor.goto("/");
-    await expect(visitor).toHaveURL("/connexion");
+      await visitor.goto("/list");
+      await visitor.getByRole("button", { name: "SE DÉCONNECTER" }).click();
+      await expect(visitor).toHaveURL("/connexion");
+      await visitor.goto("/");
+      await expect(visitor).toHaveURL("/connexion");
 
-    await visitor.getByRole("button", { name: "SE CONNECTER" }).click();
+      await visitor.getByRole("button", { name: "SE CONNECTER" }).click();
 
-    await expectInApp(visitor);
-    expect(await accountNames()).toEqual(["Léa"]);
-  });
+      await expectInApp(visitor);
+      expect(await accountNames()).toEqual(["Léa"]);
+    },
+  );
 
-  test("un prénom vide est refusé", async ({ visitor }) => {
-    await signUpAs(visitor, "   ");
+  test(
+    "un prénom vide est refusé",
+    { tag: "@passkey" },
+    async ({ visitor }) => {
+      await signUpAs(visitor, "   ");
 
-    await expect(
-      visitor.getByText("UN PRÉNOM DE 1 À 30 CARACTÈRES"),
-    ).toBeVisible();
-    await expect(visitor.getByLabel("TON PRÉNOM OU SURNOM")).toBeFocused();
-    await expect(visitor).toHaveURL("/connexion");
-    expect(await accountNames()).toEqual([]);
-  });
+      await expect(
+        visitor.getByText("UN PRÉNOM DE 1 À 30 CARACTÈRES"),
+      ).toBeVisible();
+      await expect(visitor.getByLabel("TON PRÉNOM OU SURNOM")).toBeFocused();
+      await expect(visitor).toHaveURL("/connexion");
+      expect(await accountNames()).toEqual([]);
+    },
+  );
 
   test("un navigateur sans clés d’accès l’explique, sans bouton ni erreur d’hydratation", async ({
     page,

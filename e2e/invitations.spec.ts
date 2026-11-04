@@ -52,30 +52,31 @@ async function visitTabs(page: Page, groupName: string) {
 }
 
 test.describe("invitations", () => {
-  test("Hugo crée son compte par le lien de Léa et voit la liste du groupe", async ({
-    app,
-    guest,
-  }) => {
-    await swipe(app, ["keep"]);
-    const link = await copyInviteLink(app);
-    expect(link).toMatch(/\/invitation\/[A-Za-z0-9_-]{43}$/);
+  test(
+    "Hugo crée son compte par le lien de Léa et voit la liste du groupe",
+    { tag: "@passkey" },
+    async ({ app, guest }) => {
+      await swipe(app, ["keep"]);
+      const link = await copyInviteLink(app);
+      expect(link).toMatch(/\/invitation\/[A-Za-z0-9_-]{43}$/);
 
-    const hugo = await guest();
-    const response = await hugo.goto(link);
-    // The token never leaves in a Referer header.
-    expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
-    await expect(heading(hugo, INVITED)).toBeVisible();
-    await hugo.getByRole("button", { name: "CRÉER UN COMPTE" }).click();
-    await hugo.getByLabel("TON PRÉNOM OU SURNOM").fill("Hugo");
-    await hugo.getByRole("button", { name: "CRÉER MON COMPTE" }).click();
+      const hugo = await guest();
+      const response = await hugo.goto(link);
+      // The token never leaves in a Referer header.
+      expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
+      await expect(heading(hugo, INVITED)).toBeVisible();
+      await hugo.getByRole("button", { name: "CRÉER UN COMPTE" }).click();
+      await hugo.getByLabel("TON PRÉNOM OU SURNOM").fill("Hugo");
+      await hugo.getByRole("button", { name: "CRÉER MON COMPTE" }).click();
 
-    await expect(hugo).toHaveURL("/");
-    await hugo.goto("/list");
-    await expect(pill(hugo, "NOUS DEUX")).toBeVisible();
-    await expect(listTitles(hugo)).toHaveText(["Whiplash"]);
-    await app.reload();
-    await expect(memberRow(app, "Hugo")).toBeVisible();
-  });
+      await expect(hugo).toHaveURL("/");
+      await hugo.goto("/list");
+      await expect(pill(hugo, "NOUS DEUX")).toBeVisible();
+      await expect(listTitles(hugo)).toHaveText(["Whiplash"]);
+      await app.reload();
+      await expect(memberRow(app, "Hugo")).toBeVisible();
+    },
+  );
 
   test("un lien régénéré ne marche plus", async ({ app, outsider }) => {
     const old = await copyInviteLink(app);
@@ -156,7 +157,7 @@ test.describe("invitations", () => {
     member,
   }) => {
     // The nav sits at the bottom on phones only.
-    test.skip(test.info().project.name !== "iphone");
+    test.skip(test.info().project.name === "desktop");
     await member("Hugo");
     await app.goto("/groupe");
     await app.getByRole("button", { name: "QUITTER LE GROUPE" }).click();

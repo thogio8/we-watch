@@ -53,25 +53,26 @@ const cookie = async (page: Page, name: string) =>
   (await page.context().cookies()).find((found) => found.name === name);
 
 test.describe("mon compte", () => {
-  test("ajouter une seconde clé puis se connecter avec", async ({
-    app,
-    myOtherDevice,
-  }) => {
-    await virtualAuthenticator(app);
-    await addPasskey(app, 1);
-    const laptop = await myOtherDevice();
-    await virtualAuthenticator(laptop);
-    await addPasskey(laptop, 2);
+  test(
+    "ajouter une seconde clé puis se connecter avec",
+    { tag: "@passkey" },
+    async ({ app, myOtherDevice }) => {
+      await virtualAuthenticator(app);
+      await addPasskey(app, 1);
+      const laptop = await myOtherDevice();
+      await virtualAuthenticator(laptop);
+      await addPasskey(laptop, 2);
 
-    // Only the laptop's key is on the laptop: it is the one that opens.
-    await signOut(laptop);
-    await laptop.getByRole("button", { name: "SE CONNECTER" }).click();
+      // Only the laptop's key is on the laptop: it is the one that opens.
+      await signOut(laptop);
+      await laptop.getByRole("button", { name: "SE CONNECTER" }).click();
 
-    await expect(laptop).toHaveURL("/");
-    await laptop.goto("/compte");
-    await expect(laptop.getByLabel("TON PRÉNOM")).toHaveValue("Léa");
-    await expect(passkeys(laptop)).toHaveCount(2);
-  });
+      await expect(laptop).toHaveURL("/");
+      await laptop.goto("/compte");
+      await expect(laptop.getByLabel("TON PRÉNOM")).toHaveValue("Léa");
+      await expect(passkeys(laptop)).toHaveCount(2);
+    },
+  );
 
   test("déconnecter un autre appareil : il revient sur la connexion", async ({
     app,
@@ -136,24 +137,26 @@ test.describe("mon compte", () => {
     await expect(hugo.getByText("voulu par Léa")).toHaveCount(0);
   });
 
-  test("après déconnexion, un nouveau compte ne voit pas le groupe précédent", async ({
-    visitor,
-  }) => {
-    await signUpAs(visitor, "Léa");
-    await visitor.getByLabel("NOM DU GROUPE").fill("Ciné club");
-    await visitor.getByRole("button", { name: "CRÉER LE GROUPE" }).click();
-    await expect(
-      visitor.getByRole("button", { name: "Groupe affiché : Ciné club" }),
-    ).toBeVisible();
-    expect(await cookie(visitor, "ww_group")).toBeDefined();
+  test(
+    "après déconnexion, un nouveau compte ne voit pas le groupe précédent",
+    { tag: "@passkey" },
+    async ({ visitor }) => {
+      await signUpAs(visitor, "Léa");
+      await visitor.getByLabel("NOM DU GROUPE").fill("Ciné club");
+      await visitor.getByRole("button", { name: "CRÉER LE GROUPE" }).click();
+      await expect(
+        visitor.getByRole("button", { name: "Groupe affiché : Ciné club" }),
+      ).toBeVisible();
+      expect(await cookie(visitor, "ww_group")).toBeDefined();
 
-    await signOut(visitor);
-    expect(await cookie(visitor, "ww_group")).toBeUndefined();
-    await signUpAs(visitor, "Zoé");
+      await signOut(visitor);
+      expect(await cookie(visitor, "ww_group")).toBeUndefined();
+      await signUpAs(visitor, "Zoé");
 
-    await expect(
-      visitor.getByRole("heading", { name: "CRÉER TON PREMIER GROUPE" }),
-    ).toBeVisible();
-    await expect(visitor.getByText("Ciné club")).toHaveCount(0);
-  });
+      await expect(
+        visitor.getByRole("heading", { name: "CRÉER TON PREMIER GROUPE" }),
+      ).toBeVisible();
+      await expect(visitor.getByText("Ciné club")).toHaveCount(0);
+    },
+  );
 });

@@ -50,9 +50,18 @@ async function membersReady(page: Page) {
   await expect(page.getByRole("button", { name: COPY_LINK })).toBeEnabled();
 }
 
+/**
+ * WebKit knows only "clipboard-read" (Chromium needs both); an unknown
+ * permission throws.
+ */
+const clipboardPermissions = (page: Page) =>
+  page.context().browser()?.browserType().name() === "webkit"
+    ? ["clipboard-read"]
+    : ["clipboard-read", "clipboard-write"];
+
 /** The displayed group's invite link, copied from its members screen. */
 export async function copyInviteLink(page: Page) {
-  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.context().grantPermissions(clipboardPermissions(page));
   await page.goto("/groupe");
   await membersReady(page);
   await page.getByRole("button", { name: COPY_LINK }).click();

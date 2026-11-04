@@ -37,6 +37,14 @@ export default defineConfig({
         viewport: { width: 1280, height: 800 },
       },
     },
+    {
+      // Safari's engine, the iPhone's. Passkey tests need Chromium's virtual
+      // authenticator (CDP); the reference captures stay Chromium's only.
+      name: "iphone-webkit",
+      use: { ...devices["iPhone 13"] },
+      grepInvert: /@passkey/,
+      testIgnore: /visual\.spec\.ts/,
+    },
   ],
   webServer: workerIndexes().map((worker) => ({
     command: `next start --port ${appPort(worker)}`,

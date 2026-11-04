@@ -24,6 +24,8 @@ test.describe("tirer", () => {
     await expect(app.getByText(/PAS CE SOIR\s: 1/)).toBeVisible();
 
     await app.getByRole("button", { name: "ON LE REGARDE" }).click();
+    // Leaving at once would abort the save (WebKit cancels it).
+    await settled(app);
     await app.goto("/list");
     await expect(app.getByRole("tab", { name: /VUS · 1/ })).toBeVisible();
   });
