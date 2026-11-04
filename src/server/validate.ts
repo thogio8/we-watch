@@ -24,6 +24,16 @@ export function assertSwipeDecision(
   }
 }
 
+export function assertBoolean(
+  action: string,
+  name: string,
+  value: unknown,
+): asserts value is boolean {
+  if (typeof value !== "boolean") {
+    throw new Error(`${action}: invalid ${name}`);
+  }
+}
+
 /** A database id (passkey, session…): a string of 1 to 64 characters. */
 export function assertId(action: string, id: unknown): asserts id is string {
   if (typeof id !== "string" || id.length < 1 || id.length > 64) {

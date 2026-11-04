@@ -15,6 +15,7 @@ import {
   addFromSearch,
   removeFromList,
   searchCatalog,
+  setFavorite,
   unwatch,
 } from "@/features/list/actions";
 import {
@@ -141,6 +142,7 @@ const ACTIONS = [
   ["markWatched", (g: string) => markWatched(g, PARASITE)],
   ["removeFromList", (g: string) => removeFromList(g, PARASITE)],
   ["unwatch", (g: string) => unwatch(g, WHIPLASH)],
+  ["setFavorite", (g: string) => setFavorite(g, PARASITE, true)],
   ["searchCatalog", (g: string) => searchCatalog(g, "parasite")],
   ["addFromSearch (nouveau film)", (g: string) => addFromSearch(g, AMELIE)],
   ["addFromSearch (film écarté)", (g: string) => addFromSearch(g, CHIHIRO)],

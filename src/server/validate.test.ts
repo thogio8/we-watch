@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertBoolean,
   assertId,
   assertSwipeDecision,
   assertTmdbId,
@@ -34,6 +35,16 @@ describe("validate", () => {
     for (const value of ["", "x".repeat(65), 42, null, undefined]) {
       expect(() => assertId("deletePasskey", value)).toThrow(
         "deletePasskey: invalid id",
+      );
+    }
+  });
+
+  it("assertBoolean n’accepte que true et false", () => {
+    expect(() => assertBoolean("setFavorite", "on", true)).not.toThrow();
+    expect(() => assertBoolean("setFavorite", "on", false)).not.toThrow();
+    for (const value of ["true", 1, 0, null, undefined]) {
+      expect(() => assertBoolean("setFavorite", "on", value)).toThrow(
+        "setFavorite: invalid on",
       );
     }
   });
