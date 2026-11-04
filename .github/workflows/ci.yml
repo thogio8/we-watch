@@ -272,11 +272,10 @@ jobs:
             gh api "repos/$GITHUB_REPOSITORY/statuses/$sha" -f state="$state" -f context=github-actions/release-files -f description="$description"
             if [ "$state" != success ]; then exit 1; fi
             # Only the head that was checked: a later push to the branch is refused.
-            # This PR has no CI (version files only, paths-ignore), so the
-            # ruleset's required checks leave it BLOCKED and gh refuses to merge
-            # it client-side. --admin only skips that client check: the server
-            # still enforces the ruleset, which lets the GitHub Actions app through.
-            gh pr merge "$number" --repo "$GITHUB_REPOSITORY" --rebase --admin --match-head-commit "$sha"
+            # The ruleset requires a PR (this is one) and rebase merges, but no
+            # status checks: this PR has no CI (paths-ignore) and a personal
+            # repository cannot let the GitHub Actions app bypass a ruleset.
+            gh pr merge "$number" --repo "$GITHUB_REPOSITORY" --rebase --match-head-commit "$sha"
             echo "merged=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Tag and publish the release
