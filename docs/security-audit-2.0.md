@@ -133,6 +133,7 @@ Les numéros de ligne cités renvoient au commit audité (`8f1c1e6`) ; les corre
 - **Statut** : accepté, pour la raison ci-dessous.
 - **Preuve** : `esbuild` ≤ 0.24.2 (GHSA-67mh-4wv8-2f99) via `@esbuild-kit/*` ← `drizzle-kit@0.31`. `drizzle-kit` est en `dependencies` parce que la CI migre la prod avec.
 - **Justification** : l'avis porte sur le serveur de développement d'esbuild (`esbuild --serve`), jamais lancé ; `drizzle-kit` ne tourne qu'en CI et en local, pas dans l'appli servie. Pas de correctif sans version majeure de `drizzle-kit`. Accepté ; à revoir à la sortie de `drizzle-kit` 1.0.
+- **Suivi** : point de toutes les failles des dépendances de développement (overrides et écarts) dans [`dependances.md`](dependances.md).
 
 ### I4 · Jetons d'invitation en clair en base et dans la sauvegarde
 
