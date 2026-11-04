@@ -1,4 +1,4 @@
-import { and, eq, ne, notExists } from "drizzle-orm";
+import { and, eq, isNull, ne, notExists } from "drizzle-orm";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { ApplyResult, SwipeDecision } from "@/domain/transitions";
 import type { Database } from "./create-database";
@@ -72,7 +72,10 @@ async function reject(db: Database, input: RejectInput): Promise<ApplyResult> {
   return changed(rejected);
 }
 
-/** My wish goes; the row too, if my swipe added it and nothing else holds it. */
+/**
+ * My wish goes; the row too, if my swipe added it and nothing else holds it
+ * (another member's wish, or a favourite marked since).
+ */
 function undoKeep(db: Database, input: UndoInput): Promise<ApplyResult> {
   const { groupId, userId, tmdbId } = input;
   return db.transaction(async (tx) => {
@@ -92,6 +95,7 @@ function undoKeep(db: Database, input: UndoInput): Promise<ApplyResult> {
           eq(groupMovie.status, "to_watch"),
           eq(groupMovie.addedBy, userId),
           eq(groupMovie.addedVia, "swipe"),
+          isNull(groupMovie.favoriteAt),
           notExists(otherWishes),
         ),
       )
