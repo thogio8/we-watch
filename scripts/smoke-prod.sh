@@ -9,6 +9,8 @@
 # EXPECT_SIGNUP (invite by default, or open) is the signup mode production
 # must show: with invite, /connexion must say so (SIGNUP lost or mistyped in
 # Vercel opens signup to anyone who knows the address).
+# SMOKE_CRON=skip leaves out the cron call (and CRON_SECRET), for a scheduled
+# smoke: Vercel already runs the cron daily. Empty (default) checks it.
 set -euo pipefail
 
 fail() {
@@ -19,6 +21,10 @@ fail() {
 expect_signup="${EXPECT_SIGNUP:-invite}"
 [[ "$expect_signup" =~ ^(invite|open)$ ]] ||
   fail EXPECT_SIGNUP "invite or open" "$expect_signup"
+
+smoke_cron="${SMOKE_CRON:-}"
+[[ "$smoke_cron" =~ ^(skip)?$ ]] ||
+  fail SMOKE_CRON "skip or empty" "$smoke_cron"
 
 # The passkeys' rpID is the host of BETTER_AUTH_URL, which must equal PROD_URL.
 host="${PROD_URL#*://}"
@@ -91,6 +97,11 @@ status="$(request -o /dev/null -w '%{http_code}' -X POST \
   -H 'Cookie: x=1' --data '{}' "$base/api/auth/passkey/verify-authentication")"
 [ "$status" = 403 ] || fail "POST from another origin (origin check)" 403 "$status"
 echo "✓ POST from another origin 403"
+
+if [ "$smoke_cron" = skip ]; then
+  echo "– daily purge and refresh not checked (SMOKE_CRON=skip)"
+  exit 0
+fi
 
 body="$(request -w '\n%{http_code}' \
   -H "Authorization: Bearer $CRON_SECRET" "$base/api/cron/refresh-movies")"

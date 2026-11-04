@@ -48,11 +48,14 @@ const healthy = (host: string): Prod => ({
 });
 
 let prod: Prod;
+let requested: string[];
 let server: Server;
 let url: string;
 beforeEach(async () => {
   prod = healthy("127.0.0.1");
+  requested = [];
   server = createServer((request, response: ServerResponse) => {
+    requested.push(request.url ?? "");
     const cron = request.url === "/api/cron/refresh-movies";
     const authorized = request.headers.authorization === `Bearer ${SECRET}`;
     const crossSite =
@@ -295,5 +298,31 @@ describe("test de fumée de la prod", () => {
 
     expect(code).toBe(1);
     expect(printed).toContain('expected "failed":[], received "failed":[550]');
+  });
+
+  it("avec SMOKE_CRON=skip, la fumée passe sans appeler le cron ni connaître CRON_SECRET", async () => {
+    const { code, printed } = await smoke(url, "invite", {
+      SMOKE_READY_TIMEOUT: "0",
+      SMOKE_CRON: "skip",
+      CRON_SECRET: "",
+    });
+
+    expect(code).toBe(0);
+    expect(requested).not.toContain("/api/cron/refresh-movies");
+    expect(printed).toContain("(SMOKE_CRON=skip)");
+    expect(printed).not.toContain("✕");
+  });
+
+  it("une valeur inconnue de SMOKE_CRON fait échouer la fumée avant toute requête", async () => {
+    const { code, printed } = await smoke(url, "invite", {
+      SMOKE_READY_TIMEOUT: "0",
+      SMOKE_CRON: "yes",
+    });
+
+    expect(code).toBe(1);
+    expect(printed).toContain(
+      "✕ SMOKE_CRON: expected skip or empty, received yes",
+    );
+    expect(requested).toEqual([]);
   });
 });
