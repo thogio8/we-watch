@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aSnapshot } from "@tests/helpers/movies";
+import { aMovie } from "@tests/helpers/movies";
 import type { MovieSnapshot, StreamingProvider } from "./movie";
 import {
   BEDTIMES,
@@ -23,7 +23,9 @@ const NETFLIX: StreamingProvider = { id: 8, name: "Netflix", logoPath: null };
 const PRIME: StreamingProvider = { id: 119, name: "Prime", logoPath: null };
 const CANAL: StreamingProvider = { id: 381, name: "Canal+", logoPath: null };
 
-const movie = aSnapshot;
+const movie = aMovie;
+
+const NOV_4 = new Date(2026, 10, 4, 21, 0);
 
 const ids = (movies: readonly MovieSnapshot[]) => movies.map((m) => m.tmdbId);
 
@@ -161,6 +163,7 @@ describe("filterTonight", () => {
 
   it("les filtres se cumulent", () => {
     const filters = {
+      ...NO_FILTERS,
       bedtime: 24 * 60,
       moods: ["feel" as const],
       platforms: ["prime"],
@@ -171,9 +174,65 @@ describe("filterTonight", () => {
 
 describe("sanitizeFilters", () => {
   it("oublie les plateformes absentes de la liste", () => {
-    const list = [movie(1, { providers: [NETFLIX] })];
+    const list = [aMovie(1, { providers: [NETFLIX] })];
     const filters = { ...NO_FILTERS, platforms: ["netflix", "canal+"] };
     expect(sanitizeFilters(filters, list).platforms).toEqual(["netflix"]);
+  });
+});
+
+describe("filtre coups de cœur", () => {
+  it("seulement nos coups de cœur, cumulé avec les autres filtres", () => {
+    const fav = aMovie(1, { favoriteAt: NOV_4, genreIds: [35] });
+    const favDrama = aMovie(2, { favoriteAt: NOV_4, genreIds: [18] });
+    const other = aMovie(3, { genreIds: [35] });
+    const only = { ...NO_FILTERS, favoritesOnly: true };
+    expect(filterTonight([fav, favDrama, other], only, at(21))).toEqual([
+      fav,
+      favDrama,
+    ]);
+    expect(
+      filterTonight(
+        [fav, favDrama, other],
+        { ...only, moods: ["laugh"] },
+        at(21),
+      ),
+    ).toEqual([fav]);
+  });
+
+  it("isFiltering compte le filtre coups de cœur", () => {
+    expect(isFiltering({ ...NO_FILTERS, favoritesOnly: true })).toBe(true);
+  });
+
+  it("plus aucun coup de cœur : le filtre retombe à toute la liste", () => {
+    const on = { ...NO_FILTERS, favoritesOnly: true };
+    expect(sanitizeFilters(on, [aMovie(1)]).favoritesOnly).toBe(false);
+    expect(
+      sanitizeFilters(on, [aMovie(1, { favoriteAt: NOV_4 })]).favoritesOnly,
+    ).toBe(true);
+  });
+
+  it("le dernier coup de cœur démarqué pendant le filtre : toute la liste revient", () => {
+    const on = { ...NO_FILTERS, favoritesOnly: true };
+    const list = [aMovie(1, { favoriteAt: NOV_4 }), aMovie(2)];
+    expect(filterTonight(list, sanitizeFilters(on, list), at(21))).toEqual([
+      list[0],
+    ]);
+    const unmarked = [aMovie(1), aMovie(2)];
+    const after = sanitizeFilters(on, unmarked);
+    expect(isFiltering(after)).toBe(false);
+    expect(filterTonight(unmarked, after, at(21))).toEqual(unmarked);
+  });
+
+  it("filtre cumulé sans résultat : le retirer d’un coup remet toute la liste", () => {
+    const list = [aMovie(1, { favoriteAt: NOV_4, genreIds: [18] }), aMovie(2)];
+    const combined = {
+      ...NO_FILTERS,
+      favoritesOnly: true,
+      moods: ["laugh" as const],
+    };
+    expect(filterTonight(list, combined, at(21))).toEqual([]);
+    expect(NO_FILTERS.favoritesOnly).toBe(false);
+    expect(filterTonight(list, NO_FILTERS, at(21))).toEqual(list);
   });
 });
 

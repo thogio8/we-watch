@@ -1,5 +1,6 @@
 import type { DrawSessionState } from "@/domain/draw-session";
-import type { Movie } from "@/domain/movie";
+import type { ListCounts, Movie } from "@/domain/movie";
+import { isFiltering, type TonightFilters } from "@/domain/tonight";
 
 export type View =
   | { phase: "home" }
@@ -53,4 +54,42 @@ export function exhaustedText(count: number, filtering: boolean): string {
   return count === 1
     ? "Le seul film de la liste est passé à la trappe"
     : `Les ${count} films sont passés à la trappe`;
+}
+
+export interface DrawButton {
+  lines: string[];
+  tone: "yellow" | "pink";
+}
+
+/**
+ * The big button: pink once the favourites filter is on, « PARMI n » as soon
+ * as anything else narrows the list.
+ */
+export function drawButton(
+  filters: TonightFilters,
+  eligibleCount: number,
+): DrawButton {
+  const tone = filters.favoritesOnly ? "pink" : "yellow";
+  const others = isFiltering({ ...filters, favoritesOnly: false });
+  if (filters.favoritesOnly && !others) {
+    return { lines: ["TIRER", "UN COUP", "DE CŒUR"], tone };
+  }
+  if (isFiltering(filters)) {
+    return { lines: ["TIRER", `PARMI ${eligibleCount}`], tone };
+  }
+  return { lines: ["TIRER", "UN", "FILM"], tone };
+}
+
+/** « 5 films à regarder · dont 2 ♥ · 1 vu »: the favourites only if any. */
+export function homeCounts({
+  toWatch,
+  watched,
+  favorites,
+}: ListCounts): string {
+  const parts = [
+    `${plural(toWatch, "film", "films")} à regarder`,
+    ...(favorites > 0 ? [`dont ${favorites} ♥`] : []),
+    plural(watched, "vu", "vus"),
+  ];
+  return parts.join(" · ");
 }

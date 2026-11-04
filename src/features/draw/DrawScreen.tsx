@@ -8,7 +8,7 @@ import {
 } from "motion/react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import type { Movie } from "@/domain/movie";
+import type { ListCounts, Movie } from "@/domain/movie";
 import { Headline } from "@/ui/Headline";
 import { DrawEmpty } from "./DrawEmpty";
 import { DrawExhausted } from "./DrawExhausted";
@@ -23,7 +23,7 @@ interface DrawScreenProps {
   /** The displayed group: each group keeps its own evening. */
   groupId: string;
   toWatch: Movie[];
-  counts: { toWatch: number; watched: number };
+  counts: ListCounts;
   onWatched: (tmdbId: number) => Promise<void>;
   /** The group pill: in the landmark, outside the animated screens. */
   pill?: ReactNode;

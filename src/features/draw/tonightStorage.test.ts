@@ -18,6 +18,7 @@ const storageWith = (entries: Record<string, string>) => ({
 describe("tonightStorage", () => {
   it("aller-retour sans l'humeur", () => {
     const raw = serializeTonight({
+      ...NO_FILTERS,
       bedtime: 1410,
       moods: ["laugh"],
       platforms: ["netflix", "prime"],
@@ -51,6 +52,16 @@ describe("tonightStorage", () => {
     expect(
       parseStoredTonight(JSON.stringify({ bedtime: "1410", platforms: "x" })),
     ).toEqual({ bedtime: null, platforms: [] });
+  });
+
+  it("ne garde jamais le filtre coups de cœur sur l’appareil", () => {
+    expect(
+      JSON.parse(serializeTonight({ ...NO_FILTERS, favoritesOnly: true })),
+    ).toEqual({ bedtime: null, platforms: [] });
+    expect(parseStoredTonight('{"favoritesOnly":true}')).toEqual({
+      bedtime: null,
+      platforms: [],
+    });
   });
 
   it("une clé par groupe", () => {
