@@ -1,4 +1,4 @@
-import { type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 type Release = () => Promise<void>;
 
@@ -12,7 +12,10 @@ async function holdChunks(page: Page): Promise<Release> {
     await released;
     await route.continue();
   });
-  return async () => release();
+  return async () => {
+    release();
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  };
 }
 
 /**
@@ -27,7 +30,9 @@ async function holdScheduler(page: Page): Promise<Release> {
     const scope = window as unknown as Record<string, unknown>;
     scope.releaseScheduler = () => {
       released = true;
-      for (const post of held.splice(0)) post();
+      const posts = held.splice(0);
+      for (const post of posts) post();
+      return posts.length;
     };
     const Native = MessageChannel;
     scope.MessageChannel = class extends Native {
@@ -42,12 +47,16 @@ async function holdScheduler(page: Page): Promise<Release> {
       }
     };
   });
-  return () =>
-    page.evaluate(() =>
+  return async () => {
+    const held = await page.evaluate(() =>
       (
-        window as unknown as { releaseScheduler: () => void }
+        window as unknown as { releaseScheduler: () => number }
       ).releaseScheduler(),
     );
+    // Nothing held: React no longer schedules through a MessageChannel.
+    if (held === 0)
+      throw new Error("holdHydration: React's scheduler was not held");
+  };
 }
 
 /**
@@ -58,4 +67,15 @@ async function holdScheduler(page: Page): Promise<Release> {
 export function holdHydration(page: Page): Promise<Release> {
   const webkit = page.context().browser()?.browserType().name() === "webkit";
   return webkit ? holdScheduler(page) : holdChunks(page);
+}
+
+/**
+ * Proves the hold worked: React has not hydrated `field` yet (no props
+ * attached). Before typing, since on WebKit the input event hydrates it.
+ */
+export async function expectNotHydrated(field: Locator) {
+  const hydrated = await field.evaluate((element) =>
+    Object.keys(element).some((key) => key.startsWith("__reactProps$")),
+  );
+  expect(hydrated, "the field must not be hydrated yet").toBe(false);
 }

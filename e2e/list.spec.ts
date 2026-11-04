@@ -1,5 +1,5 @@
 import { expect, swipe, test } from "./fixtures";
-import { holdHydration } from "./hydration";
+import { expectNotHydrated, holdHydration } from "./hydration";
 
 test.describe("liste", () => {
   test("liste vide : invitation à swiper", async ({ app }) => {
@@ -31,7 +31,9 @@ test.describe("liste", () => {
     const release = await holdHydration(app);
     await app.goto("/list", { waitUntil: "commit" });
 
-    await app.getByLabel("Ajouter un film").fill("amelie");
+    const field = app.getByLabel("Ajouter un film");
+    await expectNotHydrated(field);
+    await field.fill("amelie");
     await release();
 
     await expect(
