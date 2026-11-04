@@ -4,6 +4,7 @@
     "tests/**/*.ts",
     "e2e/**/*.ts",
     "**/__mocks__/**/*.ts",
-    "scripts/*.mjs"
+    "scripts/*.mjs",
+    "playwright.lighthouse.config.ts"
   ]
 }

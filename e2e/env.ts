@@ -27,3 +27,6 @@ export const e2eEnv = (worker: number) => ({
   // captures show it); without one, the link is hidden (unit tests).
   OWNER_CODE: "e2e-owner-code-0123",
 });
+
+/** Chromium's debugging port, where Lighthouse finds it (test:lighthouse). */
+export const LIGHTHOUSE_PORT = 9222;
