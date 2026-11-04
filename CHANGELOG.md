@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.2](https://github.com/thogio8/we-watch/compare/v2.0.1...v2.0.2) (2026-11-04)
+
+
+### Corrections
+
+* **account:** ask the passkey again before adding or deleting a key or the account on an old session ([cf73a62](https://github.com/thogio8/we-watch/commit/cf73a625f4fa0e2dd414e6acb2fb691f19d9b901))
+* **app:** show unknown addresses a 404 page in the app's style ([ea244b6](https://github.com/thogio8/we-watch/commit/ea244b6052b433866c6de40308dea7366c931cdc))
+* **groups:** send a removed member home on their next action ([8fd4c19](https://github.com/thogio8/we-watch/commit/8fd4c1927547e775cb594a9498213a9f5ea33418))
+* **signin:** refuse an invalid name before it spends a signup attempt ([7c62af1](https://github.com/thogio8/we-watch/commit/7c62af1e1c18f25baeeed96179985203869f423b))
+* **swipe:** keep the deck's buttons on screen on a phone held sideways ([d4fb4e7](https://github.com/thogio8/we-watch/commit/d4fb4e7662a60ca245c565fc06e693d3ccce024e))
+* **swipe:** restart the deck when another tab changes the displayed group ([f8985d1](https://github.com/thogio8/we-watch/commit/f8985d1711ba9a514d33f92f619d53da2cfcd9fb))
+
 ## [2.0.1](https://github.com/thogio8/we-watch/compare/v2.0.0...v2.0.1) (2026-11-03)
 
 
