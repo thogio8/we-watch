@@ -1,0 +1,115 @@
+# Every night: an encrypted backup of production, a rehearsal restoring it
+# into a throwaway local database, a smoke test of production, and the e2e
+# repeated three times (flaky tests show up here, not on a release).
+# GitHub switches a schedule off after 60 days without activity on a public
+# repository: run it again by hand (workflow_dispatch) or push anything.
+name: Nightly
+
+on:
+  schedule:
+    # 02:30 in Paris in winter, 03:30 in summer: after the evenings, far from
+    # Vercel's own cron (14:00 UTC).
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Same concurrency group as the release job of ci.yml, never cancelled:
+  # the database is never read halfway through a migration.
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Backup every app table (encrypted)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+          BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
+        run: node scripts/backup-db.mjs backup/db.json.enc
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-backup-nightly-${{ github.run_id }}
+          path: backup/
+          if-no-files-found: error
+          retention-days: 90
+
+  # Restores the backup into a fresh local SQLite file and compares it table
+  # by table. No production database secret here: only the backup key.
+  restore-drill:
+    needs: backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: db-backup-nightly-${{ github.run_id }}
+          path: backup/
+      - name: Migrate a fresh local database
+        env:
+          DATABASE_URL: file:drill.db
+        run: npm run db:migrate
+      - name: Restore the backup into it
+        env:
+          BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
+          DATABASE_URL: file:drill.db
+        run: node scripts/restore-db.mjs backup/db.json.enc
+      - name: Check it table by table
+        env:
+          BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
+          DATABASE_URL: file:drill.db
+        run: node scripts/verify-restore.mjs backup/db.json.enc
+
+  # No secret: Vercel already runs the cron daily, so it is skipped here.
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Smoke test production
+        env:
+          PROD_URL: ${{ vars.PROD_URL }}
+          SMOKE_CRON: skip
+          EXPECT_SIGNUP: ${{ vars.EXPECT_SIGNUP || 'invite' }}
+        run: bash scripts/smoke-prod.sh
+
+  e2e-repeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Runs in the Playwright Docker image (scripts/e2e.sh).
+      - run: npm run test:e2e -- --shard=${{ matrix.shard }}/4 --repeat-each=3 --retries=0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-report-nightly-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
