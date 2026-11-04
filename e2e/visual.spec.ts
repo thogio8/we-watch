@@ -3,10 +3,12 @@ import {
   decidedOn,
   emptyNameRefused,
   expect,
+  favoritedOn,
   joinedOn,
   leasAccountOn,
   leasInvitation,
   listTitles,
+  markFromList,
   settled,
   swipe,
   test,
@@ -154,6 +156,41 @@ test.describe("rendu visuel", () => {
       await app.goto("/connexion");
       await expect(app.getByText(UNSUPPORTED_MESSAGE)).toBeVisible();
       await shoot(app, `${format.name}-6c-connexion-sans-cle`);
+    });
+
+    test(`coups de cœur : ${format.name}`, async ({ app }) => {
+      await app.setViewportSize(format);
+      await markFromList(app, "Parasite");
+      // « coup de cœur de Léa le … », stamped by the server.
+      await favoritedOn(FROZEN_NOW);
+
+      await app.goto("/list");
+      await expect(app.getByText("♥ COUPS DE CŒUR · 1")).toBeVisible();
+      await shoot(app, `${format.name}-11-liste-coups-de-coeur`);
+
+      await app.goto("/list/496243");
+      await expect(app.getByText(/coup de cœur de Léa le/i)).toBeVisible();
+      await shoot(app, `${format.name}-11b-fiche-coup-de-coeur`);
+
+      await app.goto("/list/129");
+      await expect(app.getByText("♡ COUP DE CŒUR\u00A0?")).toBeVisible();
+      await shoot(app, `${format.name}-11c-fiche-fantome`);
+
+      await app.goto("/");
+      await app.getByRole("button", { name: /^LA SOIRÉE/ }).click();
+      await app
+        .getByRole("button", { name: "♥ NOS COUPS DE CŒUR · 1" })
+        .click();
+      await shoot(app, `${format.name}-11d-la-soiree-coups-de-coeur`);
+      await app.getByRole("button", { name: /^LA SOIRÉE/ }).click();
+      const draw = app.getByRole("button", { name: "TIRER UN COUP DE CŒUR" });
+      await expect(draw).toBeVisible();
+      await shoot(app, `${format.name}-11e-accueil-coup-de-coeur`);
+      await draw.click();
+      await expect(app.getByRole("heading", { level: 2 })).toHaveText(
+        "Parasite",
+      );
+      await shoot(app, `${format.name}-11f-ticket-coup-de-coeur`);
     });
   }
 });
