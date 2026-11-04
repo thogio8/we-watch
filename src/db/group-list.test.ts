@@ -354,6 +354,60 @@ describe("liste du groupe", () => {
     expect(await act("unwatch", 1)).toBe("noop");
   });
 
+  const rawFavorite = async (tmdbId: number) =>
+    (
+      await db
+        .select({ at: groupMovie.favoriteAt, by: groupMovie.favoriteBy })
+        .from(groupMovie)
+        .where(eq(groupMovie.tmdbId, tmdbId))
+    )[0];
+
+  it.each(["mark_watched", "remove"] as const)(
+    "%s efface le coup de cœur",
+    async (action) => {
+      await keep(1);
+      await favorite(1, hugo, T1);
+
+      expect(await act(action, 1, lea, T2)).toBe("applied");
+
+      expect(await rawFavorite(1)).toEqual({ at: null, by: null });
+    },
+  );
+
+  it("unwatch ramène le film à voir sans coup de cœur, même si les colonnes étaient restées remplies", async () => {
+    await keep(1);
+    await act("mark_watched", 1);
+    await favorite(1, hugo, T2);
+
+    expect(await act("unwatch", 1, lea, T3)).toBe("applied");
+
+    expect(await rawFavorite(1)).toEqual({ at: null, by: null });
+    expect(await list.findInList(groupA, 1)).toMatchObject({
+      status: "to_watch",
+      favoriteAt: null,
+    });
+  });
+
+  it("search_add d’un film écarté le remet à voir sans coup de cœur", async () => {
+    await keep(1);
+    await act("remove", 1);
+    await favorite(1, hugo, T2);
+
+    expect(await search(1, lea, T3)).toBe("applied");
+
+    expect(await rawFavorite(1)).toEqual({ at: null, by: null });
+    expect((await list.counts(groupA)).favorites).toBe(0);
+  });
+
+  it("search_add d’un film déjà à voir garde son coup de cœur", async () => {
+    await keep(1);
+    await favorite(1, hugo, T1);
+
+    await search(1, lea, T2);
+
+    expect(await rawFavorite(1)).toEqual({ at: T1, by: hugo });
+  });
+
   it("attribution : un compte supprimé n’est plus nommé, sans être un film copié", async () => {
     await keep(1, groupA, lea, T0);
     await keep(1, groupA, hugo, T1);

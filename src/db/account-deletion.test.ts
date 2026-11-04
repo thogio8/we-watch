@@ -14,6 +14,7 @@ import {
 } from "./auth-schema";
 import type { Database } from "./create-database";
 import { createDecisions } from "./decisions";
+import { createFavorites } from "./favorites";
 import {
   group,
   groupMovie,
@@ -120,6 +121,14 @@ beforeEach(async () => {
     .values({ groupId: zoes, tmdbId: 6, userId: lea, wantedAt: T0 });
   await bof(lea, 7);
   await bof(hugo, 7);
+  // Léa's favourite on the shared list.
+  await createFavorites(db).set({
+    groupId: shared,
+    userId: lea,
+    tmdbId: 2,
+    on: true,
+    now: T0,
+  });
   for (const id of [lea, hugo, zoe]) {
     await signInRows(id);
   }
@@ -150,7 +159,11 @@ const rowsNaming = async (userId: string) => ({
     .select()
     .from(groupMovie)
     .where(
-      or(eq(groupMovie.addedBy, userId), eq(groupMovie.watchedBy, userId)),
+      or(
+        eq(groupMovie.addedBy, userId),
+        eq(groupMovie.watchedBy, userId),
+        eq(groupMovie.favoriteBy, userId),
+      ),
     ),
 });
 
@@ -208,6 +221,7 @@ const withoutLea = (before: Tables): Tables =>
                 ...row,
                 added_by: formerMember(row.added_by),
                 watched_by: formerMember(row.watched_by),
+                favorite_by: formerMember(row.favorite_by),
               }
             : row,
         ),
@@ -302,6 +316,15 @@ describe("supprimer un compte", () => {
     expect(await movieOf(shared, 4)).toMatchObject({
       addedBy: null,
       watchedBy: hugo,
+    });
+  });
+
+  it("membre parmi d’autres : ses coups de cœur restent, attribués à un ancien membre", async () => {
+    await account.deleteUser(lea);
+
+    expect(await movieOf(shared, 2)).toMatchObject({
+      favoriteAt: T0,
+      favoriteBy: null,
     });
   });
 

@@ -13,8 +13,8 @@ import { leaveIn } from "./membership";
  * « SUPPRIMER MON COMPTE »: in one transaction (BEGIN IMMEDIATE, so no
  * write slips in between), the user leaves each of their groups as `leave`
  * does (a group left empty goes with its list), then their remaining
- * « voulu » and BOF go, the movies they added or marked watched become
- * « un ancien membre »'s, and their passkeys, sessions, accounts and user
+ * « voulu » and BOF go, the movies they added, marked watched or marked as
+ * a favourite become « un ancien membre »'s, and their passkeys, sessions, accounts and user
  * row go. Every child is deleted explicitly, on this user's rows only:
  * foreign keys may be off. False when there was no such user.
  */
@@ -38,6 +38,10 @@ export function deleteUserIn(db: Database, userId: string): Promise<boolean> {
       .update(groupMovie)
       .set({ watchedBy: null })
       .where(eq(groupMovie.watchedBy, userId));
+    await tx
+      .update(groupMovie)
+      .set({ favoriteBy: null })
+      .where(eq(groupMovie.favoriteBy, userId));
     for (const table of [passkey, session, account]) {
       await tx.delete(table).where(eq(table.userId, userId));
     }

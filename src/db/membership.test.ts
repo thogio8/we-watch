@@ -4,6 +4,7 @@ import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
 import { aSnapshot } from "@tests/helpers/movies";
 import type { Database } from "./create-database";
 import { createDecisions, type Decisions } from "./decisions";
+import { createFavorites } from "./favorites";
 import { createGroupList, type GroupList } from "./group-list";
 import {
   group,
@@ -124,6 +125,24 @@ describe("partir", () => {
     });
     expect(await list.findInList(other, 1)).toMatchObject({
       wantedBy: ["Hugo"],
+    });
+  });
+
+  it("le partant laisse ses coups de cœur au groupe, avec son prénom", async () => {
+    await keep(1, lea);
+    await createFavorites(db).set({
+      groupId: groupA,
+      userId: hugo,
+      tmdbId: 1,
+      on: true,
+      now: T1,
+    });
+
+    expect(await groups.leave(groupA, hugo)).toBe("left");
+
+    expect(await list.findInList(groupA, 1)).toMatchObject({
+      favoriteAt: T1,
+      favoriteBy: "Hugo",
     });
   });
 

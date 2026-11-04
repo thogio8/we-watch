@@ -52,6 +52,9 @@ export interface GroupList {
 
 type Who = { userId: string; now: Date };
 
+/** A movie leaving or coming back to « à voir » never keeps a favourite. */
+const NO_FAVORITE = { favoriteAt: null, favoriteBy: null } as const;
+
 /** The columns each action writes, besides the status (see nextStatus). */
 const CHANGES: Record<
   MovieAction,
@@ -62,14 +65,21 @@ const CHANGES: Record<
     addedBy: userId,
     addedVia: "search",
     legacy: false,
+    ...NO_FAVORITE,
   }),
-  remove: ({ now }) => ({ decidedAt: now }),
+  remove: ({ now }) => ({ decidedAt: now, ...NO_FAVORITE }),
   mark_watched: ({ userId, now }) => ({
     watchedAt: now,
     watchedBy: userId,
     watchedLegacy: false,
+    ...NO_FAVORITE,
   }),
-  unwatch: () => ({ watchedAt: null, watchedBy: null, watchedLegacy: false }),
+  unwatch: () => ({
+    watchedAt: null,
+    watchedBy: null,
+    watchedLegacy: false,
+    ...NO_FAVORITE,
+  }),
 };
 
 export function createGroupList(db: Database): GroupList {

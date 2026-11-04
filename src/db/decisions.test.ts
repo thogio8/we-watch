@@ -4,6 +4,7 @@ import { aSnapshot } from "@tests/helpers/movies";
 import type { SwipeDecision } from "@/domain/transitions";
 import type { Database } from "./create-database";
 import { createDecisions, type Decisions } from "./decisions";
+import { createFavorites } from "./favorites";
 import { createGroupList, type GroupList } from "./group-list";
 import { movieSnapshot } from "./group-schema";
 
@@ -175,6 +176,25 @@ describe("annuler un swipe", () => {
     expect(await list.findInList(groupe, 1)).toBeNull();
     expect(await decisions.deckExclusions(groupe, lea)).toEqual(new Set());
     expect(await undo(lea)).toBe("noop");
+  });
+
+  it("annulation par Léa d’un film qu’elle seule a voulu, mais qu’Hugo vient de mettre en coup de cœur : la ligne reste, coup de cœur compris", async () => {
+    await swipe({ userId: lea });
+    await createFavorites(db).set({
+      groupId: groupe,
+      userId: hugo,
+      tmdbId: 1,
+      on: true,
+      now: T1,
+    });
+
+    expect(await undo(lea)).toBe("applied");
+    expect(await list.findInList(groupe, 1)).toMatchObject({
+      status: "to_watch",
+      wantedBy: [],
+      favoriteAt: T1,
+      favoriteBy: "Hugo",
+    });
   });
 
   it("annulation après que le film a été marqué vu : la ligne reste", async () => {
