@@ -43,6 +43,7 @@ describe("parseGroupName (propriétés)", () => {
         (input) => {
           const parsed = parseGroupName(input);
           if (parsed === null) return;
+          expect([...parsed].length).toBeGreaterThanOrEqual(1);
           expect([...parsed].length).toBeLessThanOrEqual(30);
           expect(parseGroupName(parsed)).toBe(parsed);
         },

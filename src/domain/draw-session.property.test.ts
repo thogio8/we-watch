@@ -93,7 +93,7 @@ describe("drawSessionReducer (propriétés)", () => {
       }),
     ));
 
-  it("rejeter ne retire jamais deux fois de suite le même film", () =>
+  it("rejeter ne redonne jamais le même film", () =>
     fc.assert(
       fc.property(ids, ids, roll, (candidates, pile, r) => {
         const drawn = drawSessionReducer(

@@ -31,9 +31,15 @@ describe("confirmsName (propriétés)", () => {
 
   it("la comparaison est symétrique pour deux textes", () =>
     fc.assert(
-      fc.property(name, name, (a, b) => {
-        expect(confirmsName(a, b)).toBe(confirmsName(b, a));
-      }),
+      fc.property(
+        name,
+        fc.constantFrom("", " ", "\t"),
+        fc.boolean(),
+        (a, pad, swap) => {
+          const b = `${pad}${swap ? a.replaceAll("'", "\u2019") : a}${pad}`;
+          expect(confirmsName(a, b)).toBe(confirmsName(b, a));
+        },
+      ),
     ));
 
   it("la casse compte", () =>
