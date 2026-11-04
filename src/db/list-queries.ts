@@ -39,6 +39,7 @@ export const changed = (...results: unknown[][]): ApplyResult =>
 
 const adder = alias(user, "adder");
 const watcher = alias(user, "watcher");
+const favoriter = alias(user, "favoriter");
 
 /** Names of the members who want each movie, in the order of the wishes. */
 async function wishes(
@@ -83,11 +84,14 @@ export async function selectMovies(
       watchedLegacy: groupMovie.watchedLegacy,
       addedBy: adder.name,
       watchedBy: watcher.name,
+      favoriteAt: groupMovie.favoriteAt,
+      favoriteBy: favoriter.name,
     })
     .from(groupMovie)
     .innerJoin(movieSnapshot, eq(movieSnapshot.tmdbId, groupMovie.tmdbId))
     .leftJoin(adder, eq(adder.id, groupMovie.addedBy))
     .leftJoin(watcher, eq(watcher.id, groupMovie.watchedBy))
+    .leftJoin(favoriter, eq(favoriter.id, groupMovie.favoriteBy))
     .where(and(eq(groupMovie.groupId, groupId), where))
     .orderBy(...orderBy);
   if (rows.length === 0) return [];

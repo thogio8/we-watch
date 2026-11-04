@@ -33,3 +33,16 @@ export function watchedLine(
   if (m.watchedBy !== null) return `${seen} · marqué par ${m.watchedBy}`;
   return m.watchedLegacy ? seen : `${seen} · marqué par ${FORMER_MEMBER}`;
 }
+
+/** « d’ » before a vowel (h and y do not elide), « de » otherwise. */
+function ofName(name: string): string {
+  return /^[aeiouàâäéèêëîïôöùûüœæ]/iu.test(name) ? `d’${name}` : `de ${name}`;
+}
+
+/** « coup de cœur de Léa le 4 novembre 2026 »; null when not a favourite. */
+export function favoriteLine(
+  m: Pick<Movie, "favoriteAt" | "favoriteBy">,
+): string | null {
+  if (m.favoriteAt === null) return null;
+  return `coup de cœur ${ofName(m.favoriteBy ?? FORMER_MEMBER)} le ${formatLongDate(m.favoriteAt)}`;
+}
