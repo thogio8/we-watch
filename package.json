@@ -18,6 +18,7 @@
     "format:check": "prettier --check .",
     "dup": "jscpd",
     "deadcode": "knip",
+    "mutation": "stryker run",
     "ci:checks": "npm run format:check && npm run lint && npm run typecheck && npm run dup && npm run deadcode && npm run test:coverage",
     "ci": "npm run ci:checks && npm run test:e2e",
     "prepare": "lefthook install"
@@ -37,6 +38,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

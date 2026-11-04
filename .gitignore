@@ -61,3 +61,7 @@ next-env.d.ts
 
 # backup-db.mjs output (production data, even encrypted: never committed)
 /backup/
+
+# mutation testing (Stryker)
+/reports/
+/.stryker-tmp/
