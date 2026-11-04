@@ -1,4 +1,5 @@
 import { expect, swipe, test } from "./fixtures";
+import { holdHydration } from "./hydration";
 
 test.describe("liste", () => {
   test("liste vide : invitation à swiper", async ({ app }) => {
@@ -21,6 +22,22 @@ test.describe("liste", () => {
     await expect(app.getByRole("tab", { name: /À VOIR · 1/ })).toBeVisible();
     await expect(
       app.getByText("Le Fabuleux Destin d'Amélie Poulain"),
+    ).toBeVisible();
+  });
+
+  test("une recherche tapée avant que la page soit prête est lancée", async ({
+    app,
+  }) => {
+    const release = await holdHydration(app);
+    await app.goto("/list", { waitUntil: "commit" });
+
+    await app.getByLabel("Ajouter un film").fill("amelie");
+    await release();
+
+    await expect(
+      app.getByRole("button", {
+        name: "Ajouter Le Fabuleux Destin d'Amélie Poulain",
+      }),
     ).toBeVisible();
   });
 
