@@ -102,6 +102,7 @@ const ARGUMENTS: Record<string, () => unknown[]> = {
   "features/groups/actions.ts#removeMember": () => [groupId, "user-1"],
   "features/groups/actions.ts#joinGroup": () => [token],
   "features/list/actions.ts#searchCatalog": () => [groupId, "Fight Club"],
+  "features/list/actions.ts#setFavorite": () => [groupId, 550, true],
   "features/swipe/actions.ts#loadMoreCards": () => [groupId, "popular", 2],
   "features/account/actions.ts#deletePasskey": () => ["passkey-1"],
   "features/account/actions.ts#revokeSession": () => ["session-1"],

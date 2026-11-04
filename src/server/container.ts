@@ -4,6 +4,7 @@ import { createAuth } from "@/auth/create-auth";
 import { createAccount, type Account } from "@/db/account";
 import { createDatabase, type Database } from "@/db/create-database";
 import { createDecisions, type Decisions } from "@/db/decisions";
+import { createFavorites, type Favorites } from "@/db/favorites";
 import { createGroupList, type GroupList } from "@/db/group-list";
 import { createGroups, type Groups } from "@/db/groups";
 import { createHousekeeping, type Housekeeping } from "@/db/housekeeping";
@@ -19,6 +20,7 @@ import { discoverDeck, getMovieSnapshot } from "@/tmdb/movies";
 let database: Database | undefined;
 let account: Account | undefined;
 let decisions: Decisions | undefined;
+let favorites: Favorites | undefined;
 let groupList: GroupList | undefined;
 let groups: Groups | undefined;
 let housekeeping: Housekeeping | undefined;
@@ -41,6 +43,11 @@ export function getAccount(): Account {
 export function getDecisions(): Decisions {
   decisions ??= createDecisions(getDatabase());
   return decisions;
+}
+
+export function getFavorites(): Favorites {
+  favorites ??= createFavorites(getDatabase());
+  return favorites;
 }
 
 export function getGroupList(): GroupList {

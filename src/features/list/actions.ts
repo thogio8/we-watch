@@ -1,10 +1,11 @@
 "use server";
 
 import type { MovieSnapshot, MovieStatus } from "@/domain/movie";
-import { getGroupList, getTmdbClient } from "@/server/container";
+import type { ApplyResult } from "@/domain/transitions";
+import { getFavorites, getGroupList, getTmdbClient } from "@/server/container";
 import { assertMember } from "@/server/groups";
 import { revalidateListPages } from "@/server/revalidate";
-import { assertTmdbId } from "@/server/validate";
+import { assertBoolean, assertTmdbId } from "@/server/validate";
 import { TmdbError } from "@/tmdb/client";
 import { getMovieSnapshot, searchMovies } from "@/tmdb/movies";
 
@@ -39,6 +40,30 @@ export async function removeFromList(
 /** ↺ À VOIR on « vus »: back to « à voir », `watched_at` cleared. */
 export async function unwatch(groupId: string, tmdbId: number): Promise<void> {
   await applyFromList(groupId, "unwatch", tmdbId);
+}
+
+/**
+ * ♡ / ♥ on « à voir »: the wanted state, not a toggle, so two devices never
+ * cancel each other. A movie gone or no longer « à voir » is a "noop", not an
+ * error. No attempt limit: members only, idempotent, nothing to guess (as
+ * renameGroup).
+ */
+export async function setFavorite(
+  groupId: string,
+  tmdbId: number,
+  on: boolean,
+): Promise<ApplyResult> {
+  const { user } = await assertMember(groupId);
+  assertTmdbId("setFavorite", tmdbId);
+  assertBoolean("setFavorite", "on", on);
+  const result = await getFavorites().set({
+    groupId,
+    userId: user.userId,
+    tmdbId,
+    on,
+  });
+  revalidateListPages();
+  return result;
 }
 
 /** TMDB search (fr-FR) with each film's status. TMDB being down is expected: `{ ok: false }`. */

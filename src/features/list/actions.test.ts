@@ -9,10 +9,12 @@ import {
   addFromSearch,
   removeFromList,
   searchCatalog,
+  setFavorite,
   unwatch,
 } from "./actions";
 
 const apply = vi.fn();
+const set = vi.fn();
 const statusesOf = vi.fn();
 const searchMovies = vi.fn();
 const getMovieSnapshot = vi.fn();
@@ -21,6 +23,7 @@ const client = { get: vi.fn() };
 vi.mock("@/server/groups");
 vi.mock("@/server/container", () => ({
   getGroupList: () => ({ apply, statusesOf }),
+  getFavorites: () => ({ set }),
   getTmdbClient: () => client,
 }));
 vi.mock("@/tmdb/movies", () => ({
@@ -40,6 +43,7 @@ const GROUP = "groupe-1";
 beforeEach(() => {
   vi.mocked(assertMember).mockClear();
   apply.mockReset().mockResolvedValue("applied");
+  set.mockReset().mockResolvedValue("applied");
   statusesOf.mockReset().mockResolvedValue(new Map());
   vi.mocked(revalidateListPages).mockReset();
   searchMovies.mockReset().mockResolvedValue([]);
@@ -162,17 +166,57 @@ describe("addFromSearch", () => {
   );
 });
 
+describe("setFavorite", () => {
+  it("pose l’état voulu, pour moi, puis rafraîchit TIRER et LISTE", async () => {
+    await expect(setFavorite(GROUP, 129, true)).resolves.toBe("applied");
+
+    expect(assertMember).toHaveBeenCalledWith(GROUP);
+    expect(set).toHaveBeenCalledExactlyOnceWith({
+      groupId: GROUP,
+      userId: "user-1",
+      tmdbId: 129,
+      on: true,
+    });
+    expect(revalidateListPages).toHaveBeenCalledOnce();
+  });
+
+  it("renvoie « noop » tel quel, sans exception", async () => {
+    set.mockResolvedValue("noop");
+
+    await expect(setFavorite(GROUP, 129, false)).resolves.toBe("noop");
+  });
+
+  it.each([
+    [0, true],
+    [129, "true"],
+    [129, 1],
+    [129, null],
+    [129, undefined],
+  ])("refuse tmdbId %s et on %s sans rien écrire", async (tmdbId, on) => {
+    await expect(setFavorite(GROUP, tmdbId, on as boolean)).rejects.toThrow(
+      "invalid",
+    );
+    expect(set).not.toHaveBeenCalled();
+    expect(revalidateListPages).not.toHaveBeenCalled();
+  });
+});
+
 describe("hors du groupe, ou sans session", () => {
   it.each([
     ["removeFromList", () => removeFromList("groupe-b", 0)],
     ["unwatch", () => unwatch("groupe-b", 0)],
     ["searchCatalog", () => searchCatalog("groupe-b", 42 as unknown as string)],
     ["addFromSearch", () => addFromSearch("groupe-b", 0)],
+    [
+      "setFavorite",
+      () => setFavorite("groupe-b", 0, "true" as unknown as boolean),
+    ],
   ] as const)(
     "%s refuse avant toute validation, sans rien faire",
     (_name, call) =>
       expectRefusedFirst(call, [
         apply,
+        set,
         searchMovies,
         getMovieSnapshot,
         statusesOf,
