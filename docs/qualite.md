@@ -53,7 +53,7 @@ Résultat : résumé du job et artefact `lighthouse-report` (30 jours).
 
 - **CodeQL** (suite étendue) : analyse statique, onglet Security → Code scanning.
 - **Secret scanning et push protection** : un secret poussé est signalé, ou refusé avant le push.
-- **Dependabot** : alertes de sécurité, mises à jour de sécurité, et une pull request de mises à jour chaque lundi.
+- **Dependabot** : alertes de sécurité, mises à jour de sécurité, et une pull request de mises à jour des dépendances npm chaque lundi (celles des actions GitHub : chaque mois).
 - **Signalement privé de failles** : voir [`SECURITY.md`](../SECURITY.md).
 - **Ruleset `protect-main`** : `main` ne se supprime pas et ne se réécrit pas.
 

@@ -12,13 +12,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-16-1b1b6b" alt="Next.js 16">
-  <img src="https://img.shields.io/badge/TypeScript-strict-2f6bff" alt="TypeScript strict">
-  <img src="https://img.shields.io/badge/PWA-ffe600" alt="PWA">
+  <a href="package.json"><img src="https://img.shields.io/badge/Next.js-16-1b1b6b" alt="Next.js 16"></a>
+  <a href="tsconfig.json"><img src="https://img.shields.io/badge/TypeScript-strict-2f6bff" alt="TypeScript strict"></a>
+  <a href="src/app/manifest.ts"><img src="https://img.shields.io/badge/PWA-ffe600" alt="PWA"></a>
   <a href="docs/coverage.md"><img src="https://img.shields.io/badge/couverture-%E2%89%A5%2095%20%25-ff3fa4" alt="Couverture au moins 95 %"></a>
   <a href="docs/qualite.md"><img src="https://img.shields.io/badge/test%C3%A9%20sur-Chromium%20%2B%20WebKit-1b1b6b" alt="Testé sur Chromium et WebKit"></a>
-  <a href="docs/qualite.md"><img src="https://img.shields.io/badge/accessibilit%C3%A9-WCAG%20AA%20(axe)-ffe600" alt="Accessibilité WCAG AA, vérifiée avec axe"></a>
-  <a href="https://playwright.dev"><img src="https://img.shields.io/badge/e2e-Playwright-2f6bff" alt="Playwright"></a>
+  <a href="docs/qualite.md"><img src="https://img.shields.io/badge/accessibilit%C3%A9-axe%20sans%20d%C3%A9faut%20grave-ffe600" alt="Accessibilité : axe sans défaut grave"></a>
+  <a href="playwright.config.ts"><img src="https://img.shields.io/badge/e2e-Playwright-2f6bff" alt="Playwright"></a>
   <a href="https://www.conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-ff3fa4" alt="Conventional Commits"></a>
   <a href="https://github.com/thogio8/we-watch/blob/main/release-please-config.json"><img src="https://img.shields.io/badge/semver-release--please-1b1b6b" alt="Versions semver automatiques avec release-please"></a>
   <a href=".github/dependabot.yml"><img src="https://img.shields.io/badge/Dependabot-activ%C3%A9-ffe600" alt="Dependabot"></a>

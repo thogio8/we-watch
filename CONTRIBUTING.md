@@ -14,7 +14,7 @@ Merci d'y penser. WeWatch est un petit projet : une issue ou une pull request co
 npm run ci              # tout ce que vérifie la CI : format, lint, types, doublons, code mort, tests, e2e
 npm run ci:checks       # la même chose sans l'e2e (rapide)
 npm run test:e2e        # tests de bout en bout seuls (Docker requis)
-npm run mutation        # tests de mutation : mesure la solidité des tests (une dizaine de minutes)
+npm run mutation        # tests de mutation : mesure la solidité des tests (environ 4 minutes en local sur un passage complet, moins ensuite : le calcul est incrémental)
 npm run test:lighthouse # Lighthouse sur les écrans connectés (Docker requis)
 ```
 
