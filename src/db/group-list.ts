@@ -1,5 +1,10 @@
 import { and, count, desc, eq, inArray } from "drizzle-orm";
-import type { Movie, MovieSnapshot, MovieStatus } from "@/domain/movie";
+import type {
+  ListCounts,
+  Movie,
+  MovieSnapshot,
+  MovieStatus,
+} from "@/domain/movie";
 import {
   type ApplyResult,
   type MovieAction,
@@ -33,7 +38,8 @@ export interface GroupList {
     groupId: string,
     status: "to_watch" | "watched",
   ): Promise<Movie[]>;
-  counts(groupId: string): Promise<{ toWatch: number; watched: number }>;
+  // Task 3 adds the favourites count.
+  counts(groupId: string): Promise<Omit<ListCounts, "favorites">>;
   /** Status in the group's list, set-aside movies included. */
   statusesOf(
     groupId: string,

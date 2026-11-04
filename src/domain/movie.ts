@@ -34,4 +34,17 @@ export interface Movie extends MovieSnapshot {
   legacy: boolean;
   /** Watched before the accounts: who marked it was never recorded. */
   watchedLegacy: boolean;
+  /** Set only for a movie still to watch. */
+  favoriteAt: Date | null;
+  /** Name resolved; null with favoriteAt set = deleted account. */
+  favoriteBy: string | null;
+}
+
+export const isFavorite = (m: Pick<Movie, "favoriteAt">): boolean =>
+  m.favoriteAt !== null;
+
+export interface ListCounts {
+  toWatch: number;
+  watched: number;
+  favorites: number;
 }
