@@ -1,6 +1,7 @@
 "use client";
 
 import { type ChangeEvent, useRef } from "react";
+import { useAdoptPrefilledValue } from "@/ui/useAdoptPrefilledValue";
 import styles from "./SearchPanel.module.css";
 
 /** Same cap as the server action. */
@@ -14,6 +15,7 @@ interface SearchFieldProps {
 /** The « AJOUTER UN FILM… » field, with its clear button. */
 export function SearchField({ value, onChange }: SearchFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  useAdoptPrefilledValue(inputRef, value, onChange);
 
   const clear = () => {
     onChange("");
