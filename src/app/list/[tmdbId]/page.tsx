@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { markWatched } from "@/features/draw/actions";
 import { createGroup } from "@/features/groups/actions";
 import { FirstGroupScreen } from "@/features/groups/FirstGroupScreen";
-import { removeFromList, unwatch } from "@/features/list/actions";
+import { removeFromList, setFavorite, unwatch } from "@/features/list/actions";
 import { loadMoviePage } from "@/features/movie/load";
 import {
   MovieNotFound,
@@ -30,6 +30,7 @@ async function MovieData({
         onWatched: markWatched.bind(null, groupId),
         onUnwatch: unwatch.bind(null, groupId),
         onRemove: removeFromList.bind(null, groupId),
+        onFavorite: setFavorite.bind(null, groupId),
       }}
     />
   );

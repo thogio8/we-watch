@@ -1,0 +1,24 @@
+/*
+ * Bottom-left of the poster (spec 2.1 §6.2). The type follows the poster's
+ * width: --poster-w is only set on a lying ticket, where the poster can shrink
+ * to 90 px (phone held sideways); a standing poster is wide enough.
+ */
+.corner {
+  position: absolute;
+  bottom: 14px;
+  left: 10px;
+  z-index: 1;
+  max-width: calc(100% - 20px);
+}
+
+.stamp {
+  max-width: 100%;
+  font-size: clamp(10px, calc(var(--poster-w, 300px) / 17), var(--text-md));
+  line-height: 1.15;
+  white-space: normal;
+}
+
+/* Only the glyph is pink: pink words on paper would miss the contrast. */
+.heart {
+  color: var(--pink);
+}

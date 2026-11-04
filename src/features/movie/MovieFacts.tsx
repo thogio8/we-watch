@@ -1,14 +1,24 @@
-import { addedLine, wantedLine, watchedLine } from "@/domain/attribution";
+import {
+  addedLine,
+  favoriteLine,
+  wantedLine,
+  watchedLine,
+} from "@/domain/attribution";
 import { genreNames } from "@/domain/genres";
 import type { Movie } from "@/domain/movie";
 import { formatLongDate } from "@/domain/time";
 import type { MovieCredits } from "@/tmdb/credits";
 import styles from "./MovieScreen.module.css";
 
-/** Who added it and when, who wanted it, who marked it watched and when. */
+/**
+ * Who added it and when, who wanted it, whose favourite it is since when, who
+ * marked it watched and when.
+ */
 const ourHistory = (movie: Movie) => [
   addedLine(movie),
   wantedLine(movie.wantedBy),
+  // Only a film to watch is a favourite, even if a row kept its columns.
+  movie.status === "to_watch" ? favoriteLine(movie) : null,
   watchedLine(movie, formatLongDate),
 ];
 
