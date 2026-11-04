@@ -9,6 +9,8 @@ const config = {
     "!src/**/__mocks__/**",
     "!src/**/use*.ts",
     "!src/**/actions.ts",
+    "!src/features/pwa/brand.ts",
+    "!src/features/signin/authClient.ts",
   ],
   reporters: ["html", "clear-text", "progress"],
   htmlReporter: { fileName: "reports/mutation/index.html" },

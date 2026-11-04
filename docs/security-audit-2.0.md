@@ -237,6 +237,7 @@ Sur Vercel, `x-forwarded-for` est réécrit par la plateforme avec la seule IP d
 | Tout membre peut retirer tout membre | Choix de la spec (§7) pour un groupe de confiance ; le retiré peut revenir par le lien tant qu'il n'est pas régénéré. |
 | Actions non limitées (`revokeSession`, `renameGroup`, `regenerateInviteLink`, `removeMember`, `leaveGroup`, `chooseGroup`, lectures TMDB) | Réservées à un compte ou à un membre, sans secret à deviner (I5). |
 | Comptes supprimés présents 90 jours dans les sauvegardes | Rétention de l'artefact ; écrit dans le README. |
+| Artefacts de sauvegarde téléchargeables par tout utilisateur GitHub connecté (dépôt public) | Chiffrés (AES-256-GCM, IV aléatoire) : leur confidentialité repose entièrement sur `BACKUP_KEY`, jamais commitée ni affichée. |
 | Pas de pare-feu Vercel | Les limites en base suffisent pour deux personnes. |
 
 ## À vérifier après la bascule
