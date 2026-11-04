@@ -2,7 +2,7 @@
 
 Chaque déploiement sauvegarde la base, chiffrée avec `BACKUP_KEY`, dans un artefact `db-backup-<sha>` gardé 90 jours (CLAUDE.md, « Sauvegarde chiffrée »). Une sauvegarde d'avant la 2.0 (1.3.x) n'est plus restaurable.
 
-La restauration n'a été testée que sur des fichiers SQLite locaux. **Conseillé une fois avant d'en avoir besoin** : la répéter sur une base Turso jetable (étapes 1 à 4, puis `turso db destroy <base jetable>`).
+Chaque nuit, le workflow `nightly.yml` sauvegarde la prod (artefact `db-backup-nightly-<run>`, 90 jours), la restaure dans une base SQLite locale jetable et compare chaque table à la sauvegarde (`scripts/verify-restore.mjs` : un compte de lignes différent, ou une sauvegarde sans aucune ligne, fait échouer le run ; une table absente de la prod est dite, pas échouée). La restauration n'est donc répétée chaque nuit que sur des fichiers SQLite locaux, jamais sur Turso. **Conseillé une fois avant d'en avoir besoin** : la répéter sur une base Turso jetable (étapes 1 à 4, puis `turso db destroy <base jetable>`).
 
 1. [ ] Choisir l'artefact (le dernier d'avant l'incident) :
 

@@ -4,9 +4,24 @@
 
 <p align="center">
   <a href="https://github.com/thogio8/we-watch/actions/workflows/ci.yml"><img src="https://github.com/thogio8/we-watch/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/thogio8/we-watch/actions/workflows/nightly.yml"><img src="https://github.com/thogio8/we-watch/actions/workflows/nightly.yml/badge.svg" alt="Contrôles de nuit"></a>
+  <a href="https://github.com/thogio8/we-watch/security/code-scanning"><img src="https://github.com/thogio8/we-watch/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/thogio8/we-watch"><img src="https://api.scorecard.dev/projects/github.com/thogio8/we-watch/badge" alt="OpenSSF Scorecard"></a>
   <a href="https://github.com/thogio8/we-watch/releases"><img src="https://img.shields.io/github/v/release/thogio8/we-watch?label=version&color=ff3fa4" alt="Version"></a>
+  <a href="https://github.com/thogio8/we-watch/commits/main"><img src="https://img.shields.io/github/last-commit/thogio8/we-watch?color=2f6bff" alt="Dernier commit"></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Next.js-16-1b1b6b" alt="Next.js 16">
+  <img src="https://img.shields.io/badge/TypeScript-strict-2f6bff" alt="TypeScript strict">
   <img src="https://img.shields.io/badge/PWA-ffe600" alt="PWA">
+  <a href="docs/coverage.md"><img src="https://img.shields.io/badge/couverture-%E2%89%A5%2095%20%25-ff3fa4" alt="Couverture au moins 95 %"></a>
+  <a href="docs/qualite.md"><img src="https://img.shields.io/badge/test%C3%A9%20sur-Chromium%20%2B%20WebKit-1b1b6b" alt="Testé sur Chromium et WebKit"></a>
+  <a href="docs/qualite.md"><img src="https://img.shields.io/badge/accessibilit%C3%A9-WCAG%20AA%20(axe)-ffe600" alt="Accessibilité WCAG AA, vérifiée avec axe"></a>
+  <a href="https://playwright.dev"><img src="https://img.shields.io/badge/e2e-Playwright-2f6bff" alt="Playwright"></a>
+  <a href="https://www.conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-ff3fa4" alt="Conventional Commits"></a>
+  <a href="https://github.com/thogio8/we-watch/blob/main/release-please-config.json"><img src="https://img.shields.io/badge/semver-release--please-1b1b6b" alt="Versions semver automatiques avec release-please"></a>
+  <a href=".github/dependabot.yml"><img src="https://img.shields.io/badge/Dependabot-activ%C3%A9-ffe600" alt="Dependabot"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-2f6bff" alt="Licence MIT"></a>
 </p>
 
@@ -143,14 +158,15 @@ C'est une PWA : une fois installée, elle s'ouvre en plein écran depuis son ic�
 
 ## Sous le capot
 
-|         |                                                                                                                                                           |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Appli   | Next.js 16 (App Router, Server Actions, Cache Components), React 19, TypeScript strict                                                                    |
-| Données | SQLite via Turso / libSQL, Drizzle ORM ; API TMDB appelée côté serveur uniquement                                                                         |
-| Style   | CSS Modules, design tokens centralisés, animations Motion (`prefers-reduced-motion` respecté)                                                             |
-| Tests   | Vitest (unitaires et fonctionnels sur une vraie base et un faux TMDB), Playwright (parcours, 6 formats d'écran, accessibilité axe, captures de référence) |
-| Qualité | ESLint (taille, complexité, sens des couches), jscpd (doublons), knip (code mort)                                                                         |
-| CI/CD   | lefthook en local, GitHub Actions en parallèle, versions semver automatiques (release-please)                                                             |
+|          |                                                                                                                                                                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Appli    | Next.js 16 (App Router, Server Actions, Cache Components), React 19, TypeScript strict                                                                                                                                                           |
+| Données  | SQLite via Turso / libSQL, Drizzle ORM ; API TMDB appelée côté serveur uniquement                                                                                                                                                                |
+| Style    | CSS Modules, design tokens centralisés, animations Motion (`prefers-reduced-motion` respecté)                                                                                                                                                    |
+| Tests    | Vitest (unitaires et fonctionnels sur une vraie base et un faux TMDB), Playwright (parcours, 6 formats d'écran, Chromium et WebKit, accessibilité axe, captures de référence)                                                                    |
+| Qualité  | ESLint (taille, complexité, sens des couches), jscpd (doublons), knip (code mort)                                                                                                                                                                |
+| CI/CD    | lefthook en local, GitHub Actions en parallèle, versions semver automatiques (release-please) ; chaque nuit sauvegarde, exercice de restauration et fumée de la prod, chaque lundi mutation, Lighthouse et Scorecard ([détail](docs/qualite.md)) |
+| Sécurité | passkeys sans mot de passe, en-têtes stricts, sauvegardes chiffrées, CodeQL, détection de secrets, Dependabot ([`SECURITY.md`](SECURITY.md))                                                                                                     |
 
 ```
 src/
@@ -169,12 +185,7 @@ La conception complète, version par version, est dans [`docs/superpowers/specs/
 
 ## Contribuer
 
-```bash
-npm run ci          # tout ce que vérifie la CI : format, lint, types, doublons, code mort, tests, e2e
-npm run test:e2e    # tests de bout en bout seuls (Docker requis)
-```
-
-Les règles du projet (architecture, conventions, définition de « fini ») sont dans [`CLAUDE.md`](CLAUDE.md), écrit pour les humains comme pour les agents de code. En bref : petits fichiers, logique pure testée, commits [Conventional Commits](https://www.conventionalcommits.org) (`feat`, `fix`… fixent le numéro de version), et la direction artistique ne se négocie pas.
+Les commandes, les commits et la marche à suivre sont dans [`CONTRIBUTING.md`](CONTRIBUTING.md) ; ce qui tourne et quand (tests, mutation, Lighthouse, sauvegardes), dans [`docs/qualite.md`](docs/qualite.md).
 
 ## Crédits
 
