@@ -37,7 +37,10 @@ describe("la vérification des fichiers d'une PR de version", () => {
     const ignored = [...block.matchAll(/- (.+)/g)].map((m) => m[1]);
     expect(ignored.length).toBeGreaterThan(0);
     expect(check(ignored.join("\n")).code).toBe(0);
-    const source = readFileSync(SCRIPT, "utf8");
-    for (const file of ignored) expect(source).toContain(file);
+    const list =
+      readFileSync(SCRIPT, "utf8").match(/VERSION_FILES = \[([^\]]*)\]/)?.[1] ??
+      "";
+    const versionFiles = [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    expect([...versionFiles].sort()).toEqual([...ignored].sort());
   });
 });
