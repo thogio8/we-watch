@@ -9,6 +9,7 @@ Toutes les failles connues sont dans des dépendances **de développement** (out
 - Un override par version majeure (`"tar@7": "^7.5.21"`) : il ne touche que les copies de cette majeure, jamais une autre (`ajv@6` d'ESLint, `zod@3` de la CLI Vercel restent les leurs).
 - Aucune montée de version majeure par override. Pour esbuild en `0.x`, chaque version mineure est une majeure (`0.18` → `0.25` en est une).
 - Preuve que la CLI Vercel marche encore : `vercel build --prod` hors du dépôt, avec un `.vercel/project.json` factice et des variables factices, binaire natif et CLI JavaScript (`VERCEL_CLI_USE_NATIVE_BINARY=0`, qui charge les paquets du lockfile) : même `.vercel/output` qu'avant les overrides.
+- `"zod@4": "$zod"` suit la `zod` de l'appli (npm refuse un override différent d'une dépendance directe) : à retirer ou réécrire si l'appli change de version majeure de `zod`, sinon `$zod` ferait monter d'une majeure les copies `zod@4` de la CLI Vercel.
 - À revoir à chaque montée de la CLI Vercel, d'ESLint, de Stryker, de Lighthouse ou de `drizzle-kit` ; un override se retire dès que l'outil embarque la version corrigée.
 
 ## Corrigées
@@ -29,7 +30,7 @@ Toutes les failles connues sont dans des dépendances **de développement** (out
 | Paquet (copie) | Amené par | Avis | Pourquoi pas corrigé | Risque chez nous |
 | --- | --- | --- | --- | --- |
 | `undici@5` (5.28.4, 5.29.0) | `vercel`, `@vercel/node` | 18 avis, dont GHSA-2m5v-pch6-74hx, GHSA-qrxm-fqhp-jwvm, GHSA-vrm6-8vpv-qv8q, GHSA-v9p9-hfj2-hcw8, GHSA-vxpw-j846-p89q (hauts) | Corrigé seulement en 6.29.1 : montée majeure. Les copies 6, 7 et 8 sont déjà corrigées. | Client HTTP de la CLI, qui ne parle qu'à l'API Vercel (CI, job `build`) et à `@vercel/node` (`vercel dev`, jamais lancé). Pas d'entrée non fiable. |
-| `@fastify/busboy@2` (2.1.1) | `undici@5` | GHSA-x8mw-p69m-v3mx (haute), GHSA-gxm5-99cw-xjw9 | Corrigé seulement en 3.2.2 : montée majeure, liée à `undici@5`. | Analyse les envois multipart reçus par `undici@5` : la CLI n'en reçoit aucun. |
+| `@fastify/busboy@2` (2.1.1) | `undici@5` | GHSA-x8mw-p69m-v3mx (haute), GHSA-gxm5-99cw-xjw9 | GHSA-x8mw-p69m-v3mx corrigé en 3.2.1, GHSA-gxm5-99cw-xjw9 en 3.2.2 : montée majeure, liée à `undici@5`. | Analyse les envois multipart reçus par `undici@5` : la CLI n'en reçoit aucun. |
 | `zod@3` (3.22.4) | `vercel` (`@vercel/backends`, `express`, `hono`, `python-analysis`) | GHSA-mrhx-c7xc-m3w5 (haute) | Corrigé seulement en 4.6.6 : montée majeure. | Sert aux builders de backends (Express, Hono, Python) de la CLI, que notre projet Next n'utilise pas. La `zod` de l'appli est en 4.6.7. |
 | `minimatch@10` (10.2.6) | ESLint, `typescript-eslint`, Stryker, `glob@13` | GHSA-g3hv-75wg-m249 (modérée) | Corrigé seulement en 11.0.1 : montée majeure. | Motifs de fichiers écrits dans nos configurations (lint, mutation, traçage des fichiers du build), pas d'entrée non fiable. |
 | `glob@13` (13.0.6) | Lighthouse (`@sentry/bundler-plugins`), `@vercel/nft` | GHSA-3g3m-2fjr-6pw4 (modérée) | Corrigé seulement en 14.0.2 : montée majeure. | Annulation par `AbortSignal` ignorée : un parcours de fichiers locaux dure plus longtemps. Aucun appel annulé chez nous. |
