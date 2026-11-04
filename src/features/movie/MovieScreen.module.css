@@ -29,6 +29,13 @@
   cursor: pointer;
 }
 
+/* A 44 px tap target around the stamp, still inside the poster. */
+.favorite::after {
+  position: absolute;
+  inset: -8px;
+  content: "";
+}
+
 .favorite:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);

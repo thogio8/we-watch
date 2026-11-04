@@ -15,7 +15,7 @@
   /* Background of a favourite's row (coups de cœur). */
   --pink-pale: #ffe1f0;
   /* Paper that lets a poster show through (the ghost favourite stamp). */
-  --paper-veil: rgba(255, 244, 214, 0.75);
+  --paper-veil: color-mix(in srgb, var(--paper) 75%, transparent);
   /* Text on the pink: ink, for contrast (5:1, WCAG AA; white was 3.2:1). */
   --on-pink: var(--ink);
 
