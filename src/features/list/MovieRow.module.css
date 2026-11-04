@@ -35,6 +35,37 @@
   opacity: 0.5;
 }
 
+/* A favourite (coups de cœur, variant L2). */
+.favorite {
+  background: var(--pink-pale);
+  box-shadow: var(--shadow-offset-pink);
+}
+
+/* Holds the poster and its stamp, which spills over the clipped poster. */
+.poster {
+  position: relative;
+  flex: none;
+}
+
+/* The movie page's big stamp, in miniature at the poster's corner. */
+.mini {
+  position: absolute;
+  right: -9px;
+  bottom: -7px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: var(--border-thin);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: var(--shadow-offset-xs);
+  color: var(--pink);
+  font-size: var(--text-sm);
+  line-height: 1;
+  transform: rotate(-8deg);
+}
+
 /* w92 posters are 2:3. */
 .thumb {
   flex: none;
@@ -81,8 +112,18 @@
 }
 
 .action {
+  display: flex;
   flex: none;
   align-self: center;
+  gap: 8px;
+}
+
+/* Narrow phones (320 px): ♥ above ✕, so a long title keeps its words whole. */
+@container shell (max-width: 329px) {
+  .action {
+    flex-direction: column;
+    gap: 6px;
+  }
 }
 
 /* ✕, ↺ À VOIR, + AJOUTER, ✓ À VOIR: a small chip, at least a full touch target. */
@@ -120,6 +161,12 @@ button.chip:disabled {
 
 .paper {
   background: var(--paper);
+}
+
+/* ♥: ink on pink, for contrast. */
+.pink {
+  background: var(--pink);
+  color: var(--on-pink);
 }
 
 .yellow {
