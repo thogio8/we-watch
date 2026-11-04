@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.3](https://github.com/thogio8/we-watch/compare/v2.0.2...v2.0.3) (2026-11-04)
+
+
+### Corrections
+
+* **list:** keep the search typed before the page is ready ([e10daf2](https://github.com/thogio8/we-watch/commit/e10daf2e076bd776b40b03be8d493460522b6699))
+
 ## [2.0.2](https://github.com/thogio8/we-watch/compare/v2.0.1...v2.0.2) (2026-11-04)
 
 
