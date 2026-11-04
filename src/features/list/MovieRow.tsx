@@ -9,10 +9,12 @@ interface MovieRowProps {
   posterPath: string | null;
   /** Meta lines under the title. */
   children: ReactNode;
-  /** The row's one button (or its inactive state), on the right. */
+  /** The row's buttons (or an inactive state), on the right. */
   action: ReactNode;
   /** Faded, as the « vus » rows of the mockup. */
   muted?: boolean;
+  /** A favourite: pale pink, pink shadow, a small ♥ stamp on the poster. */
+  favorite?: boolean;
   /** Saving: the row is faded and cannot be tapped again. */
   busy?: boolean;
   /** The movie's page: poster and title open it (the button stays apart). */
@@ -22,14 +24,21 @@ interface MovieRowProps {
 /** The rows of a list or of the search results. */
 export function RowList({
   busy = false,
+  labelledBy,
   children,
 }: {
   /** The rows answer an older query while a newer one is on its way. */
   busy?: boolean;
+  /** Id of the section heading that names this list. */
+  labelledBy?: string;
   children: ReactNode;
 }) {
   return (
-    <ul className={styles.list} aria-busy={busy || undefined}>
+    <ul
+      className={styles.list}
+      aria-busy={busy || undefined}
+      aria-labelledby={labelledBy}
+    >
       {children}
     </ul>
   );
@@ -42,14 +51,28 @@ export function MovieRow({
   children,
   action,
   muted = false,
+  favorite = false,
   busy = false,
   href,
 }: MovieRowProps) {
-  const classes = cx(styles.row, muted && styles.muted, busy && styles.busy);
+  const classes = cx(
+    styles.row,
+    muted && styles.muted,
+    favorite && styles.favorite,
+    busy && styles.busy,
+  );
   const content = (
     <>
-      <div className={styles.thumb}>
-        <Poster path={posterPath} title={title} size="w92" />
+      {/* The stamp spills over the poster's corner, which clips its image. */}
+      <div className={styles.poster}>
+        <div className={styles.thumb}>
+          <Poster path={posterPath} title={title} size="w92" />
+        </div>
+        {favorite && (
+          <span className={styles.mini} aria-hidden="true">
+            ♥
+          </span>
+        )}
       </div>
       <div className={styles.body}>
         <h2 className={styles.title}>{title}</h2>
@@ -77,8 +100,8 @@ export function RowMeta({ children }: { children: ReactNode }) {
 }
 
 interface RowButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** « + AJOUTER » is the yellow call to action; ✕ and ↺ stay on paper. */
-  tone: "paper" | "yellow";
+  /** « + AJOUTER » is the yellow call to action; ✕ and ↺ stay on paper; ♥ is pink. */
+  tone: "paper" | "yellow" | "pink";
   children: ReactNode;
 }
 

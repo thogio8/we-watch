@@ -7,16 +7,23 @@ import { ListFooter } from "./ListFooter";
 import { ListRow } from "./ListRow";
 import styles from "./ListScreen.module.css";
 import { ListTabs } from "./ListTabs";
+import { ToWatchList } from "./ToWatchList";
 import { EMPTY, type Tab } from "./tabs";
 import { ListAlert, ListMessage, RowList } from "./MovieRow";
 import { type SearchActions, SearchPanel } from "./SearchPanel";
-import { type ListAction, useListAction } from "./useListAction";
+import {
+  type FavoriteAction,
+  type ListAction,
+  useListAction,
+} from "./useListAction";
 
 interface ListScreenProps {
   toWatch: Movie[];
   watched: Movie[];
   onRemove: ListAction;
   onUnwatch: ListAction;
+  /** ♡ / ♥ of an « à voir » row. */
+  onFavorite: FavoriteAction;
   /** « AJOUTER UN FILM… » above the tabs; its results replace the list. */
   search?: SearchActions;
   /** The group pill, first in the landmark. */
@@ -28,6 +35,7 @@ export function ListScreen({
   watched,
   onRemove,
   onUnwatch,
+  onFavorite,
   search,
   pill,
 }: ListScreenProps) {
@@ -39,6 +47,22 @@ export function ListScreen({
   const shown = { toWatch, watched }[tab];
   const counts = { toWatch: toWatch.length, watched: watched.length };
 
+  const row = (movie: Movie) => (
+    <ListRow
+      key={movie.tmdbId}
+      movie={movie}
+      run={run}
+      onRemove={onRemove}
+      onUnwatch={onUnwatch}
+      onFavorite={onFavorite}
+    />
+  );
+
+  const rows: Record<Tab, () => ReactNode> = {
+    toWatch: () => <ToWatchList movies={toWatch} row={row} />,
+    watched: () => <RowList>{watched.map(row)}</RowList>,
+  };
+
   const lists: ReactNode = (
     <>
       <ListTabs id={id} tab={tab} counts={counts} onSelect={setTab} />
@@ -49,17 +73,7 @@ export function ListScreen({
         {shown.length === 0 ? (
           <ListMessage title={EMPTY[tab].title}>{EMPTY[tab].text}</ListMessage>
         ) : (
-          <RowList>
-            {shown.map((movie) => (
-              <ListRow
-                key={movie.tmdbId}
-                movie={movie}
-                run={run}
-                onRemove={onRemove}
-                onUnwatch={onUnwatch}
-              />
-            ))}
-          </RowList>
+          rows[tab]()
         )}
       </div>
     </>

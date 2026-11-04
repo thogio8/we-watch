@@ -37,18 +37,26 @@ const LALALAND = movie(313369, "LA LA LAND", {
   watchedLegacy: true,
 });
 
+const PARASITE = movie(496243, "PARASITE", {
+  favoriteAt: new Date(2026, 10, 4, 21, 0),
+  favoriteBy: "Becca",
+});
+
 type Act = (tmdbId: number) => Promise<void>;
+type Fav = (tmdbId: number, on: boolean) => Promise<void>;
 
 function renderList({
   toWatch = [CHIHIRO, WHIPLASH],
   watched = [INTERSTELLAR, LALALAND],
   onRemove = vi.fn<Act>(() => Promise.resolve()),
   onUnwatch = vi.fn<Act>(() => Promise.resolve()),
+  onFavorite = vi.fn<Fav>(() => Promise.resolve()),
 }: {
   toWatch?: Movie[];
   watched?: Movie[];
   onRemove?: Act;
   onUnwatch?: Act;
+  onFavorite?: Fav;
 } = {}) {
   const user = userEvent.setup();
   render(
@@ -57,9 +65,10 @@ function renderList({
       watched={watched}
       onRemove={onRemove}
       onUnwatch={onUnwatch}
+      onFavorite={onFavorite}
     />,
   );
-  return { user, onRemove, onUnwatch };
+  return { user, onRemove, onUnwatch, onFavorite };
 }
 
 const panel = () => screen.getByRole("tabpanel");
@@ -72,6 +81,7 @@ describe("ListScreen", () => {
         watched={[]}
         onRemove={vi.fn<Act>()}
         onUnwatch={vi.fn<Act>()}
+        onFavorite={vi.fn<Fav>()}
         pill={<button type="button">PASTILLE</button>}
       />,
     );
@@ -256,6 +266,7 @@ describe("ListScreen", () => {
           watched={[]}
           onRemove={() => Promise.resolve()}
           onUnwatch={() => Promise.resolve()}
+          onFavorite={() => Promise.resolve()}
           search={{
             search: () => Promise.resolve({ ok: true, results: [] }),
             add: () => Promise.resolve(),
@@ -311,5 +322,110 @@ describe("ListScreen", () => {
       ],
     });
     expect(within(panel()).getByText("2h05 · Netflix")).toBeVisible();
+  });
+
+  describe("coups de cœur", () => {
+    const heart = (title: string) =>
+      screen.getByRole("button", {
+        name: new RegExp(`^Coup de cœur\\s: ${title}$`),
+      });
+
+    it("sans coup de cœur, la liste de la 2.0 : aucun intertitre", () => {
+      renderList();
+
+      expect(screen.queryByText(/COUPS DE CŒUR/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/LE RESTE/)).not.toBeInTheDocument();
+      expect(within(panel()).getAllByRole("listitem")).toHaveLength(2);
+    });
+
+    it("des coups de cœur : intertitres et compte, l’onglet garde À VOIR · total", () => {
+      renderList({ toWatch: [PARASITE, CHIHIRO] });
+
+      expect(screen.getByText("♥ COUPS DE CŒUR · 1")).toBeVisible();
+      expect(screen.getByText("LE RESTE · 1")).toBeVisible();
+      expect(screen.getByRole("tab", { name: "À VOIR · 2" })).toBeVisible();
+      expect(
+        within(
+          screen.getByRole("list", { name: "♥ COUPS DE CŒUR · 1" }),
+        ).getByRole("heading"),
+      ).toHaveTextContent("PARASITE");
+      expect(
+        within(screen.getByRole("list", { name: "LE RESTE · 1" })).getByRole(
+          "heading",
+        ),
+      ).toHaveTextContent("LE VOYAGE DE CHIHIRO");
+    });
+
+    it("chaque ligne à voir a ♡ / ♥ avant ✕, pressé selon le coup de cœur", () => {
+      renderList({ toWatch: [PARASITE, CHIHIRO] });
+
+      expect(heart("PARASITE")).toHaveAttribute("aria-pressed", "true");
+      expect(heart("PARASITE")).toHaveTextContent("♥");
+      expect(heart("LE VOYAGE DE CHIHIRO")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+      expect(heart("LE VOYAGE DE CHIHIRO")).toHaveTextContent("♡");
+      for (const row of within(panel()).getAllByRole("listitem")) {
+        const [first, second] = within(row).getAllByRole("button");
+        expect(first).toHaveAccessibleName(/^Coup de cœur/);
+        expect(second).toHaveAccessibleName(/^Retirer/);
+      }
+    });
+
+    it("taper ♡ marque, taper ♥ démarque", async () => {
+      const { user, onFavorite } = renderList({
+        toWatch: [PARASITE, CHIHIRO],
+      });
+
+      await user.click(heart("PARASITE"));
+      await user.click(heart("LE VOYAGE DE CHIHIRO"));
+
+      expect(onFavorite).toHaveBeenNthCalledWith(1, 496243, false);
+      expect(onFavorite).toHaveBeenNthCalledWith(2, 129, true);
+    });
+
+    it("un double tap n’appelle onFavorite qu’une fois", async () => {
+      let finish = () => {};
+      const onFavorite = vi.fn<Fav>(
+        () => new Promise<void>((resolve) => (finish = resolve)),
+      );
+      const { user } = renderList({ onFavorite });
+
+      const button = heart("WHIPLASH");
+      await user.click(button);
+      await user.click(button);
+
+      expect(onFavorite).toHaveBeenCalledOnce();
+      expect(button).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Retirer WHIPLASH" }),
+      ).toBeDisabled();
+      finish();
+    });
+
+    it("un échec de ♥ affiche le message et rend la main", async () => {
+      const onFavorite = vi.fn<Fav>(() => Promise.reject(new Error("db down")));
+      const { user } = renderList({ toWatch: [PARASITE], onFavorite });
+
+      await user.click(heart("PARASITE"));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "PAS RÉUSSI À ENREGISTRER, RÉESSAIE",
+      );
+      expect(heart("PARASITE")).toBeEnabled();
+    });
+
+    it("l’onglet VUS n’a ni ♡ ni intertitre", async () => {
+      const { user } = renderList({ toWatch: [PARASITE] });
+
+      await user.click(screen.getByRole("tab", { name: "VUS · 2" }));
+
+      expect(
+        within(panel()).queryByRole("button", { name: /^Coup de cœur/ }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/COUPS DE CŒUR/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/LE RESTE/)).not.toBeInTheDocument();
+    });
   });
 });

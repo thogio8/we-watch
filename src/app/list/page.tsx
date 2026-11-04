@@ -8,6 +8,7 @@ import {
   addFromSearch,
   removeFromList,
   searchCatalog,
+  setFavorite,
   unwatch,
 } from "@/features/list/actions";
 import { getGroupList } from "@/server/container";
@@ -30,6 +31,7 @@ async function ListData() {
       watched={watched}
       onRemove={removeFromList.bind(null, groupId)}
       onUnwatch={unwatch.bind(null, groupId)}
+      onFavorite={setFavorite.bind(null, groupId)}
       pill={
         <GroupPill
           active={active.group}

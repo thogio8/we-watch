@@ -21,6 +21,23 @@
   color: var(--on-pink);
 }
 
+/* « ♥ COUPS DE CŒUR · n », « LE RESTE · n »: a label, then a dashed rule. */
+.section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 2px 0;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  line-height: 1.1;
+}
+
+.section::after {
+  content: "";
+  flex: 1;
+  border-top: var(--border-thin-dashed);
+}
+
 /* TMDB and JustWatch attributions. */
 .footer {
   margin-top: 32px;
