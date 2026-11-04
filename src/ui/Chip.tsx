@@ -1,19 +1,22 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import styles from "./Chip.module.css";
+import { cx } from "./cx";
 
 interface ChipProps {
   pressed: boolean;
   onClick: () => void;
   children: ReactNode;
+  /** Pink once pressed (« ♥ NOS COUPS DE CŒUR »), yellow by default. */
+  tone?: "pink";
 }
 
 /** A toggle in a row of choices (filters « ce soir »). */
-export function Chip({ pressed, onClick, children }: ChipProps) {
+export function Chip({ pressed, onClick, children, tone }: ChipProps) {
   return (
     <button
       type="button"
-      className={styles.chip}
+      className={cx(styles.chip, tone === "pink" && styles.pink)}
       aria-pressed={pressed}
       onClick={onClick}
     >

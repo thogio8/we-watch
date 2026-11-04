@@ -2,10 +2,11 @@
 
 import { motion } from "motion/react";
 import type { Ref } from "react";
-import type { Movie } from "@/domain/movie";
+import { isFavorite, type Movie } from "@/domain/movie";
 import { computeEndTime, formatClock } from "@/domain/time";
 import { Button } from "@/ui/Button";
 import { cx } from "@/ui/cx";
+import { FavoriteStamp } from "@/ui/FavoriteStamp";
 import { Poster } from "@/ui/Poster";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
@@ -67,7 +68,11 @@ export function DrawResult({
           posterHeight={POSTER_HEIGHT}
           adaptive
           poster={
-            <Poster path={movie.posterPath} title={movie.title} size="w500" />
+            <>
+              <Poster path={movie.posterPath} title={movie.title} size="w500" />
+              {/* Shown, not a button: marking happens on the list or page. */}
+              {isFavorite(movie) && <FavoriteStamp on />}
+            </>
           }
           stamp={
             <motion.div

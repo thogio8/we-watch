@@ -18,6 +18,11 @@
   opacity: 0.75;
 }
 
+/* « … · dont 2 ♥ · 0 vu » wraps on the narrowest phones: evenly, no orphan. */
+.counts {
+  text-wrap: balance;
+}
+
 /* Home: title, then the « ce soir » panel and the draw button. */
 .home,
 .head,
@@ -67,11 +72,27 @@
   outline-offset: var(--focus-offset);
 }
 
+/* « ♥ NOS COUPS DE CŒUR » on: ink on the pink, with its pink glow. */
+.pink {
+  background: var(--pink);
+  box-shadow: var(--shadow-offset-lg), var(--glow-pink-lg);
+  color: var(--on-pink);
+}
+
+.pink:active {
+  box-shadow: var(--shadow-offset), var(--glow-pink-lg);
+}
+
 /* Below the « ce soir » panel, the draw button shrinks to keep the page short. */
 .compact {
   width: min(200px, 54vw);
   margin-top: 28px;
   font-size: var(--text-3xl);
+}
+
+/* « TIRER UN COUP DE CŒUR »: longer lines, a size down to fit the circle. */
+.compact.pink {
+  font-size: var(--text-2xl);
 }
 
 /* No movie suits the filters. */
@@ -217,6 +238,10 @@
 
   .compact {
     width: min(200px, calc(100dvh - 240px));
+    font-size: var(--text-xl);
+  }
+
+  .compact.pink {
     font-size: var(--text-xl);
   }
 
