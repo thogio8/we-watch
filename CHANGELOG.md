@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0](https://github.com/thogio8/we-watch/compare/v2.0.3...v2.1.0) (2026-11-04)
+
+
+### Nouveautés
+
+* **draw:** draw among the group's favourites only ([42f7f4b](https://github.com/thogio8/we-watch/commit/42f7f4b59891ca128eb4822f8aaa1b8a6890f8bc))
+* **list:** mark a film as a favourite and keep favourites first ([494b92d](https://github.com/thogio8/we-watch/commit/494b92d0a5f62c16a81eb14563b90f130ffe3001))
+* **movie:** mark a favourite from its page with the stamp ([2cb54e2](https://github.com/thogio8/we-watch/commit/2cb54e282b15d598ce87726a4ee6d82252e7e23e))
+
 ## [2.0.3](https://github.com/thogio8/we-watch/compare/v2.0.2...v2.0.3) (2026-11-04)
 
 
