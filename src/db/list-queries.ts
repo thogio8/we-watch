@@ -5,7 +5,6 @@ import {
   eq,
   getTableColumns,
   inArray,
-  ne,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -44,34 +43,38 @@ const adder = alias(user, "adder");
 const watcher = alias(user, "watcher");
 const favoriter = alias(user, "favoriter");
 
-/**
- * Names of the members who want each movie, in the order of the wishes;
- * `except`: a member left out (me, when only the others matter).
- */
-export async function wishes(
-  db: Executor,
-  groupId: string,
-  tmdbIds: number[],
-  except?: string,
-): Promise<Map<number, string[]>> {
-  const rows = await db
+/** The wishes matching `where` with their author's name, oldest first. */
+export const wishNames = (db: Executor, where: SQL | undefined) =>
+  db
     .select({ tmdbId: movieWant.tmdbId, name: user.name })
     .from(movieWant)
     .innerJoin(user, eq(user.id, movieWant.userId))
-    .where(
-      and(
-        eq(movieWant.groupId, groupId),
-        inArray(movieWant.tmdbId, tmdbIds),
-        except === undefined ? undefined : ne(movieWant.userId, except),
-      ),
-    )
+    .where(where)
     // Same millisecond: insertion order.
     .orderBy(asc(movieWant.wantedAt), asc(sql`${movieWant}.rowid`));
+
+/** Names per movie, in the order of the rows. */
+export function namesByMovie(
+  rows: { tmdbId: number; name: string }[],
+): Map<number, string[]> {
   const names = new Map<number, string[]>();
   for (const { tmdbId, name } of rows) {
     names.set(tmdbId, [...(names.get(tmdbId) ?? []), name]);
   }
   return names;
+}
+
+/** Names of the members who want each movie, in the order of the wishes. */
+async function wishes(
+  db: Database,
+  groupId: string,
+  tmdbIds: number[],
+): Promise<Map<number, string[]>> {
+  const where = and(
+    eq(movieWant.groupId, groupId),
+    inArray(movieWant.tmdbId, tmdbIds),
+  );
+  return namesByMovie(await wishNames(db, where));
 }
 
 /** How many members the group has. */
