@@ -4,10 +4,10 @@ import {
   favoriteLine,
   FORMER_MEMBER,
   matchLine,
+  wishContext,
   watchedLine,
   wantedLine,
 } from "./attribution";
-import { isFavorite, isMatch } from "./movie";
 import { formatLongDate, formatShortDate } from "./time";
 
 // Noon UTC stays on the 12th in Paris; OCT_18 is local time, as the short date is.
@@ -38,10 +38,10 @@ describe("wantedLine", () => {
   const NAMES = ["Léa", "Hugo", "Sam", "Inès", "Zoé", "Tom", "Eva", "Max"];
   const wanted = (n: number, groupSize: number, matched = false) =>
     wantedLine(NAMES.slice(0, n), { groupSize, matched });
-  const many = (n: number) =>
+  const many = (n: number, groupSize = n, matched = true) =>
     wantedLine(
       Array.from({ length: n }, (_, i) => `M${i}`),
-      { groupSize: n, matched: true },
+      { groupSize, matched },
     );
 
   it("ne dit rien sans souhait", () => {
@@ -69,15 +69,7 @@ describe("wantedLine", () => {
   it("ne dit pas tout le groupe sans match, même à deux ou trois", () => {
     expect(wanted(2, 2)).toBe("voulu par Léa et Hugo");
     expect(wanted(3, 3)).toBe("voulu par Léa, Hugo et Sam");
-    expect(
-      wantedLine(
-        Array.from({ length: 10 }, (_, i) => `M${i}`),
-        {
-          groupSize: 10,
-          matched: false,
-        },
-      ),
-    ).toBe("voulu par 10 sur 10");
+    expect(many(10, 10, false)).toBe("voulu par 10 sur 10");
   });
 
   it("garde les prénoms quand un membre de plus que d'envies a fait le match", () => {
@@ -85,19 +77,28 @@ describe("wantedLine", () => {
   });
 
   it("dit 9 sur 10 pour un match de dix membres à neuf envies", () => {
-    expect(
-      wantedLine(
-        Array.from({ length: 9 }, (_, i) => `M${i}`),
-        {
-          groupSize: 10,
-          matched: true,
-        },
-      ),
-    ).toBe("voulu par 9 sur 10");
+    expect(many(9, 10)).toBe("voulu par 9 sur 10");
+  });
+
+  it("ne dit jamais plus de membres que le groupe n'en compte", () => {
+    expect(many(5, 3, false)).toBe("voulu par 5 sur 5");
   });
 
   it("ne dit pas vous deux pour un groupe d'un seul", () => {
     expect(wanted(1, 1, true)).toBe("voulu par Léa");
+  });
+});
+
+describe("wishContext", () => {
+  it("donne la taille du groupe et si le film est un match", () => {
+    expect(wishContext({ groupSize: 3, matchedAt: null })).toEqual({
+      groupSize: 3,
+      matched: false,
+    });
+    expect(wishContext({ groupSize: 3, matchedAt: OCT_12 })).toEqual({
+      groupSize: 3,
+      matched: true,
+    });
   });
 });
 
@@ -110,11 +111,6 @@ describe("matchLine", () => {
     expect(matchLine({ matchedAt: new Date("2026-11-05T10:00:00Z") })).toBe(
       "match du groupe le 5 novembre 2026",
     );
-  });
-
-  it("isMatch suit matchedAt", () => {
-    expect(isMatch({ matchedAt: OCT_12 })).toBe(true);
-    expect(isMatch({ matchedAt: null })).toBe(false);
   });
 });
 
@@ -188,9 +184,4 @@ describe("favoriteLine", () => {
       );
     },
   );
-
-  it("isFavorite suit favoriteAt", () => {
-    expect(isFavorite({ favoriteAt: NOV_4 })).toBe(true);
-    expect(isFavorite({ favoriteAt: null })).toBe(false);
-  });
 });

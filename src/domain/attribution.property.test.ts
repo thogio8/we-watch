@@ -27,21 +27,15 @@ describe("wantedLine (propriétés)", () => {
 
   it("ne compte « K sur N » qu'au-delà de trois, avec K <= N", () =>
     fc.assert(
-      fc.property(
-        names,
-        fc.integer({ min: 0, max: 8 }),
-        fc.boolean(),
-        (list, extra, matched) => {
-          const groupSize = list.length + extra;
-          const m = /^voulu par (\d+) sur (\d+)$/u.exec(
-            wantedLine(list, { groupSize, matched }) ?? "",
-          );
-          if (m === null) return;
-          expect(Number(m[1])).toBe(list.length);
-          expect(Number(m[1])).toBeGreaterThan(THREE);
-          expect(Number(m[1])).toBeLessThanOrEqual(Number(m[2]));
-        },
-      ),
+      fc.property(names, size, fc.boolean(), (list, groupSize, matched) => {
+        const m = /^voulu par (\d+) sur (\d+)$/u.exec(
+          wantedLine(list, { groupSize, matched }) ?? "",
+        );
+        if (m === null) return;
+        expect(Number(m[1])).toBe(list.length);
+        expect(Number(m[1])).toBeGreaterThan(THREE);
+        expect(Number(m[1])).toBeLessThanOrEqual(Number(m[2]));
+      }),
     ));
 
   it("ne dit « tout le groupe » ou « vous deux » que sur un match", () =>

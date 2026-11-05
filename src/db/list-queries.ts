@@ -15,9 +15,9 @@ import { user } from "./auth-schema";
 import type { Database } from "./create-database";
 import {
   groupMovie,
+  membership,
   movieRejection,
   movieSnapshot,
-  membership,
   movieWant,
 } from "./group-schema";
 
@@ -67,6 +67,7 @@ async function wishes(
 
 /** How many members the group has. */
 async function sizeOf(db: Database, groupId: string): Promise<number> {
+  // count() returns exactly one row; summing keeps that without a dead branch.
   const rows = await db
     .select({ n: count() })
     .from(membership)
@@ -105,12 +106,14 @@ export async function selectMovies(
     .where(and(eq(groupMovie.groupId, groupId), where))
     .orderBy(...orderBy);
   if (rows.length === 0) return [];
-  const wanted = await wishes(
-    db,
-    groupId,
-    rows.map((r) => r.tmdbId),
-  );
-  const groupSize = await sizeOf(db, groupId);
+  const [wanted, groupSize] = await Promise.all([
+    wishes(
+      db,
+      groupId,
+      rows.map((r) => r.tmdbId),
+    ),
+    sizeOf(db, groupId),
+  ]);
   return rows.map((row) => ({
     ...row,
     // Only a movie still to watch is a favourite, whatever the columns hold.

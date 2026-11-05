@@ -1,4 +1,4 @@
-import type { Movie } from "./movie";
+import { isMatch, type Movie } from "./movie";
 import { formatLongDate } from "./time";
 
 /** Stands for an author whose account was deleted (name resolved to null). */
@@ -21,7 +21,8 @@ export const MAX_NAMES = 3;
 /**
  * « voulu par Léa, Hugo et Sam »; « voulu par vous deux » / « tout le groupe »
  * once a match holds every member's wish; « voulu par 9 sur 10 » past
- * MAX_NAMES names; null when nobody wanted it.
+ * MAX_NAMES names; null when nobody wanted it. N is never below K (a group
+ * smaller than its wishes is read as being as big as them).
  */
 export function wantedLine(
   names: readonly string[],
@@ -33,12 +34,18 @@ export function wantedLine(
     return groupSize === 2 ? "voulu par vous deux" : "voulu par tout le groupe";
   }
   if (names.length > MAX_NAMES) {
-    return `voulu par ${names.length} sur ${groupSize}`;
+    return `voulu par ${names.length} sur ${Math.max(groupSize, names.length)}`;
   }
   const head = names.slice(0, -1).join(", ");
   const last = names[names.length - 1];
   return `voulu par ${head === "" ? last : `${head} et ${last}`}`;
 }
+
+/** What wantedLine needs to word a movie's wishes. */
+export const wishContext = (m: Pick<Movie, "groupSize" | "matchedAt">) => ({
+  groupSize: m.groupSize,
+  matched: isMatch(m),
+});
 
 /** « match du groupe le 5 novembre 2026 »; null when not a match. */
 export function matchLine(m: Pick<Movie, "matchedAt">): string | null {
