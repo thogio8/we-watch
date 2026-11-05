@@ -97,13 +97,15 @@ export function createGroupList(db: Database): GroupList {
     },
 
     listByStatus(groupId, status) {
+      // tmdb_id last: unique in a group, so ties keep one order.
       const order =
         status === "watched"
-          ? [desc(groupMovie.watchedAt)]
+          ? [desc(groupMovie.watchedAt), desc(groupMovie.tmdbId)]
           : [
               sql`${groupMovie.favoriteAt} IS NULL`,
               desc(groupMovie.favoriteAt),
               desc(groupMovie.decidedAt),
+              desc(groupMovie.tmdbId),
             ];
       return selectMovies(db, groupId, eq(groupMovie.status, status), order);
     },
