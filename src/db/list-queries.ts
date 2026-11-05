@@ -97,6 +97,7 @@ export async function selectMovies(
       watchedBy: watcher.name,
       favoriteAt: groupMovie.favoriteAt,
       favoriteBy: favoriter.name,
+      matchedAt: groupMovie.matchedAt,
     })
     .from(groupMovie)
     .innerJoin(movieSnapshot, eq(movieSnapshot.tmdbId, groupMovie.tmdbId))
@@ -121,8 +122,6 @@ export async function selectMovies(
       ? {}
       : { favoriteAt: null, favoriteBy: null }),
     wantedBy: wanted.get(row.tmdbId) ?? [],
-    // Read from the database in the next step.
-    matchedAt: null,
     groupSize,
   }));
 }

@@ -114,6 +114,7 @@ export function createGroupList(db: Database): GroupList {
           n: count(),
           // Counts the non-null favourite dates only.
           favorites: count(groupMovie.favoriteAt),
+          matches: count(groupMovie.matchedAt),
         })
         .from(groupMovie)
         .where(eq(groupMovie.groupId, groupId))
@@ -125,8 +126,8 @@ export function createGroupList(db: Database): GroupList {
         watched: of("watched"),
         // Only a movie still to watch is a favourite.
         favorites: rows.find((r) => r.status === "to_watch")?.favorites ?? 0,
-        // Counted from the database in the next step.
-        matches: 0,
+        // Only a movie still to watch counts as a match.
+        matches: rows.find((r) => r.status === "to_watch")?.matches ?? 0,
       };
     },
 
