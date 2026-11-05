@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray } from "drizzle-orm";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { ApplyResult } from "@/domain/transitions";
 import type { Database, Executor } from "./create-database";
@@ -9,8 +9,8 @@ export interface Snapshots {
   upsert(snapshot: MovieSnapshot): Promise<void>;
   /** New TMDB data for a known movie only ("noop" if absent). */
   refresh(snapshot: MovieSnapshot): Promise<ApplyResult>;
-  /** The stored TMDB data of a movie, null when unknown. */
-  get(tmdbId: number): Promise<MovieSnapshot | null>;
+  /** The stored data of a movie « à voir » or « vu » in this group, else null. */
+  getListed(groupId: string, tmdbId: number): Promise<MovieSnapshot | null>;
   /** Movies to watch or watched in at least one group (cron). */
   listedIds(): Promise<number[]>;
 }
@@ -39,11 +39,18 @@ export function createSnapshots(db: Database): Snapshots {
       return updated.length > 0 ? "applied" : "noop";
     },
 
-    async get(tmdbId) {
+    async getListed(groupId, tmdbId) {
       const [row] = await db
-        .select()
+        .select(getTableColumns(movieSnapshot))
         .from(movieSnapshot)
-        .where(eq(movieSnapshot.tmdbId, tmdbId));
+        .innerJoin(groupMovie, eq(groupMovie.tmdbId, movieSnapshot.tmdbId))
+        .where(
+          and(
+            eq(groupMovie.groupId, groupId),
+            eq(movieSnapshot.tmdbId, tmdbId),
+            inArray(groupMovie.status, ["to_watch", "watched"]),
+          ),
+        );
       return row ?? null;
     },
 

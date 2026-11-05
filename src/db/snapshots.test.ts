@@ -27,13 +27,32 @@ describe("instantanés", () => {
     ]);
   });
 
-  it("get relit la fiche d'un film connu, null sinon", async () => {
-    await snapshots.upsert(aSnapshot(1, { providers: [NETFLIX] }));
+  it("getListed ne rend la fiche que d'un film listé dans CE groupe", async () => {
+    const lea = await aUser(db, "Léa");
+    const mine = await aGroup(db, "A", [lea]);
+    const other = await aGroup(db, "B", [lea]);
+    const decisions = createDecisions(db);
+    const swipe = (
+      groupId: string,
+      tmdbId: number,
+      decision: "keep" | "reject",
+    ) =>
+      decisions.swipe({
+        groupId,
+        userId: lea,
+        tmdbId,
+        decision,
+        ...(decision === "keep" ? { snapshot: aSnapshot(tmdbId) } : {}),
+      } as Parameters<typeof decisions.swipe>[0]);
+    await swipe(mine, 1, "keep");
+    await swipe(other, 2, "keep");
+    await swipe(mine, 3, "reject");
+    await snapshots.upsert(aSnapshot(3));
 
-    expect(await snapshots.get(1)).toEqual(
-      aSnapshot(1, { providers: [NETFLIX] }),
-    );
-    expect(await snapshots.get(2)).toBeNull();
+    expect(await snapshots.getListed(mine, 1)).toEqual(aSnapshot(1));
+    expect(await snapshots.getListed(mine, 2)).toBeNull();
+    expect(await snapshots.getListed(mine, 3)).toBeNull();
+    expect(await snapshots.getListed(mine, 4)).toBeNull();
   });
 
   it("refresh met à jour un film connu, sans jamais en créer", async () => {

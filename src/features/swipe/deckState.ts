@@ -68,11 +68,14 @@ const handlers: Handlers = {
       known.add(card.tmdbId);
       return true;
     });
+    // A page that brings nothing new and does not move on (TMDB down, the
+    // queue served again) would never be asked for again: offer « RÉESSAYER ».
+    const stuck = fresh.length === 0 && batch.nextPage === state.nextPage;
     return {
       ...state,
       queue: [...state.queue, ...fresh],
       nextPage: batch.nextPage,
-      loadFailed: false,
+      loadFailed: stuck,
     };
   },
   load_failed: (state) => ({ ...state, loadFailed: true }),

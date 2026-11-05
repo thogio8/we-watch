@@ -9,7 +9,6 @@ import type {
 import {
   getDecisions,
   getDeckDeps,
-  getGroupList,
   getGroupWishes,
   getSnapshots,
   getTmdbClient,
@@ -54,8 +53,7 @@ async function snapshotToKeep(
   groupId: string,
   tmdbId: number,
 ): Promise<MovieSnapshot> {
-  const listed = await getGroupList().findInList(groupId, tmdbId);
-  const stored = listed ? await getSnapshots().get(tmdbId) : null;
+  const stored = await getSnapshots().getListed(groupId, tmdbId);
   return stored ?? (await getMovieSnapshot(getTmdbClient(), tmdbId));
 }
 
@@ -124,8 +122,8 @@ export async function loadMoreCards(
   }
   const queue =
     page === 1 ? await getGroupWishes().pending(groupId, user.userId) : [];
+  const deps = getDeckDeps(deck, groupId, user.userId);
   try {
-    const deps = getDeckDeps(deck, groupId, user.userId);
     const batch = await loadDeckBatch(deps, page);
     const wanted = new Set(queue.map((card) => card.tmdbId));
     const cards = batch.cards.filter((card) => !wanted.has(card.tmdbId));

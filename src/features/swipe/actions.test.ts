@@ -14,8 +14,7 @@ import {
 const swipe = vi.fn();
 const undo = vi.fn();
 const getDeckDeps = vi.fn();
-const findInList = vi.fn();
-const getStored = vi.fn();
+const getListed = vi.fn();
 const getMovieSnapshot = vi.fn();
 const loadDeckBatch = vi.fn();
 const client = { get: vi.fn() };
@@ -23,8 +22,7 @@ const client = { get: vi.fn() };
 vi.mock("@/server/groups");
 vi.mock("@/server/container", () => ({
   getDecisions: () => ({ swipe, undoSwipe: undo }),
-  getGroupList: () => ({ findInList }),
-  getSnapshots: () => ({ get: getStored }),
+  getSnapshots: () => ({ getListed }),
   getTmdbClient: () => client,
   getDeckDeps: (...args: unknown[]) => getDeckDeps(...args),
 }));
@@ -56,8 +54,7 @@ beforeEach(() => {
   swipe.mockReset().mockResolvedValue({ result: "applied", matched: false });
   undo.mockReset().mockResolvedValue("applied");
   getDeckDeps.mockReset();
-  findInList.mockReset().mockResolvedValue(null);
-  getStored.mockReset().mockResolvedValue(null);
+  getListed.mockReset().mockResolvedValue(null);
   vi.mocked(revalidateListPages).mockReset();
   vi.mocked(revalidateGroupPages).mockReset();
   getMovieSnapshot.mockReset().mockResolvedValue(WHIPLASH);
@@ -111,12 +108,11 @@ describe("decideSwipe", () => {
   });
 
   it("♥ sur un film déjà dans la liste du groupe lit la fiche en base, sans TMDB", async () => {
-    findInList.mockResolvedValue({ tmdbId: 244786 });
-    getStored.mockResolvedValue(WHIPLASH);
+    getListed.mockResolvedValue(WHIPLASH);
 
     await decideSwipe(GROUP, 244786, "keep");
 
-    expect(findInList).toHaveBeenCalledWith(GROUP, 244786);
+    expect(getListed).toHaveBeenCalledWith(GROUP, 244786);
     expect(getMovieSnapshot).not.toHaveBeenCalled();
     expect(swipe).toHaveBeenCalledWith(
       expect.objectContaining({ snapshot: WHIPLASH }),
@@ -128,12 +124,6 @@ describe("decideSwipe", () => {
     await expect(decideSwipe(GROUP, 244786, "keep")).resolves.toMatchObject({
       matched: true,
     });
-  });
-
-  it("♥ sur un film listé sans fiche en base passe par TMDB", async () => {
-    findInList.mockResolvedValue({ tmdbId: 244786 });
-    await decideSwipe(GROUP, 244786, "keep");
-    expect(getMovieSnapshot).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "129" as unknown as number])(
@@ -190,16 +180,18 @@ describe("hors du groupe, ou sans session", () => {
     ["decideSwipe", () => decideSwipe("groupe-b", 0, "keep")],
     ["loadMoreCards", () => loadMoreCards("groupe-b", "palme" as DeckId, 0)],
     ["undoSwipe", () => undoSwipe("groupe-b", 0, "keep")],
-  ] as const)(
-    "%s refuse avant toute validation, sans rien faire",
-    (_name, call) =>
-      expectRefusedFirst(call, [
-        getMovieSnapshot,
-        swipe,
-        undo,
-        getDeckDeps,
-        loadDeckBatch,
-        vi.mocked(revalidateListPages),
-      ]),
+    // Valid arguments: only membership can refuse, before any read.
+    ["decideSwipe (valide)", () => decideSwipe("groupe-b", 244786, "keep")],
+    ["undoSwipe (valide)", () => undoSwipe("groupe-b", 244786, "keep")],
+  ] as const)("%s refuse avant toute lecture, sans rien faire", (_name, call) =>
+    expectRefusedFirst(call, [
+      getMovieSnapshot,
+      getListed,
+      swipe,
+      undo,
+      getDeckDeps,
+      loadDeckBatch,
+      vi.mocked(revalidateListPages),
+    ]),
   );
 });
