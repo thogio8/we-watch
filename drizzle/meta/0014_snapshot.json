@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1cf18185-d40b-4177-87f1-1149ae03a233",
+  "id": "c759cec3-b328-4e77-9013-77231498e053",
   "prevId": "5c15df45-a976-4e4e-972e-6e39e032e295",
   "tables": {
     "account": {
@@ -658,6 +658,13 @@
           "name": "group_movie_favorite_by_idx",
           "columns": [
             "favorite_by"
+          ],
+          "isUnique": false
+        },
+        "group_movie_matched_by_idx": {
+          "name": "group_movie_matched_by_idx",
+          "columns": [
+            "matched_by"
           ],
           "isUnique": false
         }

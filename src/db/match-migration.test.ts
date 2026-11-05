@@ -24,19 +24,22 @@ describe("migration des matches", () => {
     expect(migrationTags.indexOf(match)).toBe(14);
   });
 
-  it("ne fait qu’ajouter deux colonnes", () => {
+  it("ne fait qu’ajouter deux colonnes et un index", () => {
     const statements = statementsOf(match);
-    expect(statements).toHaveLength(2);
+    expect(statements).toHaveLength(3);
     expect(statements[0]).toBe(
       "ALTER TABLE `group_movie` ADD `matched_at` integer;",
     );
     expect(statements[1]).toMatch(
       /^ALTER TABLE `group_movie` ADD `matched_by` text REFERENCES `user`\(`id`\) ON UPDATE no action ON DELETE set null;$/,
     );
+    expect(statements[2]).toBe(
+      "CREATE INDEX `group_movie_matched_by_idx` ON `group_movie` (`matched_by`);",
+    );
     expect(statements.join(" ")).not.toMatch(/\b(DROP|PRAGMA)\b|__new_/i);
   });
 
-  it("supprimer l’utilisateur de matched_by le met à NULL (clé étrangère ON DELETE set null)", async () => {
+  it("matched_by désigne un utilisateur, mis à NULL à sa suppression (clé étrangère)", async () => {
     const db = await aDatabase();
     const keys = await db.all<{
       from: string;
