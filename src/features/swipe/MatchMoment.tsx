@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { type KeyboardEvent, useEffect, useId, useRef } from "react";
 import { Button } from "@/ui/Button";
 import { ButtonLink } from "@/ui/ButtonLink";
 import { MatchStamp } from "@/ui/MatchStamp";
@@ -10,7 +10,11 @@ import { CONTINUE, MATCH_TEXT, MATCH_TITLE, SEE_LIST } from "./messages";
 /**
  * « C'EST UN MATCH » printed over the deck once the server said my swipe made
  * the match: a dialog named after its stamp, « CONTINUER ▸ » focused, closed
- * by it or Escape. « ↺ ANNULER » stays above it (it undoes the match).
+ * by it or Escape (from inside the dialog only, so another panel's Escape
+ * leaves it open). The deck behind it is inert; « ↺ ANNULER » stays above
+ * it and undoes the match, but only while the match is the last swipe: an
+ * answer that arrives after another card was decided, or once the undo slip
+ * has gone, leaves a match that this device can no longer undo.
  */
 export function MatchMoment({ onClose }: { onClose: () => void }) {
   const stampId = useId();
@@ -19,13 +23,9 @@ export function MatchMoment({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     proceed.current?.focus();
   }, []);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") onClose();
+  };
 
   return (
     <div className={styles.layer}>
@@ -35,6 +35,7 @@ export function MatchMoment({ onClose }: { onClose: () => void }) {
         aria-labelledby={stampId}
         aria-describedby={textId}
         className={styles.moment}
+        onKeyDown={onKeyDown}
       >
         <MatchStamp size="large" id={stampId} className={styles.stamp} />
         <div className={styles.side}>

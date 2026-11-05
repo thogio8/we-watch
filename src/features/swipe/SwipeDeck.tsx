@@ -77,6 +77,7 @@ export function SwipeDeck({
           groupSize={groupSize}
           onDecide={decideCard}
           deckRef={deckRef}
+          frozen={match !== null}
         />
       )}
       {view === "loading" && <LoadingTicket />}
