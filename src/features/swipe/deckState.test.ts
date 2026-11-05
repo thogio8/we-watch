@@ -64,6 +64,14 @@ describe("deckReducer", () => {
     expect(ids(next)).toEqual([8, 9]);
   });
 
+  it("TMDB en panne, la file servie seule à la page 1 n'est pas un échec : une fois décidée, la page 1 se recharge", () => {
+    const wanted = cards(7);
+    const state = initDeck({ ok: true, batch: { cards: wanted, nextPage: 1 } });
+    expect(state.loadFailed).toBe(false);
+    const decided = decide(state, wanted[0] as MovieSnapshot);
+    expect(deckView(decided)).toBe("loading");
+  });
+
   it("une page 1 qui ne rapporte plus rien (file déjà décidée) propose RÉESSAYER", () => {
     const wanted = cards(7);
     const state = initDeck({ ok: true, batch: { cards: wanted, nextPage: 1 } });
