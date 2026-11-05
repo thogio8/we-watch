@@ -5,6 +5,7 @@ import {
   eq,
   getTableColumns,
   inArray,
+  ne,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -12,7 +13,7 @@ import { alias } from "drizzle-orm/sqlite-core";
 import type { Movie } from "@/domain/movie";
 import type { ApplyResult } from "@/domain/transitions";
 import { user } from "./auth-schema";
-import type { Database } from "./create-database";
+import type { Database, Executor } from "./create-database";
 import {
   groupMovie,
   membership,
@@ -43,18 +44,26 @@ const adder = alias(user, "adder");
 const watcher = alias(user, "watcher");
 const favoriter = alias(user, "favoriter");
 
-/** Names of the members who want each movie, in the order of the wishes. */
+/**
+ * Names of the members who want each movie, in the order of the wishes;
+ * `except`: a member left out (me, when only the others matter).
+ */
 export async function wishes(
-  db: Database,
+  db: Executor,
   groupId: string,
   tmdbIds: number[],
+  except?: string,
 ): Promise<Map<number, string[]>> {
   const rows = await db
     .select({ tmdbId: movieWant.tmdbId, name: user.name })
     .from(movieWant)
     .innerJoin(user, eq(user.id, movieWant.userId))
     .where(
-      and(eq(movieWant.groupId, groupId), inArray(movieWant.tmdbId, tmdbIds)),
+      and(
+        eq(movieWant.groupId, groupId),
+        inArray(movieWant.tmdbId, tmdbIds),
+        except === undefined ? undefined : ne(movieWant.userId, except),
+      ),
     )
     // Same millisecond: insertion order.
     .orderBy(asc(movieWant.wantedAt), asc(sql`${movieWant}.rowid`));
