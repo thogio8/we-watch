@@ -1,6 +1,6 @@
 # Couverture et tests
 
-Date : 2026-10-23 · mise à jour : 2026-11-04 (V2.1, coups de cœur)
+Date : 2026-10-23 · mise à jour : 2026-11-05 (V2.1, tableau régénéré)
 
 ## Les trois niveaux de tests
 
@@ -33,12 +33,11 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | Fichier | Instr. | Branches | Fonctions | Lignes |
 | --- | --- | --- | --- | --- |
 | **Total** | 100% | 100% | 100% | 100% |
-| src/env.ts | 100% | 100% | 100% | 100% |
 | src/access/cron.ts | 100% | 100% | 100% | 100% |
 | src/access/decision.ts | 100% | 100% | 100% | 100% |
 | src/access/paths.ts | 100% | 100% | 100% | 100% |
+| src/access/refusals.ts | 100% | 100% | 100% | 100% |
 | src/access/signed-in.ts | 100% | 100% | 100% | 100% |
-| src/access/signed-out.ts | 100% | 100% | 100% | 100% |
 | src/access/signup-ticket.ts | 100% | 100% | 100% | 100% |
 | src/access/signup.ts | 100% | 100% | 100% | 100% |
 | src/access/token.ts | 100% | 100% | 100% | 100% |
@@ -55,9 +54,9 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/db/auth-schema.ts | 100% | 100% | 100% | 100% |
 | src/db/create-database.ts | 100% | 100% | 100% | 100% |
 | src/db/decisions.ts | 100% | 100% | 100% | 100% |
+| src/db/favorites.ts | 100% | 100% | 100% | 100% |
 | src/db/group-list.ts | 100% | 100% | 100% | 100% |
 | src/db/group-schema.ts | 100% | 100% | 100% | 100% |
-| src/db/favorites.ts | 100% | 100% | 100% | 100% |
 | src/db/groups.ts | 100% | 100% | 100% | 100% |
 | src/db/housekeeping.ts | 100% | 100% | 100% | 100% |
 | src/db/invitations.ts | 100% | 100% | 100% | 100% |
@@ -76,12 +75,15 @@ Table générée depuis `coverage/coverage-summary.json` (`npx vitest run --cove
 | src/domain/label.ts | 100% | 100% | 100% | 100% |
 | src/domain/movie.ts | 100% | 100% | 100% | 100% |
 | src/domain/rate-limit.ts | 100% | 100% | 100% | 100% |
+| src/domain/recent-sign-in.ts | 100% | 100% | 100% | 100% |
 | src/domain/time.ts | 100% | 100% | 100% | 100% |
 | src/domain/tonight.ts | 100% | 100% | 100% | 100% |
 | src/domain/transitions.ts | 100% | 100% | 100% | 100% |
+| src/env.ts | 100% | 100% | 100% | 100% |
 | src/features/account/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/account/load.ts | 100% | 100% | 100% | 100% |
 | src/features/account/messages.ts | 100% | 100% | 100% | 100% |
+| src/features/account/recent-sign-in.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/actions.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/drawMotion.ts | 100% | 100% | 100% | 100% |
 | src/features/draw/drawView.ts | 100% | 100% | 100% | 100% |
