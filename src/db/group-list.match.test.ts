@@ -46,12 +46,13 @@ describe("liste du groupe : matchs et taille", () => {
       groupSize: 2,
     });
     const movies = await w.list.listByStatus(w.groupA, "to_watch");
-    expect(movies.map((m) => [m.tmdbId, m.matchedAt, m.groupSize])).toEqual(
-      expect.arrayContaining([
-        [1, T1, 2],
-        [2, null, 2],
-      ]),
-    );
+    const read = movies
+      .map((m) => [m.tmdbId, m.matchedAt, m.groupSize])
+      .sort(([a], [b]) => Number(a) - Number(b));
+    expect(read).toEqual([
+      [1, T1, 2],
+      [2, null, 2],
+    ]);
   });
 
   it("la taille suit les arrivées dans le groupe", async () => {
