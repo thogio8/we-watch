@@ -58,10 +58,15 @@ describe("poser un match en concurrence", () => {
       );
       expect(row.matchedAt).toEqual(winnerWish?.wantedAt);
     });
-    // The rounds really ran at the same time (a thread and a connection
-    // each, SQLite's lock deciding who writes first).
-    expect(leaLaps!.some((lap, round) => overlap(lap, hugoLaps![round]!))).toBe(
-      true,
-    );
+    // The race really happened (a thread and a connection each, SQLite's
+    // lock deciding who writes first): at least one round overlapped. Not
+    // every round: a slow single-core runner may run some one after another.
+    const overlapping = leaLaps!.filter((lap, round) =>
+      overlap(lap, hugoLaps![round]!),
+    ).length;
+    expect(
+      overlapping,
+      `rounds that overlapped: ${overlapping}/${ROUNDS}`,
+    ).toBeGreaterThan(0);
   });
 });
