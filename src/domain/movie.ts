@@ -36,13 +36,27 @@ export interface Movie extends MovieSnapshot {
   favoriteAt: Date | null;
   /** Name resolved; null with favoriteAt set = deleted account. */
   favoriteBy: string | null;
+  /** Set when the whole group kept it; never recomputed. */
+  matchedAt: Date | null;
+  /** Members of the group when read. */
+  groupSize: number;
 }
 
 export const isFavorite = (m: Pick<Movie, "favoriteAt">): boolean =>
   m.favoriteAt !== null;
 
+export const isMatch = (m: Pick<Movie, "matchedAt">): boolean =>
+  m.matchedAt !== null;
+
+/** What wantedLine needs to word a movie's wishes. */
+export const wishContext = (m: Pick<Movie, "groupSize" | "matchedAt">) => ({
+  groupSize: m.groupSize,
+  matched: isMatch(m),
+});
+
 export interface ListCounts {
   toWatch: number;
   watched: number;
   favorites: number;
+  matches: number;
 }

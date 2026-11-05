@@ -49,6 +49,7 @@ function screenFor({
         toWatch: toWatch.length,
         watched,
         favorites: toWatch.filter((m) => m.favoriteAt !== null).length,
+        matches: 0,
       }}
       onWatched={onWatched ?? (() => Promise.resolve())}
       pill={pill}

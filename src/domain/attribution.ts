@@ -15,12 +15,36 @@ export function addedLine(
     : `ajouté par ${FORMER_MEMBER} le ${date}`;
 }
 
-/** « voulu par Léa, Hugo et Sam »; null when nobody wanted it. */
-export function wantedLine(names: readonly string[]): string | null {
+/** Most first names spelled out before counting instead. */
+export const MAX_NAMES = 3;
+
+/**
+ * « voulu par Léa, Hugo et Sam »; « voulu par vous deux » / « tout le groupe »
+ * once a match holds every member's wish; « voulu par 9 sur 10 » past
+ * MAX_NAMES names; null when nobody wanted it.
+ */
+export function wantedLine(
+  names: readonly string[],
+  context: { groupSize: number; matched: boolean },
+): string | null {
   if (names.length === 0) return null;
+  const { groupSize, matched } = context;
+  if (matched && names.length === groupSize && groupSize >= 2) {
+    return groupSize === 2 ? "voulu par vous deux" : "voulu par tout le groupe";
+  }
+  if (names.length > MAX_NAMES) {
+    return `voulu par ${names.length} sur ${groupSize}`;
+  }
   const head = names.slice(0, -1).join(", ");
   const last = names[names.length - 1];
   return `voulu par ${head === "" ? last : `${head} et ${last}`}`;
+}
+
+/** « match du groupe le 5 novembre 2026 »; null when not a match. */
+export function matchLine(m: Pick<Movie, "matchedAt">): string | null {
+  return m.matchedAt === null
+    ? null
+    : `match du groupe le ${formatLongDate(m.matchedAt)}`;
 }
 
 /** « vu le 18/10 · marqué par Hugo »; null when not watched. No marker known: a deleted account. */

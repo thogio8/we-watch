@@ -49,6 +49,8 @@ export function aMovie(tmdbId: number, overrides: Partial<Movie> = {}): Movie {
     legacy: false,
     favoriteAt: null,
     favoriteBy: null,
+    matchedAt: null,
+    groupSize: 2,
     ...overrides,
   };
 }

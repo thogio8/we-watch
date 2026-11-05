@@ -123,18 +123,18 @@ describe("drawButton", () => {
 
 describe("homeCounts", () => {
   it("« dont k ♥ » seulement s’il y a des coups de cœur", () => {
-    expect(homeCounts({ toWatch: 3, watched: 0, favorites: 0 })).toBe(
-      "3 films à regarder · 0 vu",
-    );
-    expect(homeCounts({ toWatch: 5, watched: 1, favorites: 2 })).toBe(
-      "5 films à regarder · dont 2 ♥ · 1 vu",
-    );
+    expect(
+      homeCounts({ toWatch: 3, watched: 0, favorites: 0, matches: 0 }),
+    ).toBe("3 films à regarder · 0 vu");
+    expect(
+      homeCounts({ toWatch: 5, watched: 1, favorites: 2, matches: 0 }),
+    ).toBe("5 films à regarder · dont 2 ♥ · 1 vu");
   });
 
   it("met « vus » au pluriel dès deux films vus", () => {
-    expect(homeCounts({ toWatch: 1, watched: 2, favorites: 0 })).toBe(
-      "1 film à regarder · 2 vus",
-    );
+    expect(
+      homeCounts({ toWatch: 1, watched: 2, favorites: 0, matches: 0 }),
+    ).toBe("1 film à regarder · 2 vus");
   });
 });
 

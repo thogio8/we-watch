@@ -58,6 +58,7 @@ describe("swiper (fonctionnel)", () => {
       toWatch: 0,
       watched: 0,
       favorites: 0,
+      matches: 0,
     });
     expect(await deckIds()).not.toContain(CHIHIRO);
   });

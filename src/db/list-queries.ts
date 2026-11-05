@@ -1,6 +1,7 @@
 import {
   and,
   asc,
+  count,
   eq,
   getTableColumns,
   inArray,
@@ -16,6 +17,7 @@ import {
   groupMovie,
   movieRejection,
   movieSnapshot,
+  membership,
   movieWant,
 } from "./group-schema";
 
@@ -63,6 +65,15 @@ async function wishes(
   return names;
 }
 
+/** How many members the group has. */
+async function sizeOf(db: Database, groupId: string): Promise<number> {
+  const rows = await db
+    .select({ n: count() })
+    .from(membership)
+    .where(eq(membership.groupId, groupId));
+  return rows.reduce((total, r) => total + r.n, 0);
+}
+
 /**
  * Movies of a group's list matching `where`, with their snapshot and the
  * names of who added, wanted and watched them (null: no author, or a
@@ -99,6 +110,7 @@ export async function selectMovies(
     groupId,
     rows.map((r) => r.tmdbId),
   );
+  const groupSize = await sizeOf(db, groupId);
   return rows.map((row) => ({
     ...row,
     // Only a movie still to watch is a favourite, whatever the columns hold.
@@ -106,5 +118,8 @@ export async function selectMovies(
       ? {}
       : { favoriteAt: null, favoriteBy: null }),
     wantedBy: wanted.get(row.tmdbId) ?? [],
+    // Read from the database in the next step.
+    matchedAt: null,
+    groupSize,
   }));
 }
