@@ -181,3 +181,14 @@ Branche `release/2.0.0` depuis `main` ; un morceau = une branche `feat/v2-…` �
 
 - Un groupe marque des films « à voir » comme **coups de cœur** (♡ / ♥ sur la LISTE, tampon sur la fiche), les retrouve en tête de liste, et peut ne **tirer que parmi eux** (filtre « ♥ NOS COUPS DE CŒUR » de TIRER).
 - Spec détaillée : `2026-11-04-coups-de-coeur-design.md`, qui complète celle-ci. Migration additive `0012` (`group_movie.favorite_at`, `favorite_by`), action `setFavorite` non limitée.
+
+## 17. Après la 2.1 · Supprimer les restes d'avant les comptes
+
+Décidé avec le mainteneur le 2026-11-05. Rien de visible : seuls disparaissent la table `movies` (plus écrite depuis la 2.0), les colonnes `group_movie.legacy` et `watched_legacy`, et la variable `ACCESS_CODE` de Vercel.
+
+- **Deux livraisons, jamais une** : la CI migre la base avant de mettre le nouveau code en ligne, et le retour arrière automatique remet l'ancien code sur la base migrée. Une colonne ne se supprime donc qu'une fois qu'aucune version en ligne ni de retour arrière ne la lit.
+  1. **Le code cesse de lire et d'écrire** `legacy` et `watched_legacy` (la base ne change pas).
+  2. **Une migration supprime** `movies`, `legacy` et `watched_legacy`, une fois la première livraison en prod ; puis le mainteneur retire `ACCESS_CODE` de Vercel.
+- **`legacy` fait doublon** avec `added_via = 'legacy'` : chaque écriture pose les deux ensemble (copie de la 1.3.x : `'legacy'` et 1 ; swipe et recherche : `'swipe'` / `'search'` et 0). « ajouté le … », sans auteur, se déduit donc de `added_via`, et l'affichage ne change pas.
+- **`watched_legacy` est vide** selon le mainteneur : aucun film n'avait été marqué vu avant les comptes. Sans elle, un film vu sans auteur connu s'affiche « vu le … · marqué par un ancien membre », comme un compte supprimé. Preuve avant la suppression : l'exercice de restauration de nuit (`scripts/verify-restore.mjs`) affiche le nombre de lignes à 1, compté sur la sauvegarde de la prod (un nombre, jamais une donnée). La migration de l'étape 2 ne s'écrit que si ce nombre est 0 ; sinon, retour au mainteneur.
+- **Sauvegardes** : après l'étape 2, une sauvegarde plus ancienne garde `movies` et les deux colonnes ; la restauration doit les ignorer, pour qu'une sauvegarde de 90 jours se restaure encore.
