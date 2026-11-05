@@ -38,28 +38,42 @@ async function hugoMatches(app: Page, member: (name: string) => Promise<Page>) {
   return hugo;
 }
 
-/** What has the focus: its role and text, `BODY` when nothing does. */
+/** The element with the focus: whether it is the marked start, and its text. */
 const focused = (page: Page) =>
   page.evaluate(() => {
     const element = document.activeElement;
-    if (element === null || element === document.body) return "BODY";
-    return `${element.tagName} ${element.textContent?.trim() ?? ""}`;
+    const atStart = element?.hasAttribute("data-tab-start") ?? false;
+    if (element === null || element === document.body) {
+      return { atStart, label: "BODY" };
+    }
+    return {
+      atStart,
+      label: `${element.tagName} ${element.textContent?.trim() ?? ""}`,
+    };
   });
 
 /**
- * Presses Tab from the focused element until the focus comes back to it,
- * once around the page: everything Tab reaches on the way.
+ * Marks the focused element, then presses `key` until that very element has
+ * the focus again, once around the page: what the key reached on the way
+ * (the page itself, `BODY`, left out).
  */
-async function tabAround(page: Page) {
-  const start = await focused(page);
+async function tabAround(page: Page, key: "Tab" | "Shift+Tab") {
+  await page.evaluate(() =>
+    document.activeElement?.setAttribute("data-tab-start", ""),
+  );
   const reached: string[] = [];
   for (let press = 0; press < 60; press++) {
-    await page.keyboard.press("Tab");
-    const now = await focused(page);
-    if (now === start) return reached;
-    reached.push(now);
+    await page.keyboard.press(key);
+    const { atStart, label } = await focused(page);
+    if (atStart) {
+      await page.evaluate(() =>
+        document.activeElement?.removeAttribute("data-tab-start"),
+      );
+      return reached;
+    }
+    if (label !== "BODY") reached.push(label);
   }
-  throw new Error(`la tabulation ne revient jamais sur ${start}`);
+  throw new Error(`${key} ne revient jamais sur l’élément de départ`);
 }
 
 /** Animations running on the moment's big stamp (the one naming the dialog). */
@@ -100,19 +114,22 @@ test.describe("c’est un match", () => {
     await expect(matchMoment(hugo)).toHaveCount(0);
   });
 
-  test("pendant le moment du match, la tabulation n’atteint jamais les boutons de la pile ; Échap le ferme et la pile répond", async ({
+  test("le moment du match est modal : de CONTINUER, Tab et Maj+Tab n’atteignent que lui et « ↺ ANNULER » ; Échap le ferme et la pile répond", async ({
     app,
     member,
   }) => {
     const hugo = await hugoMatches(app, member);
 
-    const reached = await tabAround(hugo);
-    // Once around: past « ↺ ANNULER », the nav, the pill and the themes, to
-    // « VOIR LA LISTE », the deck's place in between, never to its buttons.
-    expect(reached).toContain("BUTTON ↺ ANNULER");
-    expect(reached).toContain(`A ${SEE_LIST}`);
-    expect(reached).not.toContainEqual(expect.stringContaining("ON LE VEUT"));
-    expect(reached).not.toContainEqual(expect.stringContaining("BOF"));
+    // Once around each way: neither the pill, the themes, the nav nor the
+    // deck's buttons, only the moment's other button and the undo slip.
+    expect(await tabAround(hugo, "Tab")).toEqual([
+      "BUTTON ↺ ANNULER",
+      `A ${SEE_LIST}`,
+    ]);
+    expect(await tabAround(hugo, "Shift+Tab")).toEqual([
+      `A ${SEE_LIST}`,
+      "BUTTON ↺ ANNULER",
+    ]);
 
     await matchMoment(hugo)
       .getByRole("button", { name: CONTINUE })
