@@ -19,13 +19,12 @@ export function useSwipeSync(
   undo: SendUndo,
 ) {
   const ops = useRef(new Map<number, Promise<ApplyResult>>());
-  const chain = (
-    tmdbId: number,
-    next: (previous: ApplyResult) => Promise<ApplyResult>,
-  ) => {
-    const previous = ops.current.get(tmdbId) ?? Promise.resolve("noop");
-    // A failed operation was reported already: the next one starts afresh.
-    const op = previous.catch((): ApplyResult => "noop").then(next);
+  // A failed operation was reported already: the next one starts afresh.
+  const previous = (tmdbId: number) =>
+    (ops.current.get(tmdbId) ?? Promise.resolve("noop")).catch(
+      (): ApplyResult => "noop",
+    );
+  const remember = (tmdbId: number, op: Promise<ApplyResult>) => {
     ops.current.set(tmdbId, op);
     op.catch(leaveIfRefused);
     return op;
@@ -34,16 +33,17 @@ export function useSwipeSync(
   const decideCard = (card: DeckCard, decision: SwipeDecision) => {
     dispatch({ type: "decided", card, decision });
     // Optimistic: the card is gone already; it comes back if the save fails.
-    let matched = false;
-    const op = chain(card.tmdbId, async () => {
-      const outcome = await decide(card.tmdbId, decision);
-      matched = outcome.matched;
-      return outcome.result;
-    });
+    const outcome = previous(card.tmdbId).then(() =>
+      decide(card.tmdbId, decision),
+    );
+    const op = remember(
+      card.tmdbId,
+      outcome.then(({ result }) => result),
+    );
     // An undo or a new decision came after: this card's fate is theirs.
     const latest = () => ops.current.get(card.tmdbId) === op;
-    op.then(
-      () => {
+    outcome.then(
+      ({ matched }) => {
         if (matched && latest()) dispatch({ type: "matched", card });
       },
       () => {
@@ -58,10 +58,13 @@ export function useSwipeSync(
     dispatch({ type: "undone" });
     // A swipe that did not apply (decided on another device) is not ours to
     // erase: the card simply comes back.
-    chain(card.tmdbId, (saved) =>
-      saved === "applied"
-        ? undo(card.tmdbId, decision)
-        : Promise.resolve(saved),
+    remember(
+      card.tmdbId,
+      previous(card.tmdbId).then((saved) =>
+        saved === "applied"
+          ? undo(card.tmdbId, decision)
+          : Promise.resolve(saved),
+      ),
     ).catch(() => dispatch({ type: "undo_failed", tmdbId: card.tmdbId }));
   };
 
