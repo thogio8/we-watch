@@ -54,3 +54,13 @@ export interface ListCounts {
   favorites: number;
   matches: number;
 }
+
+/** A movie the group wants and I have not swiped yet. */
+export type WishCard = MovieSnapshot & {
+  wish: {
+    /** The other members who want it, in the order of the wishes. */
+    others: readonly string[];
+    /** Set when the whole group kept it. */
+    matched: boolean;
+  };
+};

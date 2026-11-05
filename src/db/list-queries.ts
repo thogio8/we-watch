@@ -44,7 +44,7 @@ const watcher = alias(user, "watcher");
 const favoriter = alias(user, "favoriter");
 
 /** Names of the members who want each movie, in the order of the wishes. */
-async function wishes(
+export async function wishes(
   db: Database,
   groupId: string,
   tmdbIds: number[],
