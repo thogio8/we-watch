@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { assertMember } from "@/server/groups";
 import type { WishCard } from "@/domain/movie";
+import { expectRefusedFirst } from "@tests/helpers/refused";
 import { aSnapshot } from "@tests/helpers/movies";
 import { TmdbError } from "@/tmdb/client";
 import type { DeckId } from "@/tmdb/decks";
@@ -79,11 +80,10 @@ describe("loadMoreCards", () => {
       nextPage: null,
     });
 
-    const result = await loadMoreCards(GROUP, "top", 1);
-
-    expect(result).toMatchObject({ ok: true });
-    if (!result.ok) return;
-    expect(result.batch.cards).toEqual([WANTED, CHIHIRO]);
+    await expect(loadMoreCards(GROUP, "top", 1)).resolves.toEqual({
+      ok: true,
+      batch: { cards: [WANTED, CHIHIRO], nextPage: null },
+    });
   });
 
   it.each(["palme", "", 3] as unknown as DeckId[])(
@@ -113,6 +113,12 @@ describe("loadMoreCards", () => {
       ok: false,
     });
   });
+
+  it("refuse un non-membre avant toute lecture, arguments valides", () =>
+    expectRefusedFirst(
+      () => loadMoreCards("groupe-b", "top", 1),
+      [pending, getDeckDeps, loadDeckBatch],
+    ));
 
   it("laisse remonter les autres erreurs", async () => {
     loadDeckBatch.mockRejectedValue(new Error("database is locked"));

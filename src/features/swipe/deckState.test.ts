@@ -63,6 +63,24 @@ describe("deckReducer", () => {
     expect(ids(next)).toEqual([8, 9]);
   });
 
+  it("une page 1 qui ne rapporte plus rien (file déjà décidée) propose RÉESSAYER", () => {
+    const wanted = cards(7);
+    const state = initDeck({ ok: true, batch: { cards: wanted, nextPage: 1 } });
+    const next = deckReducer(decide(state, wanted[0] as MovieSnapshot), {
+      type: "loaded",
+      batch: { cards: wanted, nextPage: 1 },
+    });
+    expect(deckView(next)).toBe("error");
+  });
+
+  it("une page vide qui avance n'est pas un échec", () => {
+    const next = deckReducer(deckOf([], 2), {
+      type: "loaded",
+      batch: { cards: [], nextPage: 3 },
+    });
+    expect(next.loadFailed).toBe(false);
+  });
+
   it("un lot chargé efface l'échec précédent", () => {
     const failed = deckReducer(deckOf([]), { type: "load_failed" });
     expect(failed.loadFailed).toBe(true);
