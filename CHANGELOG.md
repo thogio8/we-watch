@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.2.0](https://github.com/thogio8/we-watch/compare/v2.1.1...v2.2.0) (2026-11-05)
+
+
+### Nouveautés
+
+* **db:** add the match columns to the group list ([45f0fd9](https://github.com/thogio8/we-watch/commit/45f0fd961026c33ae2fef4476035f50108e67e0c))
+* **db:** index who completed a match ([fcefc39](https://github.com/thogio8/we-watch/commit/fcefc395d737c55545a070f0d4a894129a3c36f9))
+* **db:** list the movies the group wants and I have not swiped ([42baaa0](https://github.com/thogio8/we-watch/commit/42baaa01b567b9a25616b8eba4acc6c1bc9ebd09))
+* **db:** make a match when the last member keeps a movie ([7a58593](https://github.com/thogio8/we-watch/commit/7a58593e97bc80be2f938968dbb9b5212ae2ac32))
+* **db:** read matches and the group's size with the list ([ba857c3](https://github.com/thogio8/we-watch/commit/ba857c37557cf86c411a5c8ccb984f43849a7028))
+* **draw:** draw among the group's matches ([39abffb](https://github.com/thogio8/we-watch/commit/39abffbe0e321003527c951479470238f97cfbb8))
+* **list:** stamp matches in the list, the movie page and the ticket ([f05c528](https://github.com/thogio8/we-watch/commit/f05c528ce67aab3b251fa44db11f6c664ca49eab))
+* **list:** word who wants a movie for groups of any size ([d1b1fa1](https://github.com/thogio8/we-watch/commit/d1b1fa16b8d390ac53e80f1388ec43bbe2d074e4))
+* **swipe:** keep the deck inert behind the match moment and shorten the newcomer line ([416b334](https://github.com/thogio8/we-watch/commit/416b3342a0de8dd10909d5312cecf213966173a7))
+* **swipe:** keep the match line clear of the card behind and beside the buttons sideways ([1a79abc](https://github.com/thogio8/we-watch/commit/1a79abc303d12a84ca7f09ed726f615f29bb6e5b))
+* **swipe:** keep the swipe buttons still between cards and the deck screen unscrolled ([d1292a3](https://github.com/thogio8/we-watch/commit/d1292a37b8ad2b0d0598f8682b126bc63100c625))
+* **swipe:** make the match moment a true modal ([63bf5fa](https://github.com/thogio8/we-watch/commit/63bf5fa64bec6df1fbc4bd6906b9ed1e52fea4a7))
+* **swipe:** put the movies the group wants at the top of the deck ([1cb2bb0](https://github.com/thogio8/we-watch/commit/1cb2bb067aa27d044e85e8e0bb8f0e94cc3d4d6c))
+* **swipe:** read the listed snapshot in one query and never strand the deck on a stale queue ([bcf4a7c](https://github.com/thogio8/we-watch/commit/bcf4a7cc0bff1da48a433a1cebcabba53f22d978))
+* **swipe:** show who wants a movie and stamp the match ([090f4d3](https://github.com/thogio8/we-watch/commit/090f4d33fa0ba762c3c68ecc0ccddb543a875081))
+
 ## [2.1.1](https://github.com/thogio8/we-watch/compare/v2.1.0...v2.1.1) (2026-11-05)
 
 
