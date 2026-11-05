@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { aUser } from "@tests/helpers/groups";
-import { aListWorld, matchOf } from "@tests/helpers/list-world";
+import { aUser, matchOf } from "@tests/helpers/groups";
+import { aListWorld } from "@tests/helpers/list-world";
 import { aSnapshot } from "@tests/helpers/movies";
 import { createFavorites } from "./favorites";
 import { groupMovie } from "./group-schema";

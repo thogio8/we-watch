@@ -4,6 +4,13 @@
 // thread (and a connection) of its own. Loaded by Node itself, not Vitest:
 // TypeScript is stripped natively and the hook below resolves the `@/`
 // alias and extensionless imports of the sources.
+//
+// Limits of loading `src` this way, for whoever extends what it imports: Node
+// only strips erasable TypeScript (no `enum`, parameter properties,
+// `namespace` or other syntax that emits code), the hook only adds `.ts` to
+// a file import (no directory `index` import, no explicit `.js` extension),
+// and nothing stubs `import "server-only"`, which throws here: the worker
+// then fails to load and `race` rejects.
 import { registerHooks } from "node:module";
 import { parentPort, workerData } from "node:worker_threads";
 import type { MovieSnapshot } from "@/domain/movie";

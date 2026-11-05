@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
-import { matchOf } from "@tests/helpers/list-world";
+import { aDatabase, aGroup, aUser, matchOf } from "@tests/helpers/groups";
 import { aSnapshot } from "@tests/helpers/movies";
 import type { Database } from "./create-database";
 import { createDecisions, type Decisions } from "./decisions";
