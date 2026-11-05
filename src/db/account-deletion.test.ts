@@ -22,7 +22,6 @@ import {
   movieRejection,
   movieWant,
 } from "./group-schema";
-import { movies } from "./schema";
 
 const T0 = new Date(2026, 9, 1);
 
@@ -242,7 +241,7 @@ async function unrelatedRows() {
   await keep(shared, hugo, 8);
   await db
     .update(groupMovie)
-    .set({ addedBy: null, addedVia: "legacy", legacy: true })
+    .set({ addedBy: null, addedVia: "legacy" })
     .where(and(eq(groupMovie.groupId, shared), eq(groupMovie.tmdbId, 8)));
   await db.insert(verification).values({
     id: "verification-1",
@@ -251,9 +250,6 @@ async function unrelatedRows() {
     expiresAt: new Date(2026, 11, 1),
   });
   await db.insert(signupTicketUse).values({ id: "jti-1", usedAt: T0 });
-  await db
-    .insert(movies)
-    .values({ ...aSnapshot(9), status: "watched", decidedAt: T0 });
 }
 
 /** Deletes Léa: every other row of the database stays as it was. */
@@ -311,7 +307,6 @@ describe("supprimer un compte", () => {
     expect(await movieOf(shared, 3)).toMatchObject({
       addedBy: hugo,
       watchedBy: null,
-      watchedLegacy: false,
     });
     expect(await movieOf(shared, 4)).toMatchObject({
       addedBy: null,

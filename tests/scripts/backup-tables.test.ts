@@ -49,7 +49,7 @@ describe("lecture des tables à sauvegarder", () => {
 
     expect(calls).toEqual([
       { method: "execute", statements: 1 },
-      { method: "batch", statements: 10, mode: "read" },
+      { method: "batch", statements: 9, mode: "read" },
     ]);
     expect(backup.app_group).toEqual([
       expect.objectContaining({ id: "g-1", name: "NOUS DEUX" }),
@@ -57,9 +57,9 @@ describe("lecture des tables à sauvegarder", () => {
     expect(report).toContain("app_group: 1 rows");
   });
 
-  it("une table absente n'est pas lue : seulement movies sur une base 1.3.x", async () => {
+  it("une table absente n'est pas lue : seulement celles déjà là", async () => {
     const client = createClient({ url });
-    await client.execute("CREATE TABLE movies (tmdb_id integer primary key)");
+    await client.execute("CREATE TABLE user (id text primary key)");
     const { spy, calls } = spied(client);
 
     const { backup, report } = await readTables(spy);
@@ -70,8 +70,8 @@ describe("lecture des tables à sauvegarder", () => {
       statements: 1,
       mode: "read",
     });
-    expect(backup).toEqual({ movies: [] });
-    expect(report).toContain("user: absent");
+    expect(backup).toEqual({ user: [] });
+    expect(report).toContain("app_group: absent");
   });
 
   it("une base sans table : aucun lot, une sauvegarde vide", async () => {

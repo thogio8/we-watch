@@ -83,12 +83,6 @@ export const groupMovie = sqliteTable(
     addedVia: text("added_via", {
       enum: ["swipe", "search", "legacy"],
     }).notNull(),
-    /** Copied from the pre-accounts list: authors were never recorded. */
-    legacy: integer("legacy", { mode: "boolean" }).default(false).notNull(),
-    /** Watched before the accounts: who marked it was never recorded. */
-    watchedLegacy: integer("watched_legacy", { mode: "boolean" })
-      .default(false)
-      .notNull(),
     /** Favourite (2.1.0): set only while « to_watch »; null = not a favourite. */
     favoriteAt: timestamp("favorite_at"),
     favoriteBy: author("favorite_by"),

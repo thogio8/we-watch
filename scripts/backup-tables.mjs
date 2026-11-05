@@ -31,8 +31,13 @@ export const TABLES = {
   group_movie: "*",
   movie_want: "*",
   movie_rejection: "*",
-  movies: "*",
 };
+
+/**
+ * Tables the schema dropped (spec v2 §17) that older backups still hold:
+ * a restore skips them, so a backup kept 90 days still restores.
+ */
+export const DROPPED_TABLES = ["movies"];
 
 const columns = (list) =>
   list === "*" ? "*" : list.map((name) => `"${name}"`).join(", ");

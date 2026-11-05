@@ -6,11 +6,11 @@
 // nothing. Columns: those both the backup and the current schema have (an
 // absent one takes its default; an unknown one is ignored and named).
 // A 1.3.x backup (movies, no groups) is refused: nothing restores it since
-// the 2.0 cutover.
+// the 2.0 cutover. A dropped table (DROPPED_TABLES) is skipped and named.
 // Prints row counts only, never data nor the key.
 // Usage: BACKUP_KEY=… DATABASE_URL=… node scripts/restore-db.mjs <backup>
 import { createClient } from "@libsql/client";
-import { TABLES } from "./backup-tables.mjs";
+import { DROPPED_TABLES, TABLES } from "./backup-tables.mjs";
 import { insertsInto, quote } from "./insert-rows.mjs";
 import { readBackup } from "./read-backup.mjs";
 
@@ -28,7 +28,9 @@ function checkBackup(backup) {
         : "sauvegarde sans app_group : ce n'est pas une sauvegarde 2.0",
     );
   }
-  const unknown = Object.keys(backup).filter((name) => !ORDER.includes(name));
+  const unknown = Object.keys(backup).filter(
+    (name) => !ORDER.includes(name) && !DROPPED_TABLES.includes(name),
+  );
   if (unknown.length > 0) {
     throw new Error(`table inconnue : ${unknown.join(", ")}`);
   }
@@ -77,6 +79,9 @@ async function restore(client, backup) {
       }
       statements.push(...(await insertsInto(tx, table, rows)));
       report.push(`${table}: ${rows.length} rows`);
+    }
+    for (const table of DROPPED_TABLES.filter((name) => name in backup)) {
+      report.push(`${table}: table supprimée, ignorée`);
     }
     if (statements.length > 0) await tx.batch(statements);
     await tx.commit();

@@ -286,7 +286,7 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
     let dir: string;
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-    it("copie la liste à l’identique, en un lot sans clés étrangères", async () => {
+    it("copie la liste à l’identique, en un lot sans clés étrangères, puis supprime l’ancienne table", async () => {
       dir = mkdtempSync(join(tmpdir(), "ww-migrate-"));
       const url = `file:${join(dir, "app.db")}`;
       const db = createDatabase(url);
@@ -301,7 +301,6 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
       await migrate(db, { migrationsFolder: migrationsUpTo(dir, 5) });
       expect(await recorded()).toBe(5);
       await client.batch(OLD_ROWS, "write");
-      const movies = await allMovies();
       const decisions = await rows(MOVIE_DECISIONS);
       const snapshots = await rows(
         `SELECT ${SNAPSHOT_COLUMNS} FROM movies ORDER BY tmdb_id`,
@@ -320,7 +319,8 @@ describe("migration de la liste vers « NOUS DEUX »", () => {
           `SELECT ${SNAPSHOT_COLUMNS} FROM movie_snapshot ORDER BY tmdb_id`,
         ),
       ).toEqual(snapshots);
-      expect(await allMovies()).toEqual(movies);
+      // 0013 (spec v2 §17): the pre-accounts table is gone once copied.
+      expect(await moviesDdl()).toEqual([]);
       expect(await db.all(sql`PRAGMA foreign_key_check`)).toEqual([]);
       expect(
         await db.get<{ foreign_keys: number }>(sql`PRAGMA foreign_keys`),

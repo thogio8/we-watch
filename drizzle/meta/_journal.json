@@ -92,6 +92,13 @@
       "when": 1793822813982,
       "tag": "0012_favorites",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1793876592824,
+      "tag": "0013_drop_pre_accounts_leftovers",
+      "breakpoints": true
     }
   ]
 }
