@@ -7,12 +7,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { aSnapshot } from "@tests/helpers/movies";
 import { stubMatchMedia } from "@tests/helpers/dom";
 import type { MovieSnapshot } from "@/domain/movie";
+import type { SwipeOutcome } from "@/domain/transitions";
 import type { SwipeDecision } from "./actions";
 import { SwipeDeck } from "./SwipeDeck";
 
 const card = (tmdbId: number, title: string): MovieSnapshot =>
   aSnapshot(tmdbId, { title });
 
+const APPLIED: SwipeOutcome = { result: "applied", matched: false };
 const WHIPLASH = card(244786, "WHIPLASH");
 const CHIHIRO = card(129, "LE VOYAGE DE CHIHIRO");
 
@@ -21,7 +23,7 @@ beforeEach(() => {
 });
 
 function renderTwoCards(
-  decide: (tmdbId: number, decision: SwipeDecision) => Promise<"applied">,
+  decide: (tmdbId: number, decision: SwipeDecision) => Promise<SwipeOutcome>,
 ) {
   const user = userEvent.setup();
   render(
@@ -41,7 +43,7 @@ function renderTwoCards(
 
 describe("SwipeDeck (animations actives)", () => {
   it("un double tap pendant l'envol ne décide qu'une carte", async () => {
-    const decide = vi.fn(() => Promise.resolve("applied" as const));
+    const decide = vi.fn(() => Promise.resolve(APPLIED));
     const user = renderTwoCards(decide);
 
     await user.dblClick(screen.getByRole("button", { name: "ON LE VEUT ♥" }));
@@ -53,14 +55,14 @@ describe("SwipeDeck (animations actives)", () => {
     // The save fails while the card is still flying out (~350 ms): it comes
     // back, and with two cards no other exit is left to release the buttons.
     const decide = vi
-      .fn<(tmdbId: number, decision: SwipeDecision) => Promise<"applied">>()
+      .fn<(tmdbId: number, decision: SwipeDecision) => Promise<SwipeOutcome>>()
       .mockImplementationOnce(
         () =>
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error("offline")), 100),
           ),
       )
-      .mockResolvedValue("applied");
+      .mockResolvedValue(APPLIED);
     const user = renderTwoCards(decide);
     const keep = () => screen.getByRole("button", { name: "ON LE VEUT ♥" });
     const deck = () => screen.getByRole("region", { name: "Film à trier" });

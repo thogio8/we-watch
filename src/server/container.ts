@@ -9,6 +9,7 @@ import { createGroupList, type GroupList } from "@/db/group-list";
 import { createGroups, type Groups } from "@/db/groups";
 import { createHousekeeping, type Housekeeping } from "@/db/housekeeping";
 import { createRateLimits, type RateLimits } from "@/db/rate-limit";
+import { createGroupWishes, type GroupWishes } from "@/db/group-wishes";
 import { createSnapshots, type Snapshots } from "@/db/snapshots";
 import { getServerEnv } from "@/env";
 import type { RefreshDeps } from "@/features/refresh/refresh-movies";
@@ -23,6 +24,7 @@ let decisions: Decisions | undefined;
 let favorites: Favorites | undefined;
 let groupList: GroupList | undefined;
 let groups: Groups | undefined;
+let groupWishes: GroupWishes | undefined;
 let housekeeping: Housekeeping | undefined;
 let rateLimits: RateLimits | undefined;
 let snapshots: Snapshots | undefined;
@@ -55,6 +57,11 @@ export function getGroupList(): GroupList {
   return groupList;
 }
 
+export function getGroupWishes(): GroupWishes {
+  groupWishes ??= createGroupWishes(getDatabase());
+  return groupWishes;
+}
+
 export function getGroups(): Groups {
   groups ??= createGroups(getDatabase());
   return groups;
@@ -72,7 +79,7 @@ export function getRateLimits(): RateLimits {
   return rateLimits;
 }
 
-function getSnapshots(): Snapshots {
+export function getSnapshots(): Snapshots {
   snapshots ??= createSnapshots(getDatabase());
   return snapshots;
 }

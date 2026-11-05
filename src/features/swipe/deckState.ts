@@ -1,11 +1,11 @@
 import type { MovieSnapshot } from "@/domain/movie";
 import type { LoadMoreResult, SwipeDecision } from "./actions";
-import type { DeckBatch } from "./deck";
+import type { DeckBatch, DeckCard } from "./deck";
 
 export type Toast = "save_failed" | "undo_failed";
 
 export interface DeckState {
-  queue: MovieSnapshot[];
+  queue: DeckCard[];
   /** Next TMDB page to load; null once the last page has been read. */
   nextPage: number | null;
   /** The last load failed: no automatic retry until « RÉESSAYER ». */

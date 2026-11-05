@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { aSnapshot, PRIME } from "@tests/helpers/movies";
 import { stubMatchMedia } from "@tests/helpers/dom";
-import type { ApplyResult } from "@/domain/transitions";
+import type { ApplyResult, SwipeOutcome } from "@/domain/transitions";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { DeckId } from "@/tmdb/decks";
 import type { LoadMoreResult, SwipeDecision } from "./actions";
@@ -34,20 +34,28 @@ const AMELIE = snapshot(194, "LE FABULEUX DESTIN D'AMÉLIE POULAIN");
 const ok = (cards: MovieSnapshot[], nextPage: number | null) =>
   ({ ok: true, batch: { cards, nextPage } satisfies DeckBatch }) as const;
 
-type Decide = (tmdbId: number, decision: SwipeDecision) => Promise<ApplyResult>;
+type Decide = (
+  tmdbId: number,
+  decision: SwipeDecision,
+) => Promise<SwipeOutcome>;
+type Undo = (tmdbId: number, decision: SwipeDecision) => Promise<ApplyResult>;
+const outcome = (result: ApplyResult): SwipeOutcome => ({
+  result,
+  matched: false,
+});
 type LoadMore = (deck: DeckId, page: number) => Promise<LoadMoreResult>;
 
 function renderDeck(
   initial: LoadMoreResult,
   {
     deck = "top",
-    decide = vi.fn<Decide>(() => Promise.resolve("applied")),
-    undo = vi.fn<Decide>(() => Promise.resolve("applied")),
+    decide = vi.fn<Decide>(() => Promise.resolve(outcome("applied"))),
+    undo = vi.fn<Undo>(() => Promise.resolve("applied")),
     loadMore = vi.fn<LoadMore>(() => Promise.resolve(ok([], null))),
   }: {
     deck?: DeckId;
     decide?: Decide;
-    undo?: Decide;
+    undo?: Undo;
     loadMore?: LoadMore;
   } = {},
 ) {
@@ -87,7 +95,7 @@ describe("SwipeDeck", () => {
         deck="top"
         initial={ok([WHIPLASH], null)}
         decide={vi.fn<Decide>()}
-        undo={vi.fn<Decide>()}
+        undo={vi.fn<Undo>()}
         loadMore={vi.fn<LoadMore>()}
         pill={<button type="button">PASTILLE</button>}
       />,
@@ -213,7 +221,7 @@ describe("SwipeDeck", () => {
     const decide = vi
       .fn<Decide>()
       .mockRejectedValueOnce(new Error("network"))
-      .mockResolvedValue("applied");
+      .mockResolvedValue(outcome("applied"));
     const { user } = renderDeck(ok([WHIPLASH, CHIHIRO, PARASITE], null), {
       decide,
     });
@@ -366,7 +374,7 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
   });
 
   it("attend la fin de l'enregistrement avant d'annuler", async () => {
-    let saved: (result: ApplyResult) => void = () => {};
+    let saved: (result: SwipeOutcome) => void = () => {};
     const decide = vi.fn<Decide>(
       () => new Promise((resolve) => (saved = resolve)),
     );
@@ -378,12 +386,12 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
     await user.click(undoButton());
     expect(undo).not.toHaveBeenCalled();
 
-    saved("applied");
+    saved(outcome("applied"));
     await waitFor(() => expect(undo).toHaveBeenCalledOnce());
   });
 
   it("un swipe déjà décidé ailleurs ne s'efface pas", async () => {
-    const decide = vi.fn<Decide>(() => Promise.resolve("noop"));
+    const decide = vi.fn<Decide>(() => Promise.resolve(outcome("noop")));
     const { user, undo } = renderDeck(ok([WHIPLASH, CHIHIRO], null), {
       decide,
     });
@@ -398,7 +406,7 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
 
   it("une nouvelle décision attend l'annulation", async () => {
     let undone: (result: ApplyResult) => void = () => {};
-    const undo = vi.fn<Decide>(
+    const undo = vi.fn<Undo>(
       () => new Promise((resolve) => (undone = resolve)),
     );
     const { user, decide } = renderDeck(ok([WHIPLASH, CHIHIRO], null), {
@@ -418,7 +426,7 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
   });
 
   it("une annulation en échec le dit et la carte repart", async () => {
-    const undo = vi.fn<Decide>(() => Promise.reject(new Error("offline")));
+    const undo = vi.fn<Undo>(() => Promise.reject(new Error("offline")));
     const { user } = renderDeck(ok([WHIPLASH, CHIHIRO], null), { undo });
 
     await tap(user, "ON LE VEUT ♥");
@@ -440,7 +448,7 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
       .mockImplementationOnce(
         () => new Promise((_, reject) => (failFirst = reject)),
       )
-      .mockResolvedValue("applied");
+      .mockResolvedValue(outcome("applied"));
     const { user } = renderDeck(ok([WHIPLASH, CHIHIRO], null), { decide });
 
     await tap(user, "ON LE VEUT ♥");
