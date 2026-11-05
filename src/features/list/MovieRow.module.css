@@ -66,6 +66,17 @@
   transform: rotate(-8deg);
 }
 
+/* « ♥♥ MATCH » spills over the poster's top-left; the ♥ keeps the bottom-right. */
+.poster .match {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  padding: 0 5px;
+  border: var(--border-thin);
+  box-shadow: var(--shadow-offset-xs);
+  font-size: 10px;
+}
+
 /* w92 posters are 2:3. */
 .thumb {
   flex: none;

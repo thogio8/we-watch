@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { aMovie } from "@tests/helpers/movies";
 import { ListScreen } from "./ListScreen";
@@ -44,5 +45,44 @@ describe("liste : formulation d'un match", () => {
     show({ groupSize: 2, wantedBy: ["Léa"] });
 
     expect(screen.getByText("voulu par Léa")).toBeVisible();
+  });
+});
+
+describe("liste : le tampon MATCH", () => {
+  const stamp = () => screen.queryByText(/MATCH/);
+
+  it("un match « à voir » porte le tampon", () => {
+    show({ groupSize: 2, wantedBy: names(2), matchedAt: MATCHED });
+
+    expect(stamp()).toBeVisible();
+  });
+
+  it("sans match, pas de tampon", () => {
+    show({ groupSize: 2, wantedBy: ["Léa"] });
+
+    expect(stamp()).not.toBeInTheDocument();
+  });
+
+  it("un match vu garde son tampon", async () => {
+    const noop = vi.fn(() => Promise.resolve());
+    render(
+      <ListScreen
+        toWatch={[]}
+        watched={[
+          aMovie(1, {
+            status: "watched",
+            groupSize: 2,
+            wantedBy: names(2),
+            matchedAt: MATCHED,
+          }),
+        ]}
+        onRemove={noop}
+        onUnwatch={noop}
+        onFavorite={noop}
+      />,
+    );
+    await userEvent.click(screen.getByRole("tab", { name: /VUS/ }));
+
+    expect(stamp()).toBeVisible();
   });
 });
