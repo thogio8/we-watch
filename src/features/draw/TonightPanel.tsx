@@ -7,6 +7,7 @@ import {
   MOODS,
   type Platform,
   type TonightFilters,
+  type TonightPool,
 } from "@/domain/tonight";
 import { Chip } from "@/ui/Chip";
 import styles from "./TonightPanel.module.css";
@@ -18,6 +19,8 @@ interface TonightPanelProps {
   platforms: readonly Platform[];
   /** « à voir » favourites: the « ON TIRE PARMI » row only shows past 0. */
   favoriteCount: number;
+  /** « à voir » matches, likewise. */
+  matchCount: number;
   onChange: (filters: TonightFilters) => void;
 }
 
@@ -58,6 +61,7 @@ function TonightChoices({
   filters,
   platforms,
   favoriteCount,
+  matchCount,
   onChange,
 }: TonightPanelProps & { id: string }) {
   const set = (patch: Partial<TonightFilters>) =>
@@ -65,12 +69,13 @@ function TonightChoices({
 
   return (
     <div id={id} className={styles.body}>
-      {favoriteCount > 0 && (
-        <FavoritesChoice
+      {(favoriteCount > 0 || matchCount > 0) && (
+        <PoolChoice
           id={`${id}-among`}
-          favoritesOnly={filters.favoritesOnly}
-          count={favoriteCount}
-          onChange={(favoritesOnly) => set({ favoritesOnly })}
+          pool={filters.pool}
+          favoriteCount={favoriteCount}
+          matchCount={matchCount}
+          onChange={(pool) => set({ pool })}
         />
       )}
 
@@ -127,26 +132,39 @@ function TonightChoices({
   );
 }
 
-/** Variant T2's first row: the whole list, or our favourites only. */
-function FavoritesChoice({
+/** « ON TIRE PARMI »: the whole list, or only what has an object. */
+function PoolChoice({
   id,
-  favoritesOnly,
-  count,
+  pool,
+  favoriteCount,
+  matchCount,
   onChange,
 }: {
   id: string;
-  favoritesOnly: boolean;
-  count: number;
-  onChange: (favoritesOnly: boolean) => void;
+  pool: TonightPool;
+  favoriteCount: number;
+  matchCount: number;
+  onChange: (pool: TonightPool) => void;
 }) {
   return (
     <ChipGroup id={id} label="ON TIRE PARMI">
-      <Chip pressed={!favoritesOnly} onClick={() => onChange(false)}>
+      <Chip pressed={pool === "all"} onClick={() => onChange("all")}>
         TOUTE LA LISTE
       </Chip>
-      <Chip tone="pink" pressed={favoritesOnly} onClick={() => onChange(true)}>
-        {`♥ NOS COUPS DE CŒUR · ${count}`}
-      </Chip>
+      {favoriteCount > 0 && (
+        <Chip
+          tone="pink"
+          pressed={pool === "favorites"}
+          onClick={() => onChange("favorites")}
+        >
+          {`♥ NOS COUPS DE CŒUR · ${favoriteCount}`}
+        </Chip>
+      )}
+      {matchCount > 0 && (
+        <Chip pressed={pool === "matches"} onClick={() => onChange("matches")}>
+          {`♥♥ NOS MATCHS · ${matchCount}`}
+        </Chip>
+      )}
     </ChipGroup>
   );
 }

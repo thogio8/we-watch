@@ -36,11 +36,19 @@ describe("filtersSummary", () => {
   });
 });
 
+describe("filtersSummary matchs", () => {
+  it("MATCHS vient en premier", () => {
+    expect(
+      filtersSummary({ ...NO_FILTERS, pool: "matches", bedtime: 24 * 60 }, []),
+    ).toBe("MATCHS · AVANT MINUIT");
+  });
+});
+
 describe("filtersSummary coups de cœur", () => {
   it("le filtre coups de cœur vient en premier : COUPS DE CŒUR · AVANT MINUIT", () => {
     expect(
       filtersSummary(
-        { ...NO_FILTERS, favoritesOnly: true, bedtime: 24 * 60 },
+        { ...NO_FILTERS, pool: "favorites", bedtime: 24 * 60 },
         [],
       ),
     ).toBe("COUPS DE CŒUR · AVANT MINUIT");

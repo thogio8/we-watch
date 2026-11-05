@@ -107,14 +107,24 @@ describe("drawButton", () => {
       { lines: ["TIRER", "PARMI 2"], tone: "yellow" },
     ],
     [
-      { ...NO_FILTERS, favoritesOnly: true },
+      { ...NO_FILTERS, pool: "favorites" },
       2,
       { lines: ["TIRER", "UN COUP", "DE CŒUR"], tone: "pink" },
     ],
     [
-      { ...NO_FILTERS, favoritesOnly: true, moods: ["laugh"] },
+      { ...NO_FILTERS, pool: "favorites", moods: ["laugh"] },
       1,
       { lines: ["TIRER", "PARMI 1"], tone: "pink" },
+    ],
+    [
+      { ...NO_FILTERS, pool: "matches" },
+      2,
+      { lines: ["TIRER", "UN MATCH"], tone: "yellow" },
+    ],
+    [
+      { ...NO_FILTERS, pool: "matches", moods: ["laugh"] },
+      1,
+      { lines: ["TIRER", "PARMI 1"], tone: "yellow" },
     ],
   ])("drawButton(%o, %i)", (filters, count, expected) => {
     expect(drawButton(filters, count)).toEqual(expected);
@@ -129,6 +139,15 @@ describe("homeCounts", () => {
     expect(
       homeCounts({ toWatch: 5, watched: 1, favorites: 2, matches: 0 }),
     ).toBe("5 films à regarder · dont 2 ♥ · 1 vu");
+  });
+
+  it("« dont k match(s) » après les ♥, seulement s’il y en a", () => {
+    expect(
+      homeCounts({ toWatch: 5, watched: 1, favorites: 0, matches: 1 }),
+    ).toBe("5 films à regarder · dont 1 match · 1 vu");
+    expect(
+      homeCounts({ toWatch: 5, watched: 1, favorites: 2, matches: 2 }),
+    ).toBe("5 films à regarder · dont 2 ♥ · dont 2 matchs · 1 vu");
   });
 
   it("met « vus » au pluriel dès deux films vus", () => {

@@ -79,6 +79,7 @@ export function DrawScreen({
           filters={draw.filters}
           platforms={draw.platforms}
           favoriteCount={draw.favoriteCount}
+          matchCount={draw.matchCount}
           onFiltersChange={draw.setFilters}
           filtering={draw.filtering}
           eligibleCount={draw.eligibleCount}

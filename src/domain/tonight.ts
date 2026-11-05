@@ -1,5 +1,6 @@
 import {
   isFavorite,
+  isMatch,
   type Movie,
   type MovieSnapshot,
   type StreamingProvider,
@@ -31,23 +32,27 @@ export const MOODS = [
 
 export type MoodId = (typeof MOODS)[number]["id"];
 
+/** Which part of the list the draw picks from; never stored. */
+export type TonightPool = "all" | "favorites" | "matches";
+
 export interface TonightFilters {
   bedtime: Bedtime | null;
   moods: readonly MoodId[];
   /** Platform keys (see platformKey); empty means every platform. */
   platforms: readonly string[];
-  /** « ♥ NOS COUPS DE CŒUR »: per evening, never stored on the device. */
-  favoritesOnly: boolean;
+  /** « ON TIRE PARMI »: per evening, never stored on the device. */
+  pool: TonightPool;
 }
 
-/** A list movie as the draw sees it: its snapshot and its favourite mark. */
-export type TonightMovie = MovieSnapshot & Pick<Movie, "favoriteAt">;
+/** A list movie as the draw sees it: its snapshot and its marks. */
+export type TonightMovie = MovieSnapshot &
+  Pick<Movie, "favoriteAt" | "matchedAt">;
 
 export const NO_FILTERS: TonightFilters = {
   bedtime: null,
   moods: [],
   platforms: [],
-  favoritesOnly: false,
+  pool: "all",
 };
 
 const HOUR_MS = 3_600_000;
@@ -134,10 +139,17 @@ export function distinctPlatforms(
   });
 }
 
+/** Whether a movie belongs to each pool of « ON TIRE PARMI ». */
+const IN_POOL: Record<TonightPool, (movie: TonightMovie) => boolean> = {
+  all: () => true,
+  favorites: isFavorite,
+  matches: isMatch,
+};
+
 /**
  * Drops remembered platforms that no movie of the list has any more (their
- * chip is gone, so they could not be unselected) and the favourites filter
- * once the list holds no favourite.
+ * chip is gone, so they could not be unselected) and the pool once the list
+ * holds nothing of it (no favourite, no match): back to the whole list.
  */
 export function sanitizeFilters(
   filters: TonightFilters,
@@ -147,7 +159,7 @@ export function sanitizeFilters(
   return {
     ...filters,
     platforms: filters.platforms.filter((key) => known.has(key)),
-    favoritesOnly: filters.favoritesOnly && movies.some(isFavorite),
+    pool: movies.some(IN_POOL[filters.pool]) ? filters.pool : "all",
   };
 }
 
@@ -156,7 +168,7 @@ export function isFiltering(filters: TonightFilters): boolean {
     filters.bedtime !== null ||
     filters.moods.length > 0 ||
     filters.platforms.length > 0 ||
-    filters.favoritesOnly
+    filters.pool !== "all"
   );
 }
 
@@ -175,7 +187,7 @@ export function filterTonight<M extends TonightMovie>(
   const { bedtime } = filters;
   return movies.filter(
     (movie) =>
-      (!filters.favoritesOnly || isFavorite(movie)) &&
+      IN_POOL[filters.pool](movie) &&
       (bedtime === null || fitsBefore(movie.runtimeMinutes, now, bedtime)) &&
       (genres.size === 0 || movie.genreIds.some((id) => genres.has(id))) &&
       (platforms.size === 0 ||

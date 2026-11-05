@@ -62,17 +62,20 @@ export interface DrawButton {
 }
 
 /**
- * The big button: pink once the favourites filter is on, « PARMI n » as soon
- * as anything else narrows the list.
+ * The big button: pink for the favourites pool, yellow for the matches pool,
+ * « PARMI n » as soon as anything else narrows the list.
  */
 export function drawButton(
   filters: TonightFilters,
   eligibleCount: number,
 ): DrawButton {
-  const tone = filters.favoritesOnly ? "pink" : "yellow";
-  const others = isFiltering({ ...filters, favoritesOnly: false });
-  if (filters.favoritesOnly && !others) {
+  const tone = filters.pool === "favorites" ? "pink" : "yellow";
+  const others = isFiltering({ ...filters, pool: "all" });
+  if (filters.pool === "favorites" && !others) {
     return { lines: ["TIRER", "UN COUP", "DE CŒUR"], tone };
+  }
+  if (filters.pool === "matches" && !others) {
+    return { lines: ["TIRER", "UN MATCH"], tone };
   }
   if (isFiltering(filters)) {
     return { lines: ["TIRER", `PARMI ${eligibleCount}`], tone };
@@ -80,15 +83,20 @@ export function drawButton(
   return { lines: ["TIRER", "UN", "FILM"], tone };
 }
 
-/** « 5 films à regarder · dont 2 ♥ · 1 vu »: the favourites only if any. */
+/**
+ * « 5 films à regarder · dont 2 ♥ · dont 1 match · 1 vu »: the favourites and
+ * the matches only if any.
+ */
 export function homeCounts({
   toWatch,
   watched,
   favorites,
+  matches,
 }: ListCounts): string {
   const parts = [
     `${plural(toWatch, "film", "films")} à regarder`,
     ...(favorites > 0 ? [`dont ${favorites} ♥`] : []),
+    ...(matches > 0 ? [`dont ${plural(matches, "match", "matchs")}`] : []),
     plural(watched, "vu", "vus"),
   ];
   return parts.join(" · ");

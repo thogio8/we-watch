@@ -208,7 +208,7 @@ describe("filtre coups de cœur", () => {
     const fav = aMovie(1, { favoriteAt: NOV_4, genreIds: [35] });
     const favDrama = aMovie(2, { favoriteAt: NOV_4, genreIds: [18] });
     const other = aMovie(3, { genreIds: [35] });
-    const only = { ...NO_FILTERS, favoritesOnly: true };
+    const only = { ...NO_FILTERS, pool: "favorites" as const };
     expect(filterTonight([fav, favDrama, other], only, at(21))).toEqual([
       fav,
       favDrama,
@@ -223,19 +223,21 @@ describe("filtre coups de cœur", () => {
   });
 
   it("isFiltering compte le filtre coups de cœur", () => {
-    expect(isFiltering({ ...NO_FILTERS, favoritesOnly: true })).toBe(true);
+    expect(isFiltering({ ...NO_FILTERS, pool: "favorites" as const })).toBe(
+      true,
+    );
   });
 
   it("plus aucun coup de cœur : le filtre retombe à toute la liste", () => {
-    const on = { ...NO_FILTERS, favoritesOnly: true };
-    expect(sanitizeFilters(on, [aMovie(1)]).favoritesOnly).toBe(false);
-    expect(
-      sanitizeFilters(on, [aMovie(1, { favoriteAt: NOV_4 })]).favoritesOnly,
-    ).toBe(true);
+    const on = { ...NO_FILTERS, pool: "favorites" as const };
+    expect(sanitizeFilters(on, [aMovie(1)]).pool).toBe("all");
+    expect(sanitizeFilters(on, [aMovie(1, { favoriteAt: NOV_4 })]).pool).toBe(
+      "favorites",
+    );
   });
 
   it("le dernier coup de cœur démarqué pendant le filtre : toute la liste revient", () => {
-    const on = { ...NO_FILTERS, favoritesOnly: true };
+    const on = { ...NO_FILTERS, pool: "favorites" as const };
     const list = [aMovie(1, { favoriteAt: NOV_4 }), aMovie(2)];
     expect(filterTonight(list, sanitizeFilters(on, list), at(21))).toEqual([
       list[0],
@@ -250,12 +252,48 @@ describe("filtre coups de cœur", () => {
     const list = [aMovie(1, { favoriteAt: NOV_4, genreIds: [18] }), aMovie(2)];
     const combined = {
       ...NO_FILTERS,
-      favoritesOnly: true,
+      pool: "favorites" as const,
       moods: ["laugh" as const],
     };
     expect(filterTonight(list, combined, at(21))).toEqual([]);
-    expect(NO_FILTERS.favoritesOnly).toBe(false);
+    expect(NO_FILTERS.pool).toBe("all");
     expect(filterTonight(list, NO_FILTERS, at(21))).toEqual(list);
+  });
+});
+
+describe("filtre matchs", () => {
+  const match = aMovie(1, { matchedAt: NOV_4, genreIds: [35] });
+  const matchDrama = aMovie(2, { matchedAt: NOV_4, genreIds: [18] });
+  const lovedOnly = aMovie(3, { favoriteAt: NOV_4, genreIds: [35] });
+  const other = aMovie(4, { genreIds: [35] });
+  const list = [match, matchDrama, lovedOnly, other];
+  const matches = { ...NO_FILTERS, pool: "matches" as const };
+
+  it("seulement les matchs, cumulé avec les autres filtres", () => {
+    expect(filterTonight(list, matches, at(21))).toEqual([match, matchDrama]);
+    expect(
+      filterTonight(list, { ...matches, moods: ["laugh"] }, at(21)),
+    ).toEqual([match]);
+  });
+
+  it("les coups de cœur ne sont pas les matchs, et inversement", () => {
+    const loved = { ...NO_FILTERS, pool: "favorites" as const };
+    expect(filterTonight(list, loved, at(21))).toEqual([lovedOnly]);
+  });
+
+  it("isFiltering compte le filtre matchs", () => {
+    expect(isFiltering(matches)).toBe(true);
+  });
+
+  it("plus aucun match : le filtre retombe à toute la liste", () => {
+    expect(sanitizeFilters(matches, [lovedOnly, other]).pool).toBe("all");
+    expect(sanitizeFilters(matches, list).pool).toBe("matches");
+  });
+
+  it("un choix qui garde son objet n’en change pas un autre", () => {
+    const loved = { ...NO_FILTERS, pool: "favorites" as const };
+    expect(sanitizeFilters(loved, [match, other]).pool).toBe("all");
+    expect(sanitizeFilters(NO_FILTERS, []).pool).toBe("all");
   });
 });
 

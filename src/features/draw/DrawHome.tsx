@@ -18,6 +18,7 @@ interface DrawHomeProps {
   filters: TonightFilters;
   platforms: readonly Platform[];
   favoriteCount: number;
+  matchCount: number;
   onFiltersChange: (filters: TonightFilters) => void;
   filtering: boolean;
   eligibleCount: number;
@@ -42,6 +43,7 @@ export function DrawHome(props: DrawHomeProps) {
             filters={filters}
             platforms={platforms}
             favoriteCount={props.favoriteCount}
+            matchCount={props.matchCount}
             onChange={onFiltersChange}
           />
         </div>

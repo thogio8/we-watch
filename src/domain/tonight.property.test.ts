@@ -28,10 +28,12 @@ const movie = fc
     }),
     names: fc.uniqueArray(fc.constantFrom(...PROVIDER_NAMES), { maxLength: 3 }),
     favoriteAt: fc.option(fc.date({ noInvalidDate: true }), { nil: null }),
+    matchedAt: fc.option(fc.date({ noInvalidDate: true }), { nil: null }),
   })
-  .map(({ runtime, genreIds, names, favoriteAt }) =>
+  .map(({ runtime, genreIds, names, favoriteAt, matchedAt }) =>
     aMovie(0, {
       favoriteAt,
+      matchedAt,
       runtimeMinutes: runtime,
       genreIds,
       providers: names.map((name, id) => ({ id, name, logoPath: null })),
@@ -48,7 +50,7 @@ const filters: fc.Arbitrary<TonightFilters> = fc.record({
   platforms: fc.uniqueArray(
     fc.constantFrom(...PROVIDER_NAMES.map(platformKey)),
   ),
-  favoritesOnly: fc.boolean(),
+  pool: fc.constantFrom("all", "favorites", "matches"),
 });
 
 const now = fc.date({
@@ -64,6 +66,14 @@ describe("filterTonight (propriétés)", () => {
         const kept = filterTonight(list, f, d);
         expect(kept.length).toBeLessThanOrEqual(list.length);
         for (const m of kept) expect(list).toContain(m);
+      }),
+    ));
+
+  it("avec pool=matches, chaque film gardé est un match", () =>
+    fc.assert(
+      fc.property(movies, filters, now, (list, f, d) => {
+        const kept = filterTonight(list, { ...f, pool: "matches" }, d);
+        for (const m of kept) expect(m.matchedAt).not.toBeNull();
       }),
     ));
 
@@ -84,7 +94,8 @@ describe("filterTonight (propriétés)", () => {
           if (f.bedtime !== null) {
             expect(fitsBefore(m.runtimeMinutes, d, f.bedtime)).toBe(true);
           }
-          if (f.favoritesOnly) expect(m.favoriteAt).not.toBeNull();
+          if (f.pool === "favorites") expect(m.favoriteAt).not.toBeNull();
+          if (f.pool === "matches") expect(m.matchedAt).not.toBeNull();
           if (f.moods.length > 0) {
             expect(m.genreIds.some((g) => genres.includes(g))).toBe(true);
           }
