@@ -10,6 +10,7 @@ import { movieSnapshot } from "./group-schema";
 
 const T0 = new Date(2026, 9, 1);
 const T1 = new Date(2026, 9, 2);
+const NOTHING_MATCHED = { result: "applied", matched: false };
 
 let db: Database;
 let decisions: Decisions;
@@ -61,7 +62,9 @@ const wantedBy = async (tmdbId = 1) =>
 
 describe("décisions de swipe", () => {
   it("« ON LE VEUT » ajoute le film à la liste et le « voulu », une seule fois", async () => {
-    expect(await swipe({ userId: lea, title: "Whiplash" })).toBe("applied");
+    expect(await swipe({ userId: lea, title: "Whiplash" })).toEqual(
+      NOTHING_MATCHED,
+    );
 
     expect(await list.findInList(groupe, 1)).toMatchObject({
       title: "Whiplash",
@@ -70,14 +73,18 @@ describe("décisions de swipe", () => {
       addedBy: "Léa",
       wantedBy: ["Léa"],
     });
-    expect(await swipe({ userId: lea })).toBe("noop");
+    expect(await swipe({ userId: lea })).toEqual({
+      result: "noop",
+      matched: false,
+    });
   });
 
   it("deux « ON LE VEUT » de Léa puis Hugo : une ligne, voulue par les deux", async () => {
     await swipe({ userId: lea, now: T0 });
-    expect(await swipe({ userId: hugo, title: "Nouveau", now: T1 })).toBe(
-      "applied",
-    );
+    expect(await swipe({ userId: hugo, title: "Nouveau", now: T1 })).toEqual({
+      result: "applied",
+      matched: true,
+    });
 
     const listed = await list.listByStatus(groupe, "to_watch");
     expect(listed).toHaveLength(1);
@@ -112,7 +119,7 @@ describe("décisions de swipe", () => {
       tmdbId: 1,
     });
 
-    expect(await swipe({ userId: hugo })).toBe("applied");
+    expect(await swipe({ userId: hugo })).toEqual(NOTHING_MATCHED);
     expect(await list.findInList(groupe, 1)).toMatchObject({
       status: "watched",
       wantedBy: ["Léa", "Hugo"],
@@ -121,8 +128,13 @@ describe("décisions de swipe", () => {
 
   it("« ON LE VEUT » de Léa puis « BOF » de Hugo : le BOF ne cache le film qu’à Hugo", async () => {
     await swipe({ userId: lea });
-    expect(await swipe({ userId: hugo, decision: "reject" })).toBe("applied");
-    expect(await swipe({ userId: hugo, decision: "reject" })).toBe("noop");
+    expect(await swipe({ userId: hugo, decision: "reject" })).toEqual(
+      NOTHING_MATCHED,
+    );
+    expect(await swipe({ userId: hugo, decision: "reject" })).toEqual({
+      result: "noop",
+      matched: false,
+    });
 
     expect(await list.findInList(groupe, 1)).toMatchObject({
       wantedBy: ["Léa"],

@@ -42,7 +42,7 @@ export async function decideSwipe(
   assertTmdbId("decideSwipe", tmdbId);
   assertSwipeDecision("decideSwipe", decision);
   const who = { groupId, userId: user.userId, tmdbId };
-  const result = await getDecisions().swipe(
+  const { result } = await getDecisions().swipe(
     decision === "keep"
       ? {
           ...who,

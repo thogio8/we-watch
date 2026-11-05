@@ -3,6 +3,12 @@ import type { MovieStatus } from "./movie";
 /** Did a change reach the database, or was it a no-op (see nextStatus)? */
 export type ApplyResult = "applied" | "noop";
 
+/** A swipe's result, and whether this very swipe made the match. */
+export interface SwipeOutcome {
+  result: ApplyResult;
+  matched: boolean;
+}
+
 /** « ON LE VEUT » / « BOF ». */
 export type SwipeDecision = "keep" | "reject";
 
