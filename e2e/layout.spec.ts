@@ -6,11 +6,14 @@ import {
   expect,
   leasInvitation,
   markFromList,
+  settled,
   swipe,
   test,
   topCard,
 } from "./fixtures";
 import { COPY_LINK, pill } from "./groups";
+import { CONTINUE, MATCH_HINT, SEE_LIST } from "../src/features/swipe/messages";
+import { closeMatch, keepToMatch, matchMoment } from "./match";
 
 /** Formats from spec §12: small and large phones, sideways, tablet, desktop. */
 const VIEWPORTS = [
@@ -303,6 +306,76 @@ test.describe("mise en page et accessibilité, coups de cœur", () => {
   }
 });
 
+/** A member of Léa's group on a second device, in `viewport`. */
+async function memberIn(
+  viewport: Viewport,
+  member: Devices["member"],
+  name: string,
+) {
+  const page = await member(name);
+  await page.setViewportSize(viewport);
+  return page;
+}
+
+/**
+ * Hugo's deck topped by Léa's latest film and its banner, the match moment
+ * once he keeps it; Léa's list, the draw among three pools with the matches
+ * chosen, the match drawn; Sam's deck, the match made before he came.
+ */
+async function* matchScreens(
+  viewport: Viewport,
+  { app, member }: Omit<Devices, "outsider">,
+): AsyncGenerator<{ page: Page; path: string }> {
+  const hugo = await memberIn(viewport, member, "Hugo");
+  await hugo.goto("/swipe");
+  await expect(topCard(hugo)).toHaveText("Le Voyage de Chihiro");
+  yield { page: hugo, path: "/swipe (bandeau)" };
+  await keepToMatch(hugo);
+  yield { page: hugo, path: "/swipe (moment du match)" };
+  await closeMatch(hugo);
+  await settled(hugo);
+
+  await app.setViewportSize(viewport);
+  await markFromList(app, "Whiplash");
+  yield { page: app, path: "/list (match et coup de cœur)" };
+  await app.goto("/");
+  await app.getByRole("button", { name: /^LA SOIRÉE/ }).click();
+  await app.getByRole("button", { name: "♥♥ NOS MATCHS · 1" }).click();
+  await expect(
+    app.getByRole("button", { name: "♥ NOS COUPS DE CŒUR · 1" }),
+  ).toBeVisible();
+  yield { page: app, path: "/ (trois puces, les matchs choisis)" };
+  await app.getByRole("button", { name: "TIRER UN MATCH" }).click();
+  await expect(app.getByRole("heading", { level: 2 })).toHaveText(
+    "Le Voyage de Chihiro",
+  );
+  yield { page: app, path: "/ (match tiré)" };
+
+  const sam = await memberIn(viewport, member, "Sam");
+  await sam.goto("/swipe");
+  await expect(topCard(sam)).toHaveText("Le Voyage de Chihiro");
+  yield { page: sam, path: "/swipe (match d’avant mon arrivée)" };
+}
+
+test.describe("mise en page et accessibilité, matchs", () => {
+  test.beforeEach(async ({ app }) => {
+    test.skip(test.info().project.name !== "desktop");
+    await swipe(app, ["keep", "keep"]);
+  });
+
+  for (const viewport of VIEWPORTS) {
+    test(`matchs : ${viewport.name}`, async ({ app, member }) => {
+      for await (const { page, path } of matchScreens(viewport, {
+        app,
+        member,
+      })) {
+        await expectNoOverflow(page, path);
+        expect(await seriousViolations(page, path)).toEqual([]);
+      }
+    });
+  }
+});
+
 /** Each element whole between the nav and the screen's other edge, unscrolled. */
 async function expectOnScreen(
   page: Page,
@@ -364,6 +437,29 @@ test.describe("un écran sans défiler", () => {
         ],
         ["l’heure", clock],
       ]);
+    });
+
+    test(`SWIPER, un film que le groupe veut : la phrase et les deux boutons, puis le moment du match : ${viewport.name}`, async ({
+      member,
+    }) => {
+      const hugo = await memberIn(viewport, member, "Hugo");
+      await hugo.goto("/swipe");
+      await expect(topCard(hugo)).toHaveText("Le Voyage de Chihiro");
+      await expectOnScreen(hugo, viewport, [
+        ["la phrase", hugo.getByText(MATCH_HINT)],
+        ["✕ BOF", hugo.getByRole("button", { name: "✕ BOF" })],
+        ["ON LE VEUT ♥", hugo.getByRole("button", { name: "ON LE VEUT ♥" })],
+      ]);
+      await keepToMatch(hugo);
+      // The moment's layer covers the nav: its buttons need only the screen.
+      for (const button of [
+        matchMoment(hugo).getByRole("link", { name: SEE_LIST }),
+        matchMoment(hugo).getByRole("button", { name: CONTINUE }),
+      ]) {
+        const { y, height } = await box(button);
+        expect(y).toBeGreaterThanOrEqual(0);
+        expect(y + height).toBeLessThanOrEqual(viewport.height);
+      }
     });
 
     test(`SWIPER : la carte et ses deux boutons, ni sous la nav ni à défiler : ${viewport.name}`, async ({
