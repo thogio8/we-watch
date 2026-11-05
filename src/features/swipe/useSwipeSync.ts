@@ -1,15 +1,16 @@
 import { leaveIfRefused } from "@/access/refusals";
 import { type Dispatch, useRef } from "react";
 import type { ApplyResult } from "@/domain/transitions";
-import type { MovieSnapshot } from "@/domain/movie";
 import type { SendDecision, SendUndo, SwipeDecision } from "./actions";
+import type { DeckCard } from "./deck";
 import type { DeckAction, DeckState } from "./deckState";
 
 /**
  * Sends swipes and undos to the server, optimistically. The last save or
  * undo of each movie is kept, so they reach the server in the order they
  * were made: an undo waits for its save (and only undoes a swipe that
- * applied), a new decision waits for the undo.
+ * applied), a new decision waits for the undo. Only the server says a swipe
+ * made a match, and only the card's latest operation may open its moment.
  */
 export function useSwipeSync(
   undoable: DeckState["undoable"],
@@ -30,19 +31,25 @@ export function useSwipeSync(
     return op;
   };
 
-  const decideCard = (card: MovieSnapshot, decision: SwipeDecision) => {
+  const decideCard = (card: DeckCard, decision: SwipeDecision) => {
     dispatch({ type: "decided", card, decision });
     // Optimistic: the card is gone already; it comes back if the save fails.
-    const op = chain(
-      card.tmdbId,
-      async () => (await decide(card.tmdbId, decision)).result,
-    );
-    op.catch(() => {
-      // An undo or a new decision came after: this card's fate is theirs.
-      if (ops.current.get(card.tmdbId) === op) {
-        dispatch({ type: "decide_failed", card });
-      }
+    let matched = false;
+    const op = chain(card.tmdbId, async () => {
+      const outcome = await decide(card.tmdbId, decision);
+      matched = outcome.matched;
+      return outcome.result;
     });
+    // An undo or a new decision came after: this card's fate is theirs.
+    const latest = () => ops.current.get(card.tmdbId) === op;
+    op.then(
+      () => {
+        if (matched && latest()) dispatch({ type: "matched", card });
+      },
+      () => {
+        if (latest()) dispatch({ type: "decide_failed", card });
+      },
+    );
   };
 
   const undoLast = () => {

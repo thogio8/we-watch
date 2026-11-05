@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Own file: motion reads `prefers-reduced-motion` once per module, and these
 // tests need the real fly-out (SwipeDeck.test.tsx runs reduced motion).
+import { readFileSync } from "node:fs";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -24,18 +25,20 @@ beforeEach(() => {
 
 function renderTwoCards(
   decide: (tmdbId: number, decision: SwipeDecision) => Promise<SwipeOutcome>,
+  first: MovieSnapshot = WHIPLASH,
 ) {
   const user = userEvent.setup();
   render(
     <SwipeDeck
       initial={{
         ok: true,
-        batch: { cards: [WHIPLASH, CHIHIRO], nextPage: null },
+        batch: { cards: [first, CHIHIRO], nextPage: null },
       }}
       deck="top"
       decide={decide}
       undo={() => Promise.resolve("applied")}
       loadMore={() => Promise.resolve({ ok: false })}
+      groupSize={2}
     />,
   );
   return user;
@@ -82,5 +85,37 @@ describe("SwipeDeck (animations actives)", () => {
 
     expect(decide).toHaveBeenCalledTimes(2);
     expect(decide).toHaveBeenLastCalledWith(244786, "keep");
+  });
+});
+
+describe("SwipeDeck : le moment du match en mouvement", () => {
+  it("s'ouvre pendant l'envol de la carte, CONTINUER au focus", async () => {
+    const wanted = { ...WHIPLASH, wish: { others: ["Becca"], matched: false } };
+    const user = renderTwoCards(
+      () => Promise.resolve({ result: "applied", matched: true }),
+      wanted,
+    );
+
+    await user.click(screen.getByRole("button", { name: "ON LE VEUT ♥" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "C’EST UN MATCH",
+    });
+    expect(screen.getByRole("button", { name: "CONTINUER ▸" })).toHaveFocus();
+    expect(dialog).toBeVisible();
+  });
+
+  it("mouvement réduit : le tampon s'imprime sans rebond", () => {
+    // jsdom applies no stylesheet: the rule itself is the contract.
+    const css = readFileSync(
+      "src/features/swipe/MatchMoment.module.css",
+      "utf8",
+    );
+    const reduced = css.slice(
+      css.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+
+    expect(css).toMatch(/\.stamp \{[^}]*animation: thump /);
+    expect(reduced).toMatch(/^@media[^{]*\{\s*\.stamp \{\s*animation: none;/);
   });
 });

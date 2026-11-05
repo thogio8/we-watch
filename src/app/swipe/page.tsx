@@ -31,6 +31,7 @@ async function SwipeData({ deck }: { deck: DeckId }) {
       decide={decideSwipe.bind(null, groupId)}
       undo={undoSwipe.bind(null, groupId)}
       loadMore={loadMoreCards.bind(null, groupId)}
+      groupSize={active.group.memberCount}
       pill={
         <GroupPill
           active={active.group}

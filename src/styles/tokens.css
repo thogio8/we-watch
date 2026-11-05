@@ -46,6 +46,8 @@
   --text-2xl: 29px;
   --text-3xl: 34px;
   --text-4xl: 39px;
+  /* « MATCH » on the match moment's stamp (spec 2.2 §4). */
+  --text-5xl: 56px;
 
   /* Minimum touch target height (buttons, nav tabs) */
   --touch-min: 44px;

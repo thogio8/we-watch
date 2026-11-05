@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useReducer } from "react";
+import { type ReactNode, useCallback, useReducer, useRef } from "react";
 import { type DeckId, deckLabel } from "@/tmdb/decks";
 import type {
   LoadCards,
@@ -13,9 +13,11 @@ import { DeckChips } from "./DeckChips";
 import { DeckNotice } from "./DeckNotice";
 import { deckReducer, deckView, initDeck } from "./deckState";
 import { DeckEnd, DeckError, LoadingTicket } from "./DeckStatus";
+import { MatchMoment } from "./MatchMoment";
 import styles from "./SwipeDeck.module.css";
 import { useDeckLoader } from "./useDeckLoader";
 import { useDismissAfter } from "./useDismissAfter";
+import { useFocusOnClose } from "./useFocusOnClose";
 import { useSwipeSync } from "./useSwipeSync";
 
 interface SwipeDeckProps {
@@ -24,6 +26,8 @@ interface SwipeDeckProps {
   decide: SendDecision;
   undo: SendUndo;
   loadMore: LoadCards;
+  /** Members of the group, me included. */
+  groupSize: number;
   /** The group pill, first in the landmark. */
   pill?: ReactNode;
 }
@@ -38,13 +42,19 @@ export function SwipeDeck({
   decide,
   undo,
   loadMore,
+  groupSize,
   pill,
 }: SwipeDeckProps) {
   const [state, dispatch] = useReducer(deckReducer, initial, initDeck);
-  const { queue, toast, undoable } = state;
+  const { queue, toast, undoable, match } = state;
+  const screenRef = useRef<HTMLElement>(null);
+  const deckRef = useRef<HTMLElement>(null);
   useDeckLoader(deck, state, dispatch, loadMore);
   useDismissAfter(toast, TOAST_MS, dispatch, "dismiss_toast");
-  useDismissAfter(undoable, UNDO_MS, dispatch, "dismiss_undo");
+  // « ↺ ANNULER » waits while the match moment is open: it undoes the match.
+  useDismissAfter(match ? null : undoable, UNDO_MS, dispatch, "dismiss_undo");
+  useFocusOnClose(match !== null, [deckRef, screenRef]);
+  const closeMatch = useCallback(() => dispatch({ type: "match_closed" }), []);
   const { decideCard, undoLast } = useSwipeSync(
     undoable,
     dispatch,
@@ -55,7 +65,7 @@ export function SwipeDeck({
   const view = deckView(state);
 
   return (
-    <main className={styles.screen}>
+    <main ref={screenRef} tabIndex={-1} className={styles.screen}>
       {pill}
       <h1 className={styles.kicker}>{deckLabel(deck)}</h1>
       <DeckChips deck={deck} />
@@ -64,7 +74,9 @@ export function SwipeDeck({
         <CardStack
           queue={queue}
           lastDecision={state.lastDecision}
+          groupSize={groupSize}
           onDecide={decideCard}
+          deckRef={deckRef}
         />
       )}
       {view === "loading" && <LoadingTicket />}
@@ -73,6 +85,7 @@ export function SwipeDeck({
         <DeckError onRetry={() => dispatch({ type: "retry" })} />
       )}
 
+      {match && <MatchMoment onClose={closeMatch} />}
       <DeckNotice toast={toast} undoable={undoable} onUndo={undoLast} />
     </main>
   );

@@ -27,6 +27,7 @@ describe("initDeck", () => {
     expect(state.undoable).toBeNull();
     expect(state.toast).toBeNull();
     expect(state.lastDecision).toBe("keep");
+    expect(state.match).toBeNull();
   });
 
   it("note l'échec quand le premier lot n'a pas pu être chargé", () => {
@@ -171,6 +172,53 @@ describe("deckReducer", () => {
     };
     expect(deckReducer(state, { type: "dismiss_undo" }).undoable).toBeNull();
     expect(deckReducer(state, { type: "dismiss_toast" }).toast).toBeNull();
+  });
+});
+
+describe("deckReducer : le moment du match", () => {
+  it("s'ouvre sur la carte que le serveur dit matchée, et se ferme", () => {
+    const one = aSnapshot(1);
+    const state = deckReducer(decide(deckOf([1, 2]), one), {
+      type: "matched",
+      card: one,
+    });
+    expect(state.match).toBe(one);
+    expect(deckReducer(state, { type: "match_closed" }).match).toBeNull();
+  });
+
+  it("ANNULER le swipe du match ferme le moment", () => {
+    const one = aSnapshot(1);
+    const matched = deckReducer(decide(deckOf([1, 2]), one), {
+      type: "matched",
+      card: one,
+    });
+    const state = deckReducer(matched, { type: "undone" });
+    expect(state.match).toBeNull();
+    expect(ids(state)).toEqual([1, 2]);
+  });
+
+  it("ANNULER un autre swipe laisse le moment ouvert", () => {
+    const one = aSnapshot(1);
+    const two = aSnapshot(2);
+    const matched = deckReducer(decide(deckOf([1, 2, 3]), one), {
+      type: "matched",
+      card: one,
+    });
+    const state = deckReducer(decide(matched, two), { type: "undone" });
+    expect(state.match).toBe(one);
+  });
+
+  it("une carte remise en tête garde son envie", () => {
+    const wanted = {
+      ...aSnapshot(1),
+      wish: { others: ["Becca"], matched: false },
+    };
+    const state = initDeck({
+      ok: true,
+      batch: { cards: [wanted], nextPage: null },
+    });
+    const back = deckReducer(decide(state, wanted), { type: "undone" });
+    expect(back.queue[0]).toBe(wanted);
   });
 });
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { aSnapshot, PRIME } from "@tests/helpers/movies";
@@ -52,11 +52,13 @@ function renderDeck(
     decide = vi.fn<Decide>(() => Promise.resolve(outcome("applied"))),
     undo = vi.fn<Undo>(() => Promise.resolve("applied")),
     loadMore = vi.fn<LoadMore>(() => Promise.resolve(ok([], null))),
+    groupSize = 2,
   }: {
     deck?: DeckId;
     decide?: Decide;
     undo?: Undo;
     loadMore?: LoadMore;
+    groupSize?: number;
   } = {},
 ) {
   const user = userEvent.setup();
@@ -67,6 +69,7 @@ function renderDeck(
       decide={decide}
       undo={undo}
       loadMore={loadMore}
+      groupSize={groupSize}
     />,
   );
   return { user, decide, undo, loadMore };
@@ -97,6 +100,7 @@ describe("SwipeDeck", () => {
         decide={vi.fn<Decide>()}
         undo={vi.fn<Undo>()}
         loadMore={vi.fn<LoadMore>()}
+        groupSize={2}
         pill={<button type="button">PASTILLE</button>}
       />,
     );
@@ -475,5 +479,201 @@ describe("SwipeDeck : annuler le dernier swipe", () => {
     expect(
       screen.queryByRole("button", { name: "↺ ANNULER" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+/** The line under the card, exactly: getByText would fold no-break spaces. */
+const line = () =>
+  screen.queryByText(/(C’EST UN MATCH|IL LE RESTE)\.$/)?.textContent ?? null;
+
+describe("SwipeDeck : un film que le groupe veut", () => {
+  const wanted = (others: string[], matched = false) => ({
+    ...AMELIE,
+    wish: { others, matched },
+  });
+  const ticket = () => within(screen.getByRole("article"));
+  /** Exact text: getByText would fold no-break spaces. */
+  const banner = () =>
+    ticket().queryByText(/LE VEU(T|LENT)$/)?.textContent ?? null;
+  const HINT = "TU LE VEUX AUSSI\u00A0? C’EST UN MATCH.";
+  const KEPT =
+    "LE GROUPE EN AVAIT FAIT UN MATCH AVANT TON ARRIVÉE\u00A0: IL LE RESTE.";
+
+  it("porte le bandeau de Becca et la ligne du match quand seule mon envie manque", () => {
+    renderDeck(ok([wanted(["Becca"]), WHIPLASH], null), { groupSize: 2 });
+
+    expect(banner()).toBe("♥ BECCA LE VEUT");
+    expect(line()).toBe(HINT);
+    expect(ticket().queryByText(/MATCH/)).not.toBeInTheDocument();
+  });
+
+  it("à trois, voulu par un seul autre membre : le bandeau, sans la ligne", () => {
+    renderDeck(ok([wanted(["Léa"])], null), { groupSize: 3 });
+
+    expect(banner()).toBe("♥ LÉA LE VEUT");
+    expect(line()).toBeNull();
+  });
+
+  it("au-delà de trois prénoms, le bandeau compte les membres", () => {
+    const others = ["Léa", "Hugo", "Sam", "Becca"];
+    renderDeck(ok([wanted(others)], null), { groupSize: 5 });
+
+    expect(banner()).toBe("♥ 4 MEMBRES LE VEULENT");
+    expect(line()).toBe(HINT);
+  });
+
+  it("un match d'avant mon arrivée : le petit tampon et sa ligne", () => {
+    renderDeck(ok([wanted(["Léa", "Hugo"], true)], null), { groupSize: 4 });
+
+    expect(banner()).toBe("♥ LÉA ET HUGO LE VEULENT");
+    expect(ticket().getByText(/MATCH$/)).toHaveTextContent("♥♥ MATCH");
+    expect(line()).toBe(KEPT);
+  });
+
+  it("une carte du thème n'a ni bandeau ni ligne", () => {
+    renderDeck(ok([WHIPLASH], null));
+
+    expect(banner()).toBeNull();
+    expect(line()).toBeNull();
+  });
+
+  it("la ligne suit la carte du dessus", async () => {
+    const { user } = renderDeck(ok([wanted(["Becca"]), WHIPLASH], null));
+
+    await tap(user, "✕ BOF");
+
+    expect(currentTitle()).toHaveTextContent("WHIPLASH");
+    expect(line()).toBeNull();
+  });
+});
+
+describe("SwipeDeck : le moment du match", () => {
+  const LAST_WISH = { ...AMELIE, wish: { others: ["Becca"], matched: false } };
+  const MATCHED: SwipeOutcome = { result: "applied", matched: true };
+  const moment = () => screen.queryByRole("dialog", { name: "C’EST UN MATCH" });
+  const deckRegion = () => screen.getByRole("region", { name: "Film à trier" });
+
+  /** Keeps the last wished card; the server answers `answer`. */
+  async function keepLastWish(answer: SwipeOutcome, more = [WHIPLASH]) {
+    const decide = vi.fn<Decide>(() => Promise.resolve(answer));
+    const rendered = renderDeck(ok([LAST_WISH, ...more], null), { decide });
+    await tap(rendered.user, "ON LE VEUT ♥");
+    await waitFor(() => expect(decide).toHaveBeenCalledOnce());
+    return rendered;
+  }
+
+  it("s'ouvre quand le serveur dit que mon swipe a fait le match", async () => {
+    await keepLastWish(MATCHED);
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "C’EST UN MATCH",
+    });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveAccessibleDescription(
+      "IL NE MANQUAIT QUE TOI Tout le monde le veut\u00A0: il rejoint vos matchs",
+    );
+    const inside = within(dialog);
+    expect(inside.getByText("IL NE MANQUAIT QUE TOI")).toBeVisible();
+    expect(inside.getByRole("link", { name: "VOIR LA LISTE" })).toHaveAttribute(
+      "href",
+      "/list",
+    );
+    expect(inside.getByRole("button", { name: "CONTINUER ▸" })).toHaveFocus();
+  });
+
+  it("ne s'ouvre pas sur une prédiction : le serveur dit qu'il n'y a pas de match", async () => {
+    await keepLastWish({ result: "applied", matched: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(moment()).not.toBeInTheDocument();
+  });
+
+  it("CONTINUER le ferme et rend le focus à la pile", async () => {
+    const { user } = await keepLastWish(MATCHED);
+    await screen.findByRole("dialog");
+
+    await user.click(screen.getByRole("button", { name: "CONTINUER ▸" }));
+
+    expect(moment()).not.toBeInTheDocument();
+    expect(deckRegion()).toHaveFocus();
+    expect(currentTitle()).toHaveTextContent("WHIPLASH");
+  });
+
+  it("Échap le ferme", async () => {
+    const { user } = await keepLastWish(MATCHED);
+    await screen.findByRole("dialog");
+
+    await user.keyboard("{Escape}");
+
+    expect(moment()).not.toBeInTheDocument();
+    expect(deckRegion()).toHaveFocus();
+  });
+
+  it("après la dernière carte, le focus revient à la page", async () => {
+    const { user } = await keepLastWish(MATCHED, []);
+    await screen.findByRole("dialog");
+
+    await user.click(screen.getByRole("button", { name: "CONTINUER ▸" }));
+
+    expect(screen.getByRole("main")).toHaveFocus();
+  });
+
+  it("ANNULER le ferme et défait le match côté serveur", async () => {
+    const { user, undo } = await keepLastWish(MATCHED);
+    await screen.findByRole("dialog");
+
+    await user.click(screen.getByRole("button", { name: "↺ ANNULER" }));
+
+    expect(moment()).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(undo).toHaveBeenCalledExactlyOnceWith(194, "keep"),
+    );
+    expect(currentTitle()).toHaveTextContent(AMELIE.title);
+    expect(line()).toBe("TU LE VEUX AUSSI ? C’EST UN MATCH.");
+    expect(deckRegion()).toHaveFocus();
+  });
+
+  it("ANNULER reste proposé tant que le moment est ouvert, puis 5 s encore", async () => {
+    // Only the dismiss timers: motion's frame loop keeps the real clock.
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout"],
+      shouldAdvanceTime: true,
+    });
+    try {
+      const { user } = await keepLastWish(MATCHED);
+      await screen.findByRole("dialog");
+
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(screen.getByRole("button", { name: "↺ ANNULER" })).toBeVisible();
+
+      await user.click(screen.getByRole("button", { name: "CONTINUER ▸" }));
+      act(() => vi.advanceTimersByTime(4_000));
+      expect(screen.getByRole("button", { name: "↺ ANNULER" })).toBeVisible();
+      act(() => vi.advanceTimersByTime(1_000));
+      expect(
+        screen.queryByRole("button", { name: "↺ ANNULER" }),
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("une réponse « match » arrivée après une nouvelle décision sur la même carte n'ouvre rien", async () => {
+    let answer: (outcome: SwipeOutcome) => void = () => {};
+    const decide = vi
+      .fn<Decide>()
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (answer = resolve)),
+      )
+      .mockResolvedValue({ result: "applied", matched: false });
+    const { user } = renderDeck(ok([LAST_WISH, WHIPLASH], null), { decide });
+
+    await tap(user, "ON LE VEUT ♥");
+    await user.click(screen.getByRole("button", { name: "↺ ANNULER" }));
+    await tap(user, "✕ BOF");
+    answer(MATCHED);
+
+    await waitFor(() => expect(decide).toHaveBeenLastCalledWith(194, "reject"));
+    expect(moment()).not.toBeInTheDocument();
   });
 });
