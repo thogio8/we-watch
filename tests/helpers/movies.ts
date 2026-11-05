@@ -47,7 +47,6 @@ export function aMovie(tmdbId: number, overrides: Partial<Movie> = {}): Movie {
     wantedBy: [],
     watchedBy: null,
     legacy: false,
-    watchedLegacy: false,
     favoriteAt: null,
     favoriteBy: null,
     ...overrides,

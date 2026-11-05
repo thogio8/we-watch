@@ -34,7 +34,6 @@ const LALALAND = movie(313369, "LA LA LAND", {
   status: "watched",
   watchedAt: new Date(2026, 9, 11, 21, 5),
   legacy: true,
-  watchedLegacy: true,
 });
 
 const PARASITE = movie(496243, "PARASITE", {
@@ -185,8 +184,9 @@ describe("ListScreen", () => {
     const rows = within(panel()).getAllByRole("listitem");
     expect(rows[0]).toHaveTextContent("INTERSTELLAR");
     expect(rows[0]).toHaveTextContent("vu le 18/10 · marqué par Hugo");
-    expect(rows[1]).toHaveTextContent("vu le 11/10");
-    expect(rows[1]).not.toHaveTextContent("marqué");
+    expect(rows[1]).toHaveTextContent(
+      "vu le 11/10 · marqué par un ancien membre",
+    );
     expect(
       within(panel()).queryByRole("button", { name: /^Retirer/ }),
     ).not.toBeInTheDocument();
