@@ -152,6 +152,14 @@
   right: 12px;
 }
 
+/* Top-left of the poster: the favourite stamp keeps the bottom-left. */
+.matchCorner {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  z-index: 1;
+}
+
 .actions {
   display: flex;
   justify-content: center;

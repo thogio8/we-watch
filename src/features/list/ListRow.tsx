@@ -7,7 +7,7 @@ import {
   watchedLine,
   wishContext,
 } from "@/domain/attribution";
-import { isFavorite, type Movie } from "@/domain/movie";
+import { isFavorite, isMatch, type Movie } from "@/domain/movie";
 import { formatShortDate } from "@/domain/time";
 import { favoriteButtonName } from "@/ui/favorite";
 import { MovieRow, RowButton, RowMeta } from "./MovieRow";
@@ -43,6 +43,7 @@ export function ListRow({
         title={title}
         posterPath={movie.posterPath}
         muted
+        match={isMatch(movie)}
         busy={busy}
         href={`/list/${tmdbId}`}
         action={
@@ -67,6 +68,7 @@ export function ListRow({
       posterPath={movie.posterPath}
       busy={busy}
       favorite={favorite}
+      match={isMatch(movie)}
       href={`/list/${tmdbId}`}
       action={
         <>

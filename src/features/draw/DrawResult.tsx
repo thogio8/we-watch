@@ -2,11 +2,12 @@
 
 import { motion } from "motion/react";
 import type { Ref } from "react";
-import { isFavorite, type Movie } from "@/domain/movie";
+import { isFavorite, isMatch, type Movie } from "@/domain/movie";
 import { computeEndTime, formatClock } from "@/domain/time";
 import { Button } from "@/ui/Button";
 import { cx } from "@/ui/cx";
 import { FavoriteStamp } from "@/ui/FavoriteStamp";
+import { MatchStamp } from "@/ui/MatchStamp";
 import { Poster } from "@/ui/Poster";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
@@ -70,7 +71,10 @@ export function DrawResult({
           poster={
             <>
               <Poster path={movie.posterPath} title={movie.title} size="w500" />
-              {/* Shown, not a button: marking happens on the list or page. */}
+              {/* Shown, not buttons: marking happens on the list or page. */}
+              {isMatch(movie) && (
+                <MatchStamp size="small" className={styles.matchCorner} />
+              )}
               {isFavorite(movie) && <FavoriteStamp on />}
             </>
           }

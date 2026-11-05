@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { MatchStamp } from "@/ui/MatchStamp";
 import { Poster } from "@/ui/Poster";
 import styles from "./MovieRow.module.css";
 import { cx } from "@/ui/cx";
@@ -15,6 +16,8 @@ interface MovieRowProps {
   muted?: boolean;
   /** A favourite: pale pink, pink shadow, a small ♥ stamp on the poster. */
   favorite?: boolean;
+  /** A match: a small « ♥♥ MATCH » stamp on the poster's top-left corner. */
+  match?: boolean;
   /** Saving: the row is faded and cannot be tapped again. */
   busy?: boolean;
   /** The movie's page: poster and title open it (the button stays apart). */
@@ -44,6 +47,28 @@ export function RowList({
   );
 }
 
+/** The poster; the stamps spill over its corner, which clips the image. */
+function RowPoster({
+  title,
+  posterPath,
+  favorite,
+  match,
+}: Pick<MovieRowProps, "title" | "posterPath" | "favorite" | "match">) {
+  return (
+    <div className={styles.poster}>
+      <div className={styles.thumb}>
+        <Poster path={posterPath} title={title} size="w92" />
+      </div>
+      {match && <MatchStamp size="small" className={styles.match} />}
+      {favorite && (
+        <span className={styles.mini} aria-hidden="true">
+          ♥
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** One film of the list or of the search results (mockup screens 5-7). */
 export function MovieRow({
   title,
@@ -52,6 +77,7 @@ export function MovieRow({
   action,
   muted = false,
   favorite = false,
+  match = false,
   busy = false,
   href,
 }: MovieRowProps) {
@@ -63,17 +89,12 @@ export function MovieRow({
   );
   const content = (
     <>
-      {/* The stamp spills over the poster's corner, which clips its image. */}
-      <div className={styles.poster}>
-        <div className={styles.thumb}>
-          <Poster path={posterPath} title={title} size="w92" />
-        </div>
-        {favorite && (
-          <span className={styles.mini} aria-hidden="true">
-            ♥
-          </span>
-        )}
-      </div>
+      <RowPoster
+        title={title}
+        posterPath={posterPath}
+        favorite={favorite}
+        match={match}
+      />
       <div className={styles.body}>
         <h2 className={styles.title}>{title}</h2>
         {children}

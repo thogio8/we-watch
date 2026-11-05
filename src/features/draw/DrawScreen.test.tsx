@@ -762,3 +762,40 @@ describe("DrawScreen : tirer parmi nos coups de cœur", () => {
     expect(choice("TOUTE LA LISTE")).toHaveAttribute("aria-pressed", "true");
   });
 });
+
+describe("DrawScreen : le match sur le ticket", () => {
+  const MATCHED = new Date(2026, 10, 5);
+  const ticketOf = async (m: Movie) => {
+    const { user } = renderDraw({ toWatch: [m] });
+    await user.click(drawButton());
+    return within(await screen.findByRole("article"));
+  };
+
+  it("un film tiré qui est un match porte le tampon MATCH", async () => {
+    const ticket = await ticketOf(
+      movie(1, "PARASITE", { wantedBy: ["Léa", "Hugo"], matchedAt: MATCHED }),
+    );
+
+    expect(ticket.getByText(/MATCH/)).toBeVisible();
+  });
+
+  it("un film coup de cœur et match porte les deux tampons", async () => {
+    const ticket = await ticketOf(
+      movie(1, "PARASITE", {
+        wantedBy: ["Léa", "Hugo"],
+        matchedAt: MATCHED,
+        favoriteAt: MATCHED,
+        favoriteBy: "Léa",
+      }),
+    );
+
+    expect(ticket.getByText(/MATCH/)).toBeVisible();
+    expect(ticket.getByText("COUP DE CŒUR")).toBeVisible();
+  });
+
+  it("sans match, pas de tampon MATCH", async () => {
+    const ticket = await ticketOf(movie(1, "PARASITE", { wantedBy: ["Léa"] }));
+
+    expect(ticket.queryByText(/MATCH/)).not.toBeInTheDocument();
+  });
+});
