@@ -38,6 +38,9 @@ button {
  * tickets and the list adapt to the column's width (container queries).
  */
 .shell {
+  /* Room under the content, above the nav (a screen that fits drops it). */
+  --shell-end: 24px;
+
   container: shell / inline-size;
   width: 100%;
   max-width: var(--column-max);
@@ -45,17 +48,19 @@ button {
   /* Safe-area insets keep content clear of the notch and home indicator. */
   padding: calc(20px + env(safe-area-inset-top))
     calc(var(--gutter) + env(safe-area-inset-right))
-    calc(var(--nav-height) + 24px + env(safe-area-inset-bottom))
+    calc(var(--nav-height) + var(--shell-end) + env(safe-area-inset-bottom))
     calc(var(--gutter) + env(safe-area-inset-left));
 }
 
 /* Wide screens: a wider column below the top nav (see BottomNav). */
 @media (min-width: 760px) {
   .shell {
+    --shell-end: 40px;
+
     max-width: var(--column-wide);
     padding: calc(var(--nav-top-height) + 28px + env(safe-area-inset-top))
       calc(var(--gutter) + env(safe-area-inset-right))
-      calc(40px + env(safe-area-inset-bottom))
+      calc(var(--shell-end) + env(safe-area-inset-bottom))
       calc(var(--gutter) + env(safe-area-inset-left));
   }
 }
@@ -63,8 +68,10 @@ button {
 /* Phone held sideways: every pixel of height counts. */
 @media (min-width: 760px) and (max-height: 520px) {
   .shell {
+    --shell-end: 20px;
+
     padding-top: calc(var(--nav-top-height) + 14px + env(safe-area-inset-top));
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--shell-end) + env(safe-area-inset-bottom));
   }
 }
 
