@@ -17,6 +17,7 @@ import {
   withoutPasskeys,
 } from "./fixtures";
 import { COPY_LINK } from "./groups";
+import { closeMatch, keepToMatch, smallMatchStamp } from "./match";
 
 /**
  * Visual regression: one reference image per screen and format
@@ -191,6 +192,54 @@ test.describe("rendu visuel", () => {
         "Parasite",
       );
       await shoot(app, `${format.name}-11f-ticket-coup-de-coeur`);
+    });
+
+    test(`matchs : ${format.name}`, async ({ app, member }) => {
+      await app.setViewportSize(format);
+      /** A second device of the group, in the same format and clock. */
+      const another = async (name: string) => {
+        const page = await member(name);
+        await page.setViewportSize(format);
+        await freeze(page);
+        return page;
+      };
+
+      // Hugo finds Léa's three films on top of his deck, the latest first.
+      const hugo = await another("Hugo");
+      await hugo.goto("/swipe");
+      await expect(topCard(hugo)).toHaveText("Parasite");
+      await expect(hugo.getByText("LÉA LE VEUT")).toHaveCount(2);
+      await shoot(hugo, `${format.name}-12-swipe-bandeau`);
+      await keepToMatch(hugo);
+      // The viewport: the moment is a fixed layer over the deck.
+      await shoot(hugo, `${format.name}-12b-match`, { fullPage: false });
+      await closeMatch(hugo);
+      await settled(hugo);
+
+      // Parasite, a match and a favourite; Whiplash a favourite only.
+      await markFromList(app, "Parasite");
+      await markFromList(app, "Whiplash");
+      await app.goto("/list");
+      await expect(smallMatchStamp(app)).toBeVisible();
+      await shoot(app, `${format.name}-12c-liste-matchs`);
+
+      await app.goto("/");
+      await app.getByRole("button", { name: /^LA SOIRÉE/ }).click();
+      await app.getByRole("button", { name: "♥♥ NOS MATCHS · 1" }).click();
+      await shoot(app, `${format.name}-12d-la-soiree-matchs`);
+      await app.getByRole("button", { name: /^LA SOIRÉE/ }).click();
+      await app.getByRole("button", { name: "TIRER UN MATCH" }).click();
+      await expect(app.getByRole("heading", { level: 2 })).toHaveText(
+        "Parasite",
+      );
+      await shoot(app, `${format.name}-12e-ticket-match`);
+
+      // Sam arrives after the match: it stays, stamped on his deck.
+      const sam = await another("Sam");
+      await sam.goto("/swipe");
+      await expect(topCard(sam)).toHaveText("Parasite");
+      await expect(sam.getByText("LÉA ET HUGO LE VEULENT")).toBeVisible();
+      await shoot(sam, `${format.name}-12f-swipe-nouveau-membre`);
     });
   }
 });
