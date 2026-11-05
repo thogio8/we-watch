@@ -98,6 +98,7 @@ export const groupMovie = sqliteTable(
     index("group_movie_added_by_idx").on(table.addedBy),
     index("group_movie_watched_by_idx").on(table.watchedBy),
     index("group_movie_favorite_by_idx").on(table.favoriteBy),
+    index("group_movie_matched_by_idx").on(table.matchedBy),
   ],
 );
 
