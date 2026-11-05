@@ -1,11 +1,12 @@
 import {
   addedLine,
   favoriteLine,
+  matchLine,
   wantedLine,
   watchedLine,
 } from "@/domain/attribution";
 import { genreNames } from "@/domain/genres";
-import type { Movie } from "@/domain/movie";
+import { type Movie, wishContext } from "@/domain/movie";
 import { formatLongDate } from "@/domain/time";
 import type { MovieCredits } from "@/tmdb/credits";
 import styles from "./MovieScreen.module.css";
@@ -16,7 +17,8 @@ import styles from "./MovieScreen.module.css";
  */
 const ourHistory = (movie: Movie) => [
   addedLine(movie),
-  wantedLine(movie.wantedBy),
+  wantedLine(movie.wantedBy, wishContext(movie)),
+  matchLine(movie),
   // Only a film to watch is a favourite, even if a row kept its columns.
   movie.status === "to_watch" ? favoriteLine(movie) : null,
   watchedLine(movie, formatLongDate),

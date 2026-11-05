@@ -3,10 +3,11 @@ import {
   addedLine,
   favoriteLine,
   FORMER_MEMBER,
+  matchLine,
   watchedLine,
   wantedLine,
 } from "./attribution";
-import { isFavorite } from "./movie";
+import { isFavorite, isMatch } from "./movie";
 import { formatLongDate, formatShortDate } from "./time";
 
 // Noon UTC stays on the 12th in Paris; OCT_18 is local time, as the short date is.
@@ -34,16 +35,86 @@ describe("addedLine", () => {
 });
 
 describe("wantedLine", () => {
+  const NAMES = ["Léa", "Hugo", "Sam", "Inès", "Zoé", "Tom", "Eva", "Max"];
+  const wanted = (n: number, groupSize: number, matched = false) =>
+    wantedLine(NAMES.slice(0, n), { groupSize, matched });
+  const many = (n: number) =>
+    wantedLine(
+      Array.from({ length: n }, (_, i) => `M${i}`),
+      { groupSize: n, matched: true },
+    );
+
   it("ne dit rien sans souhait", () => {
-    expect(wantedLine([])).toBeNull();
+    expect(wanted(0, 2)).toBeNull();
   });
 
   it("liste un, deux ou trois noms", () => {
-    expect(wantedLine(["Léa"])).toBe("voulu par Léa");
-    expect(wantedLine(["Léa", "Hugo"])).toBe("voulu par Léa et Hugo");
-    expect(wantedLine(["Léa", "Hugo", "Sam"])).toBe(
-      "voulu par Léa, Hugo et Sam",
+    expect(wanted(1, 4)).toBe("voulu par Léa");
+    expect(wanted(2, 4)).toBe("voulu par Léa et Hugo");
+    expect(wanted(3, 4)).toBe("voulu par Léa, Hugo et Sam");
+  });
+
+  it("compte à partir de quatre noms", () => {
+    expect(wanted(4, 6)).toBe("voulu par 4 sur 6");
+  });
+
+  it.each([
+    [2, "voulu par vous deux"],
+    [3, "voulu par tout le groupe"],
+    [10, "voulu par tout le groupe"],
+  ])("dit tout le groupe à %i quand il y a match", (size, text) => {
+    expect(many(size)).toBe(text);
+  });
+
+  it("ne dit pas tout le groupe sans match, même à deux ou trois", () => {
+    expect(wanted(2, 2)).toBe("voulu par Léa et Hugo");
+    expect(wanted(3, 3)).toBe("voulu par Léa, Hugo et Sam");
+    expect(
+      wantedLine(
+        Array.from({ length: 10 }, (_, i) => `M${i}`),
+        {
+          groupSize: 10,
+          matched: false,
+        },
+      ),
+    ).toBe("voulu par 10 sur 10");
+  });
+
+  it("garde les prénoms quand un membre de plus que d'envies a fait le match", () => {
+    expect(wanted(2, 3, true)).toBe("voulu par Léa et Hugo");
+  });
+
+  it("dit 9 sur 10 pour un match de dix membres à neuf envies", () => {
+    expect(
+      wantedLine(
+        Array.from({ length: 9 }, (_, i) => `M${i}`),
+        {
+          groupSize: 10,
+          matched: true,
+        },
+      ),
+    ).toBe("voulu par 9 sur 10");
+  });
+
+  it("ne dit pas vous deux pour un groupe d'un seul", () => {
+    expect(wanted(1, 1, true)).toBe("voulu par Léa");
+  });
+});
+
+describe("matchLine", () => {
+  it("ne dit rien sans match", () => {
+    expect(matchLine({ matchedAt: null })).toBeNull();
+  });
+
+  it("donne la date au format long", () => {
+    expect(matchLine({ matchedAt: new Date("2026-11-05T10:00:00Z") })).toBe(
+      "match du groupe le 5 novembre 2026",
     );
+  });
+
+  it("isMatch suit matchedAt", () => {
+    expect(isMatch({ matchedAt: OCT_12 })).toBe(true);
+    expect(isMatch({ matchedAt: null })).toBe(false);
   });
 });
 

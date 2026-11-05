@@ -136,11 +136,13 @@ describe("liste du groupe", () => {
       toWatch: 1,
       watched: 1,
       favorites: 0,
+      matches: 0,
     });
     expect(await list.counts(groupB)).toEqual({
       toWatch: 1,
       watched: 0,
       favorites: 0,
+      matches: 0,
     });
   });
 
@@ -207,6 +209,7 @@ describe("liste du groupe", () => {
       toWatch: 2,
       watched: 0,
       favorites: 1,
+      matches: 0,
     });
   });
 
@@ -235,6 +238,7 @@ describe("liste du groupe", () => {
       toWatch: 0,
       watched: 0,
       favorites: 0,
+      matches: 0,
     });
     expect(await list.statusesOf(groupA, [1])).toEqual(new Map());
   });

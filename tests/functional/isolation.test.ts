@@ -203,6 +203,7 @@ describe("isolation des groupes (fonctionnel, sécurité)", () => {
       toWatch: 0,
       watched: 0,
       favorites: 0,
+      matches: 0,
     });
   });
 });

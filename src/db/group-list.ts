@@ -125,6 +125,8 @@ export function createGroupList(db: Database): GroupList {
         watched: of("watched"),
         // Only a movie still to watch is a favourite.
         favorites: rows.find((r) => r.status === "to_watch")?.favorites ?? 0,
+        // Counted from the database in the next step.
+        matches: 0,
       };
     },
 

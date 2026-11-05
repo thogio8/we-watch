@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { addedLine, wantedLine, watchedLine } from "@/domain/attribution";
-import { isFavorite, type Movie } from "@/domain/movie";
+import { isFavorite, type Movie, wishContext } from "@/domain/movie";
 import { formatShortDate } from "@/domain/time";
 import { favoriteButtonName } from "@/ui/favorite";
 import { MovieRow, RowButton, RowMeta } from "./MovieRow";
@@ -86,7 +86,9 @@ export function ListRow({
       }
     >
       <RowMeta>{toWatchMeta(movie)}</RowMeta>
-      <RowMeta>{wantedLine(movie.wantedBy) ?? addedLine(movie)}</RowMeta>
+      <RowMeta>
+        {wantedLine(movie.wantedBy, wishContext(movie)) ?? addedLine(movie)}
+      </RowMeta>
     </MovieRow>
   );
 }
