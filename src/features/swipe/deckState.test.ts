@@ -49,6 +49,20 @@ describe("deckReducer", () => {
     expect(next.nextPage).toBeNull();
   });
 
+  it("une file renvoyée à la page 1 ne s'affiche pas deux fois, ni une carte décidée", () => {
+    // TMDB was down: the server served the queue alone, then serves it again.
+    const wanted = cards(7, 8);
+    const state = initDeck({
+      ok: true,
+      batch: { cards: wanted, nextPage: 1 },
+    });
+    const next = deckReducer(decide(state, aSnapshot(7), false), {
+      type: "loaded",
+      batch: { cards: [...wanted, aSnapshot(9)], nextPage: 2 },
+    });
+    expect(ids(next)).toEqual([8, 9]);
+  });
+
   it("un lot chargé efface l'échec précédent", () => {
     const failed = deckReducer(deckOf([]), { type: "load_failed" });
     expect(failed.loadFailed).toBe(true);

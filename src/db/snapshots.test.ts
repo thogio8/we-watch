@@ -27,6 +27,15 @@ describe("instantanés", () => {
     ]);
   });
 
+  it("get relit la fiche d'un film connu, null sinon", async () => {
+    await snapshots.upsert(aSnapshot(1, { providers: [NETFLIX] }));
+
+    expect(await snapshots.get(1)).toEqual(
+      aSnapshot(1, { providers: [NETFLIX] }),
+    );
+    expect(await snapshots.get(2)).toBeNull();
+  });
+
   it("refresh met à jour un film connu, sans jamais en créer", async () => {
     await snapshots.upsert(aSnapshot(1));
 

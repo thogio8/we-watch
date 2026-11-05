@@ -9,6 +9,8 @@ export interface Snapshots {
   upsert(snapshot: MovieSnapshot): Promise<void>;
   /** New TMDB data for a known movie only ("noop" if absent). */
   refresh(snapshot: MovieSnapshot): Promise<ApplyResult>;
+  /** The stored TMDB data of a movie, null when unknown. */
+  get(tmdbId: number): Promise<MovieSnapshot | null>;
   /** Movies to watch or watched in at least one group (cron). */
   listedIds(): Promise<number[]>;
 }
@@ -35,6 +37,14 @@ export function createSnapshots(db: Database): Snapshots {
         .where(eq(movieSnapshot.tmdbId, snapshot.tmdbId))
         .returning({ id: movieSnapshot.tmdbId });
       return updated.length > 0 ? "applied" : "noop";
+    },
+
+    async get(tmdbId) {
+      const [row] = await db
+        .select()
+        .from(movieSnapshot)
+        .where(eq(movieSnapshot.tmdbId, tmdbId));
+      return row ?? null;
     },
 
     async listedIds() {

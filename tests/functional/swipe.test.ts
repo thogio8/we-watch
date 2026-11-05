@@ -42,8 +42,8 @@ describe("swiper (fonctionnel)", () => {
   });
 
   it("♥ range le film dans « à voir » et le retire du deck", async () => {
-    await expect(decideSwipe(mine.id, WHIPLASH, "keep")).resolves.toBe(
-      "applied",
+    await expect(decideSwipe(mine.id, WHIPLASH, "keep")).resolves.toMatchObject(
+      { result: "applied" },
     );
 
     const toWatch = await getGroupList().listByStatus(mine.id, "to_watch");
@@ -66,9 +66,9 @@ describe("swiper (fonctionnel)", () => {
   it("✕ après ♥ (autre téléphone) : le film reste dans la liste du groupe", async () => {
     await decideSwipe(mine.id, WHIPLASH, "keep");
 
-    await expect(decideSwipe(mine.id, WHIPLASH, "reject")).resolves.toBe(
-      "applied",
-    );
+    await expect(
+      decideSwipe(mine.id, WHIPLASH, "reject"),
+    ).resolves.toMatchObject({ result: "applied" });
     expect(await counts()).toMatchObject({ toWatch: 1 });
     expect(await deckIds()).not.toContain(WHIPLASH);
   });
@@ -76,7 +76,9 @@ describe("swiper (fonctionnel)", () => {
   it("♥ deux fois : une seule ligne, rien de plus à annuler", async () => {
     await decideSwipe(mine.id, WHIPLASH, "keep");
 
-    await expect(decideSwipe(mine.id, WHIPLASH, "keep")).resolves.toBe("noop");
+    await expect(decideSwipe(mine.id, WHIPLASH, "keep")).resolves.toMatchObject(
+      { result: "noop" },
+    );
     expect(await counts()).toMatchObject({ toWatch: 1 });
   });
 
@@ -100,9 +102,9 @@ describe("swiper (fonctionnel)", () => {
   it("✕ BOF avec TMDB en panne : enregistré quand même (pas besoin de la fiche)", async () => {
     setTmdbDown(true);
 
-    await expect(decideSwipe(mine.id, CHIHIRO, "reject")).resolves.toBe(
-      "applied",
-    );
+    await expect(
+      decideSwipe(mine.id, CHIHIRO, "reject"),
+    ).resolves.toMatchObject({ result: "applied" });
     setTmdbDown(false);
     expect(await deckIds()).not.toContain(CHIHIRO);
   });

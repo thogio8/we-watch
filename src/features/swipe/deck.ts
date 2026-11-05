@@ -1,4 +1,4 @@
-import type { MovieSnapshot } from "@/domain/movie";
+import type { MovieSnapshot, WishCard } from "@/domain/movie";
 import type { DiscoverPage } from "@/tmdb/movies";
 
 export interface DeckDeps {
@@ -7,8 +7,11 @@ export interface DeckDeps {
   decidedIds(): Promise<Set<number>>;
 }
 
+/** A card of the deck; a movie the group wants carries its `wish`. */
+export type DeckCard = MovieSnapshot & { wish?: WishCard["wish"] };
+
 export interface DeckBatch {
-  cards: MovieSnapshot[];
+  cards: DeckCard[];
   nextPage: number | null;
 }
 

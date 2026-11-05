@@ -3,7 +3,6 @@ import { assertMember } from "@/server/groups";
 import { revalidateGroupPages, revalidateListPages } from "@/server/revalidate";
 import type { MovieSnapshot } from "@/domain/movie";
 import { expectRefusedFirst } from "@tests/helpers/refused";
-import { TmdbError } from "@/tmdb/client";
 import type { DeckId } from "@/tmdb/decks";
 import {
   decideSwipe,
@@ -15,14 +14,17 @@ import {
 const swipe = vi.fn();
 const undo = vi.fn();
 const getDeckDeps = vi.fn();
+const findInList = vi.fn();
+const getStored = vi.fn();
 const getMovieSnapshot = vi.fn();
 const loadDeckBatch = vi.fn();
 const client = { get: vi.fn() };
-const deckDeps = { discover: vi.fn(), snapshot: vi.fn(), decidedIds: vi.fn() };
 
 vi.mock("@/server/groups");
 vi.mock("@/server/container", () => ({
   getDecisions: () => ({ swipe, undoSwipe: undo }),
+  getGroupList: () => ({ findInList }),
+  getSnapshots: () => ({ get: getStored }),
   getTmdbClient: () => client,
   getDeckDeps: (...args: unknown[]) => getDeckDeps(...args),
 }));
@@ -53,7 +55,9 @@ beforeEach(() => {
   vi.mocked(assertMember).mockClear();
   swipe.mockReset().mockResolvedValue({ result: "applied", matched: false });
   undo.mockReset().mockResolvedValue("applied");
-  getDeckDeps.mockReset().mockReturnValue(deckDeps);
+  getDeckDeps.mockReset();
+  findInList.mockReset().mockResolvedValue(null);
+  getStored.mockReset().mockResolvedValue(null);
   vi.mocked(revalidateListPages).mockReset();
   vi.mocked(revalidateGroupPages).mockReset();
   getMovieSnapshot.mockReset().mockResolvedValue(WHIPLASH);
@@ -67,9 +71,10 @@ describe("decideSwipe", () => {
   ] as const)(
     "%s enregistre la décision de Léa dans le groupe et périme TIRER et LISTE",
     async (decision, extra) => {
-      await expect(decideSwipe(GROUP, 244786, decision)).resolves.toBe(
-        "applied",
-      );
+      await expect(decideSwipe(GROUP, 244786, decision)).resolves.toEqual({
+        result: "applied",
+        matched: false,
+      });
 
       expect(assertMember).toHaveBeenCalledWith(GROUP);
       expect(swipe).toHaveBeenCalledWith({
@@ -99,7 +104,36 @@ describe("decideSwipe", () => {
 
   it("signale une décision qui n’a rien créé (rien à annuler)", async () => {
     swipe.mockResolvedValue({ result: "noop", matched: false });
-    await expect(decideSwipe(GROUP, 244786, "keep")).resolves.toBe("noop");
+    await expect(decideSwipe(GROUP, 244786, "keep")).resolves.toEqual({
+      result: "noop",
+      matched: false,
+    });
+  });
+
+  it("♥ sur un film déjà dans la liste du groupe lit la fiche en base, sans TMDB", async () => {
+    findInList.mockResolvedValue({ tmdbId: 244786 });
+    getStored.mockResolvedValue(WHIPLASH);
+
+    await decideSwipe(GROUP, 244786, "keep");
+
+    expect(findInList).toHaveBeenCalledWith(GROUP, 244786);
+    expect(getMovieSnapshot).not.toHaveBeenCalled();
+    expect(swipe).toHaveBeenCalledWith(
+      expect.objectContaining({ snapshot: WHIPLASH }),
+    );
+  });
+
+  it("transmet le match au client", async () => {
+    swipe.mockResolvedValue({ result: "applied", matched: true });
+    await expect(decideSwipe(GROUP, 244786, "keep")).resolves.toMatchObject({
+      matched: true,
+    });
+  });
+
+  it("♥ sur un film listé sans fiche en base passe par TMDB", async () => {
+    findInList.mockResolvedValue({ tmdbId: 244786 });
+    await decideSwipe(GROUP, 244786, "keep");
+    expect(getMovieSnapshot).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5, Number.NaN, "129" as unknown as number])(
@@ -149,58 +183,6 @@ describe("undoSwipe", () => {
     ).rejects.toThrow("invalid decision");
     expect(undo).not.toHaveBeenCalled();
   });
-});
-
-describe("loadMoreCards", () => {
-  it("renvoie le lot de la page demandée, pour le deck demandé", async () => {
-    const batch = { cards: [WHIPLASH], nextPage: 3 };
-    loadDeckBatch.mockResolvedValue(batch);
-
-    await expect(loadMoreCards(GROUP, "animation", 2)).resolves.toEqual({
-      ok: true,
-      batch,
-    });
-    expect(assertMember).toHaveBeenCalledWith(GROUP);
-    // The deck leaves out the group's list and Léa's own BOF.
-    expect(getDeckDeps).toHaveBeenCalledWith("animation", GROUP, "user-1");
-    expect(loadDeckBatch).toHaveBeenCalledWith(deckDeps, 2);
-  });
-
-  it.each(["palme", "", 3] as unknown as DeckId[])(
-    "refuse un deck inconnu (%s)",
-    async (deck) => {
-      await expect(loadMoreCards(GROUP, deck, 1)).rejects.toThrow(
-        "invalid deck",
-      );
-      expect(loadDeckBatch).not.toHaveBeenCalled();
-    },
-  );
-
-  it("une erreur TMDB devient { ok: false }", async () => {
-    loadDeckBatch.mockRejectedValue(new TmdbError(503, "TMDB responded 503"));
-
-    await expect(loadMoreCards(GROUP, "top", 1)).resolves.toEqual({
-      ok: false,
-    });
-  });
-
-  it("laisse remonter les autres erreurs", async () => {
-    loadDeckBatch.mockRejectedValue(new Error("database is locked"));
-
-    await expect(loadMoreCards(GROUP, "top", 1)).rejects.toThrow(
-      "database is locked",
-    );
-  });
-
-  it.each([0, -2, 2.5, Number.NaN, "2" as unknown as number])(
-    "refuse une page invalide (%s)",
-    async (page) => {
-      await expect(loadMoreCards(GROUP, "top", page)).rejects.toThrow(
-        "invalid page",
-      );
-      expect(loadDeckBatch).not.toHaveBeenCalled();
-    },
-  );
 });
 
 describe("hors du groupe, ou sans session", () => {

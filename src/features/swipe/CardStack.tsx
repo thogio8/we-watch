@@ -5,11 +5,12 @@ import { useState } from "react";
 import type { MovieSnapshot } from "@/domain/movie";
 import { Button } from "@/ui/Button";
 import type { SwipeDecision } from "./actions";
+import type { DeckCard } from "./deck";
 import { SwipeCard } from "./SwipeCard";
 import styles from "./SwipeDeck.module.css";
 
 interface CardStackProps {
-  queue: MovieSnapshot[];
+  queue: DeckCard[];
   lastDecision: SwipeDecision;
   onDecide: (card: MovieSnapshot, decision: SwipeDecision) => void;
 }

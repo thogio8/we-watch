@@ -2,7 +2,7 @@ import { leaveIfRefused } from "@/access/refusals";
 import { type Dispatch, useRef } from "react";
 import type { ApplyResult } from "@/domain/transitions";
 import type { MovieSnapshot } from "@/domain/movie";
-import type { SendSwipe, SwipeDecision } from "./actions";
+import type { SendDecision, SendUndo, SwipeDecision } from "./actions";
 import type { DeckAction, DeckState } from "./deckState";
 
 /**
@@ -14,8 +14,8 @@ import type { DeckAction, DeckState } from "./deckState";
 export function useSwipeSync(
   undoable: DeckState["undoable"],
   dispatch: Dispatch<DeckAction>,
-  decide: SendSwipe,
-  undo: SendSwipe,
+  decide: SendDecision,
+  undo: SendUndo,
 ) {
   const ops = useRef(new Map<number, Promise<ApplyResult>>());
   const chain = (
@@ -33,7 +33,10 @@ export function useSwipeSync(
   const decideCard = (card: MovieSnapshot, decision: SwipeDecision) => {
     dispatch({ type: "decided", card, decision });
     // Optimistic: the card is gone already; it comes back if the save fails.
-    const op = chain(card.tmdbId, () => decide(card.tmdbId, decision));
+    const op = chain(
+      card.tmdbId,
+      async () => (await decide(card.tmdbId, decision)).result,
+    );
     op.catch(() => {
       // An undo or a new decision came after: this card's fate is theirs.
       if (ops.current.get(card.tmdbId) === op) {

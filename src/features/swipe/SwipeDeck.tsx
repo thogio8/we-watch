@@ -2,7 +2,12 @@
 
 import { type ReactNode, useReducer } from "react";
 import { type DeckId, deckLabel } from "@/tmdb/decks";
-import type { LoadCards, LoadMoreResult, SendSwipe } from "./actions";
+import type {
+  LoadCards,
+  LoadMoreResult,
+  SendDecision,
+  SendUndo,
+} from "./actions";
 import { CardStack } from "./CardStack";
 import { DeckChips } from "./DeckChips";
 import { DeckNotice } from "./DeckNotice";
@@ -16,8 +21,8 @@ import { useSwipeSync } from "./useSwipeSync";
 interface SwipeDeckProps {
   deck: DeckId;
   initial: LoadMoreResult;
-  decide: SendSwipe;
-  undo: SendSwipe;
+  decide: SendDecision;
+  undo: SendUndo;
   loadMore: LoadCards;
   /** The group pill, first in the landmark. */
   pill?: ReactNode;
