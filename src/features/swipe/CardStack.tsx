@@ -28,7 +28,8 @@ interface CardStackProps {
  * A card whose save failed comes back mid-flight: AnimatePresence then never
  * reports the end of its exit, so a leaving id back in the queue no longer
  * locks. The lock also resets with the stack whenever the deck runs dry.
- * Under the top card, a line when the group wants it (`wishHint`).
+ * Under the top card, a line when the group wants it (`wishHint`), kept
+ * empty otherwise.
  */
 export function CardStack({
   queue,
@@ -87,7 +88,8 @@ export function CardStack({
             ))}
         </AnimatePresence>
       </section>
-      {hint !== null && <p className={styles.hint}>{hint}</p>}
+      {/* Empty or not, the line keeps its place: the buttons stay still. */}
+      <p className={styles.hint}>{hint}</p>
       <div className={styles.actions} inert={frozen}>
         <Button variant="secondary" onClick={() => choose("reject")}>
           ✕ BOF

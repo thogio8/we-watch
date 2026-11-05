@@ -11,6 +11,14 @@
   margin-inline: calc(-1 * var(--gutter));
   padding-inline: var(--gutter);
   overflow-x: clip;
+  /*
+   * The deck is sized to fit the screen: the shell's room under the content
+   * would only make the page scroll by that much.
+   */
+  margin-bottom: calc(-1 * var(--shell-end, 0px));
+  /* The deck's buttons: their gap, and the row's width when it is fixed. */
+  --deck-gap: 16px;
+  --deck-actions-width: 320px;
 }
 
 /* « LES MIEUX NOTÉS »: the mockup's small caption, as the page heading. */
@@ -36,7 +44,7 @@
 .actions {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: var(--deck-gap);
   margin-top: 26px;
 }
 
@@ -53,15 +61,18 @@
 
 /*
  * « TU LE VEUX AUSSI ? C'EST UN MATCH. »: in the gap above the buttons, clear
- * of the offset shadow of the card behind, which peeks under the deck.
+ * of the offset shadow of the card behind, which peeks under the deck. Every
+ * card keeps its line, empty or not: the buttons stay still between cards.
  */
 .hint {
+  --hint-line: 1.3;
   max-width: 100%;
+  min-height: calc(var(--hint-line) * 1em);
   margin: 16px 0 0;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--hint-line);
   text-align: center;
 }
 
@@ -220,8 +231,8 @@
  */
 @media (max-height: 620px) {
   .hint {
+    --hint-line: 1.1;
     margin-top: 14px;
-    line-height: 1.1;
   }
 
   .hint + .actions {
@@ -263,19 +274,20 @@
   }
 
   /*
-   * No height to spare: the line takes none. It stands left of the buttons,
-   * under the peek of the card behind, and the buttons stay where a card
-   * without it puts them (the 50% less half the buttons' row, and a gap).
+   * No height to spare: the line takes none. It stands left of the buttons'
+   * row (of a fixed width, centred), under the peek of the card behind.
    */
   .hint {
     align-self: flex-start;
     height: 0;
-    max-width: calc(50% - 170px);
+    min-height: 0;
+    max-width: calc(50% - var(--deck-actions-width) / 2 - var(--deck-gap));
     margin-top: 22px;
     text-align: left;
   }
 
   .hint + .actions {
+    min-width: var(--deck-actions-width);
     margin-top: -12px;
   }
 }

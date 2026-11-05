@@ -450,6 +450,7 @@ test.describe("un écran sans défiler", () => {
         ["✕ BOF", hugo.getByRole("button", { name: "✕ BOF" })],
         ["ON LE VEUT ♥", hugo.getByRole("button", { name: "ON LE VEUT ♥" })],
       ]);
+      await expectNoVerticalScroll(hugo, "/swipe (phrase)");
       await keepToMatch(hugo);
       // The moment's layer covers the nav: its buttons need only the screen.
       for (const button of [
@@ -473,6 +474,7 @@ test.describe("un écran sans défiler", () => {
         ["✕ BOF", app.getByRole("button", { name: "✕ BOF" })],
         ["ON LE VEUT ♥", app.getByRole("button", { name: "ON LE VEUT ♥" })],
       ]);
+      await expectNoVerticalScroll(app, "/swipe");
     });
   }
 });
@@ -504,6 +506,14 @@ test.describe("mise en page et accessibilité, sans groupe", () => {
     });
   }
 });
+
+/** The deck fits the screen: nothing to scroll, not even the shell's room. */
+async function expectNoVerticalScroll(page: Page, path: string) {
+  const scroll = await page.evaluate(
+    () => document.documentElement.scrollHeight - window.innerHeight,
+  );
+  expect(scroll, `${path} défile de ${scroll}px`).toBeLessThanOrEqual(0);
+}
 
 async function expectNoOverflow(page: Page, path: string) {
   const overflow = await page.evaluate(
