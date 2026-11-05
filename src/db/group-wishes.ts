@@ -5,19 +5,20 @@ import {
   desc,
   eq,
   getTableColumns,
+  inArray,
   max,
   ne,
   notExists,
 } from "drizzle-orm";
 import type { WishCard } from "@/domain/movie";
-import type { Database, Executor } from "./create-database";
+import type { Database } from "./create-database";
 import {
   groupMovie,
   movieRejection,
   movieSnapshot,
   movieWant,
 } from "./group-schema";
-import { wishes } from "./list-queries";
+import { namesByMovie, wishNames } from "./list-queries";
 
 export const GROUP_WISHES_LIMIT = 30;
 
@@ -30,11 +31,11 @@ export interface GroupWishes {
   pending(groupId: string, userId: string): Promise<WishCard[]>;
 }
 
-/** The candidate movies, most wanted first. */
-function candidates(tx: Executor, groupId: string, userId: string) {
+/** The candidate movies with their snapshot, most wanted first. */
+function candidates(db: Database, groupId: string, userId: string) {
   const wishCount = count();
   const lastWish = max(movieWant.wantedAt);
-  return tx
+  return db
     .select({
       ...getTableColumns(movieSnapshot),
       matchedAt: groupMovie.matchedAt,
@@ -54,7 +55,7 @@ function candidates(tx: Executor, groupId: string, userId: string) {
         eq(groupMovie.groupId, groupId),
         eq(groupMovie.status, "to_watch"),
         notExists(
-          tx
+          db
             .select({ one: movieWant.tmdbId })
             .from(movieWant)
             .where(
@@ -66,7 +67,7 @@ function candidates(tx: Executor, groupId: string, userId: string) {
             ),
         ),
         notExists(
-          tx
+          db
             .select({ one: movieRejection.tmdbId })
             .from(movieRejection)
             .where(
@@ -85,26 +86,31 @@ function candidates(tx: Executor, groupId: string, userId: string) {
 
 export function createGroupWishes(db: Database): GroupWishes {
   return {
-    // One transaction: the movies and the names come from the same snapshot.
-    pending: (groupId, userId) =>
-      db.transaction(async (tx) => {
-        const rows = await candidates(tx, groupId, userId);
-        if (rows.length === 0) return [];
-        const names = await wishes(
-          tx,
-          groupId,
-          rows.map((r) => r.tmdbId),
-          userId,
-        );
-        return rows.map(({ matchedAt, ...snapshot }) => ({
-          ...snapshot,
-          wish: {
-            // Read in the same snapshot as the movies, each of which has a
-            // wish from someone else: its entry exists.
-            others: names.get(snapshot.tmdbId) as string[],
-            matched: matchedAt !== null,
-          },
-        }));
-      }),
+    // One batch: the movies and the names come from the same snapshot.
+    async pending(groupId, userId) {
+      const movies = candidates(db, groupId, userId);
+      const top = movies.as("top");
+      const [rows, wishes] = await db.batch([
+        movies,
+        wishNames(
+          db,
+          and(
+            eq(movieWant.groupId, groupId),
+            ne(movieWant.userId, userId),
+            inArray(movieWant.tmdbId, db.select({ id: top.tmdbId }).from(top)),
+          ),
+        ),
+      ]);
+      const names = namesByMovie(wishes);
+      return rows.map(({ matchedAt, ...snapshot }) => ({
+        ...snapshot,
+        wish: {
+          // Same snapshot as the movies, each wanted by someone else: its
+          // entry exists, and never holds my name.
+          others: names.get(snapshot.tmdbId) as string[],
+          matched: matchedAt !== null,
+        },
+      }));
+    },
   };
 }

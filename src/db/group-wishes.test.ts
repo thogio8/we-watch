@@ -6,7 +6,6 @@ import type { Database } from "./create-database";
 import { createDecisions, type Decisions } from "./decisions";
 import { createGroupList } from "./group-list";
 import { groupMovie } from "./group-schema";
-import { wishes } from "./list-queries";
 import { createGroupWishes, GROUP_WISHES_LIMIT } from "./group-wishes";
 
 const at = (day: number) => new Date(2026, 9, day);
@@ -152,12 +151,5 @@ describe("la file « le groupe le veut »", () => {
     await want(lea, 2, 1);
     await want(hugo, 2, 1);
     expect((await pending())[0]?.wish.others).toEqual(["Hugo", "Zoé"]);
-  });
-
-  it("écarte le membre exclu de la lecture des prénoms", async () => {
-    await want(lea, 1, 1);
-    await want(hugo, 1, 2);
-    expect((await wishes(db, A, [1])).get(1)).toEqual(["Léa", "Hugo"]);
-    expect((await wishes(db, A, [1], lea)).get(1)).toEqual(["Hugo"]);
   });
 });
