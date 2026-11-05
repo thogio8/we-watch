@@ -130,6 +130,12 @@ describe("homeCounts", () => {
       "5 films à regarder · dont 2 ♥ · 1 vu",
     );
   });
+
+  it("met « vus » au pluriel dès deux films vus", () => {
+    expect(homeCounts({ toWatch: 1, watched: 2, favorites: 0 })).toBe(
+      "1 film à regarder · 2 vus",
+    );
+  });
 });
 
 describe("resolveView et coup de cœur", () => {

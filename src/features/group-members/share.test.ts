@@ -41,6 +41,27 @@ describe("shareOrCopy", () => {
   });
 
   it.each([
+    [
+      "une autre erreur du navigateur",
+      () => Promise.reject(new DOMException("non", "NotAllowedError")),
+    ],
+    [
+      "une erreur ordinaire nommée AbortError",
+      () =>
+        Promise.reject(Object.assign(new Error("x"), { name: "AbortError" })),
+    ],
+  ])("%s n'est pas une annulation : le lien est copié", async (_, share) => {
+    const writeText = vi.fn(() => Promise.resolve());
+
+    const outcome = await shareOrCopy(LINK, {
+      share,
+      clipboard: { writeText },
+    });
+
+    expect(outcome).toBe("copied");
+  });
+
+  it.each([
     ["sans partage", {}],
     ["partage en panne", { share: broken }],
   ])("%s : le lien est copié", async (_, sharer) => {

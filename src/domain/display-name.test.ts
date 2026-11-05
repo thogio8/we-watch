@@ -79,6 +79,15 @@ describe("confirmsName", () => {
     expect(confirmsName("D\u2018Artagnan", "D\u02BCArtagnan")).toBe(true);
   });
 
+  it("une apostrophe n'est pas une lettre qu'on peut omettre", () => {
+    expect(confirmsName("DArtagnan", "D'Artagnan")).toBe(false);
+    expect(confirmsName("D\u2019Artagnan", "DArtagnan")).toBe(false);
+  });
+
+  it("des espaces ne sont pas du vide : « Jean Pierre » n'est pas « JeanPierre »", () => {
+    expect(confirmsName("JeanPierre", "Jean Pierre")).toBe(false);
+  });
+
   it("refuse un autre prénom, une autre casse, du vide ou autre chose qu’une chaîne", () => {
     expect(confirmsName("Hugo", "Léa")).toBe(false);
     expect(confirmsName("léa", "Léa")).toBe(false);
