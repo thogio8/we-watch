@@ -111,6 +111,19 @@ describe("liste du groupe", () => {
     expect(await list.listByStatus(groupB, "watched")).toEqual([]);
   });
 
+  it("listByStatus départage deux films à la même date par leur id TMDB, le plus grand d’abord", async () => {
+    await keep(7, groupA, lea, T0);
+    await keep(9, groupA, lea, T0);
+    await keep(8, groupA, lea, T0);
+    await keep(3, groupA, lea, T0);
+    await keep(5, groupA, lea, T0);
+    await act("mark_watched", 3, lea, T1);
+    await act("mark_watched", 5, lea, T1);
+
+    expect(ids(await list.listByStatus(groupA, "to_watch"))).toEqual([9, 8, 7]);
+    expect(ids(await list.listByStatus(groupA, "watched"))).toEqual([5, 3]);
+  });
+
   it("counts compte les films à voir et vus du groupe seulement", async () => {
     await keep(1);
     await keep(2);
