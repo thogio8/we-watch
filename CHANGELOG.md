@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/thogio8/we-watch/compare/v2.1.0...v2.1.1) (2026-11-05)
+
+
+### Corrections
+
+* **group-members:** ask for the invite link once per screen, not on every refresh ([800b815](https://github.com/thogio8/we-watch/commit/800b815e1763de2dd69769748e5c9725681f59cd))
+* **list:** keep one order for films added or watched at the same moment ([14adbda](https://github.com/thogio8/we-watch/commit/14adbdac1c38c450ec4a3c2cdf86257ac181ac66))
+
 ## [2.1.0](https://github.com/thogio8/we-watch/compare/v2.0.3...v2.1.0) (2026-11-04)
 
 
