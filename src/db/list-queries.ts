@@ -78,7 +78,8 @@ async function sizeOf(db: Database, groupId: string): Promise<number> {
 /**
  * Movies of a group's list matching `where`, with their snapshot and the
  * names of who added, wanted and watched them (null: no author, or a
- * deleted account).
+ * deleted account). Callers only select « à voir » or « vu » rows, so
+ * `matchedAt` is read as is: one selecting a rejected row must filter it.
  */
 export async function selectMovies(
   db: Database,
