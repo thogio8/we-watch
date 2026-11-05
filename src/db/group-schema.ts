@@ -86,6 +86,10 @@ export const groupMovie = sqliteTable(
     /** Favourite (2.1.0): set only while « to_watch »; null = not a favourite. */
     favoriteAt: timestamp("favorite_at"),
     favoriteBy: author("favorite_by"),
+    /** Match (2.2.0): when both members wanted it; null = no match yet. */
+    matchedAt: timestamp("matched_at"),
+    /** The member whose swipe completed the match. */
+    matchedBy: author("matched_by"),
   },
   (table) => [
     primaryKey({ columns: [table.groupId, table.tmdbId] }),
