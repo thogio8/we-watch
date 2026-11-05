@@ -157,8 +157,9 @@ test.describe("groupes", () => {
     await app.goto("/list");
     await createGroup(app, "LA COLOC");
     // Saved in « NOUS DEUX », the deck on screen; the save re-renders the
-    // tab on the displayed group, « LA COLOC », cards included.
-    await decide(other, "keep");
+    // tab on the displayed group, « LA COLOC », cards included. Not
+    // `decide`: Whiplash tops the new deck too, maybe before it is seen gone.
+    await other.getByRole("button", { name: "ON LE VEUT ♥" }).click();
     await expect(pill(other, "LA COLOC")).toBeVisible();
     await expect(topCard(other)).toHaveText("Whiplash");
     await decide(other, "keep");
