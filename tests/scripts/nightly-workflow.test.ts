@@ -26,6 +26,20 @@ const misplacedSecrets = (text: string) =>
     .filter((line) => line.includes("secrets."))
     .filter((line) => line.search(/\S/) < STEP_ENV_INDENT);
 
+/** Checkout steps that leave the token in .git/config for the next steps. */
+function keptCredentials(text: string) {
+  const lines = text.split("\n");
+  return lines.flatMap((line, i) => {
+    if (!/uses:\s*actions\/checkout@/.test(line)) return [];
+    const dash = line.indexOf("-");
+    const end = lines.findIndex(
+      (next, j) => j > i && next.trim() !== "" && next.search(/\S/) <= dash,
+    );
+    const step = lines.slice(i, end === -1 ? undefined : end).join("\n");
+    return /persist-credentials: false/.test(step) ? [] : [line.trim()];
+  });
+}
+
 function job(text: string, name: string) {
   const start = text.indexOf(`\n  ${name}:\n`);
   expect(start, `job ${name}`).toBeGreaterThan(-1);
@@ -54,6 +68,23 @@ describe("les workflows GitHub (.github/workflows)", () => {
       "jobs:\n  a:\n    steps:\n      - run: x\n        env:\n          TOKEN: ${{ secrets.TOKEN }}\n";
     expect(misplacedSecrets(bad)).toHaveLength(1);
     expect(misplacedSecrets(good)).toEqual([]);
+  });
+
+  it("chaque checkout retire le jeton de la config git", () => {
+    for (const { file, text } of workflows) {
+      expect(keptCredentials(text), file).toEqual([]);
+    }
+  });
+
+  it("repère un checkout qui garde le jeton", () => {
+    const kept = "      - uses: actions/checkout@x\n      - run: npm ci\n";
+    const dropped =
+      "      - uses: actions/checkout@x\n        with:\n          persist-credentials: false\n      - run: npm ci\n";
+    const nextSays =
+      "      - uses: actions/checkout@x\n      - uses: y\n        with:\n          persist-credentials: false\n";
+    expect(keptCredentials(kept)).toHaveLength(1);
+    expect(keptCredentials(dropped)).toEqual([]);
+    expect(keptCredentials(nextSays)).toHaveLength(1);
   });
 
   it("repère une action non épinglée", () => {
