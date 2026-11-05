@@ -48,12 +48,6 @@ export const isFavorite = (m: Pick<Movie, "favoriteAt">): boolean =>
 export const isMatch = (m: Pick<Movie, "matchedAt">): boolean =>
   m.matchedAt !== null;
 
-/** What wantedLine needs to word a movie's wishes. */
-export const wishContext = (m: Pick<Movie, "groupSize" | "matchedAt">) => ({
-  groupSize: m.groupSize,
-  matched: isMatch(m),
-});
-
 export interface ListCounts {
   toWatch: number;
   watched: number;

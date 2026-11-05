@@ -1,8 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { addedLine, wantedLine, watchedLine } from "@/domain/attribution";
-import { isFavorite, type Movie, wishContext } from "@/domain/movie";
+import {
+  addedLine,
+  wantedLine,
+  watchedLine,
+  wishContext,
+} from "@/domain/attribution";
+import { isFavorite, type Movie } from "@/domain/movie";
 import { formatShortDate } from "@/domain/time";
 import { favoriteButtonName } from "@/ui/favorite";
 import { MovieRow, RowButton, RowMeta } from "./MovieRow";

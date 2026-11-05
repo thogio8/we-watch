@@ -4,9 +4,10 @@ import {
   matchLine,
   wantedLine,
   watchedLine,
+  wishContext,
 } from "@/domain/attribution";
 import { genreNames } from "@/domain/genres";
-import { type Movie, wishContext } from "@/domain/movie";
+import type { Movie } from "@/domain/movie";
 import { formatLongDate } from "@/domain/time";
 import type { MovieCredits } from "@/tmdb/credits";
 import styles from "./MovieScreen.module.css";
