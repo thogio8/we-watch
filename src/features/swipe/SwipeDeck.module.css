@@ -40,6 +40,11 @@
   margin-top: 26px;
 }
 
+/* Behind the match moment, all the screen but it fades under the scrim. */
+.screen > [inert] {
+  opacity: 0.35;
+}
+
 /* Deck or page take the focus back after the match moment: no ring. */
 .screen:focus,
 .deck:focus {

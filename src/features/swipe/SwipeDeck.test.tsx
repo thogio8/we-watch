@@ -612,6 +612,23 @@ describe("SwipeDeck : le moment du match", () => {
     expect(deckRegion()).toHaveFocus();
   });
 
+  it("le moment est modal : les thèmes aussi sont inertes, « ↺ ANNULER » non, jusqu'à sa fermeture", async () => {
+    const { user } = await keepLastWish(MATCHED);
+    await screen.findByRole("dialog");
+    const themes = () =>
+      document.querySelector('nav[aria-label="Thèmes"]') as Element;
+
+    expect(themes().closest("[inert]")).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "↺ ANNULER" }).closest("[inert]"),
+    ).toBeNull();
+    expect(screen.getByRole("dialog").closest("[inert]")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: CONTINUE }));
+
+    expect(themes().closest("[inert]")).toBeNull();
+  });
+
   it("la pile reste inerte derrière le moment, puis répond de nouveau", async () => {
     const { user, decide } = await keepLastWish(MATCHED);
     await screen.findByRole("dialog");

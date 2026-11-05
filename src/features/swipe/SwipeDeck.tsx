@@ -18,6 +18,7 @@ import styles from "./SwipeDeck.module.css";
 import { useDeckLoader } from "./useDeckLoader";
 import { useDismissAfter } from "./useDismissAfter";
 import { useFocusOnClose } from "./useFocusOnClose";
+import { useInertOutside } from "@/ui/useInertOutside";
 import { useSwipeSync } from "./useSwipeSync";
 
 interface SwipeDeckProps {
@@ -49,11 +50,13 @@ export function SwipeDeck({
   const { queue, toast, undoable, match } = state;
   const screenRef = useRef<HTMLElement>(null);
   const deckRef = useRef<HTMLElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   useDeckLoader(deck, state, dispatch, loadMore);
   useDismissAfter(toast, TOAST_MS, dispatch, "dismiss_toast");
   // « ↺ ANNULER » waits while the match moment is open: it undoes the match.
   useDismissAfter(match ? null : undoable, UNDO_MS, dispatch, "dismiss_undo");
   useFocusOnClose(match !== null, [deckRef, screenRef]);
+  useInertOutside(match !== null, overlayRef);
   const closeMatch = useCallback(() => dispatch({ type: "match_closed" }), []);
   const { decideCard, undoLast } = useSwipeSync(
     undoable,
@@ -86,8 +89,11 @@ export function SwipeDeck({
         <DeckError onRetry={() => dispatch({ type: "retry" })} />
       )}
 
-      {match && <MatchMoment onClose={closeMatch} />}
-      <DeckNotice toast={toast} undoable={undoable} onUndo={undoLast} />
+      {/* The match moment is modal: all else is inert, but « ↺ ANNULER ». */}
+      <div ref={overlayRef}>
+        {match && <MatchMoment onClose={closeMatch} />}
+        <DeckNotice toast={toast} undoable={undoable} onUndo={undoLast} />
+      </div>
     </main>
   );
 }
