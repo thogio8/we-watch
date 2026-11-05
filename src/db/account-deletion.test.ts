@@ -112,6 +112,9 @@ beforeEach(async () => {
   await markWatched(shared, 3, lea);
   await keep(shared, lea, 4);
   await markWatched(shared, 4, hugo);
+  // A match Léa's swipe completed.
+  await keep(shared, hugo, 9);
+  await keep(shared, lea, 9);
   await keep(hugos, hugo, 5);
   await markWatched(hugos, 5, hugo);
   await keep(zoes, zoe, 6);
@@ -162,6 +165,7 @@ const rowsNaming = async (userId: string) => ({
         eq(groupMovie.addedBy, userId),
         eq(groupMovie.watchedBy, userId),
         eq(groupMovie.favoriteBy, userId),
+        eq(groupMovie.matchedBy, userId),
       ),
     ),
 });
@@ -221,6 +225,7 @@ const withoutLea = (before: Tables): Tables =>
                 added_by: formerMember(row.added_by),
                 watched_by: formerMember(row.watched_by),
                 favorite_by: formerMember(row.favorite_by),
+                matched_by: formerMember(row.matched_by),
               }
             : row,
         ),
@@ -302,6 +307,7 @@ describe("supprimer un compte", () => {
     expect(after.wants.map((row) => [row.tmdbId, row.userId])).toEqual([
       [2, hugo],
       [3, hugo],
+      [9, hugo],
     ]);
     expect(await movieOf(shared, 2)).toMatchObject({ addedBy: null });
     expect(await movieOf(shared, 3)).toMatchObject({
@@ -320,6 +326,22 @@ describe("supprimer un compte", () => {
     expect(await movieOf(shared, 2)).toMatchObject({
       favoriteAt: T0,
       favoriteBy: null,
+    });
+  });
+
+  it("compte supprimé : matched_by à NULL, matched_at intact", async () => {
+    expect(await movieOf(shared, 9)).toMatchObject({
+      matchedAt: T0,
+      matchedBy: lea,
+    });
+    // Explicitly, not by the foreign key's ON DELETE set null.
+    await db.run(sql`PRAGMA foreign_keys = OFF`);
+
+    await account.deleteUser(lea);
+
+    expect(await movieOf(shared, 9)).toMatchObject({
+      matchedAt: T0,
+      matchedBy: null,
     });
   });
 

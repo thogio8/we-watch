@@ -55,6 +55,9 @@ type Who = { userId: string; now: Date };
 /** A movie leaving or coming back to « à voir » never keeps a favourite. */
 const NO_FAVORITE = { favoriteAt: null, favoriteBy: null } as const;
 
+/** A movie set aside then added again is no match any more. */
+const NO_MATCH = { matchedAt: null, matchedBy: null } as const;
+
 /** The columns each action writes, besides the status (see nextStatus). */
 const CHANGES: Record<
   MovieAction,
@@ -203,13 +206,13 @@ async function writeTransition(
       .onConflictDoNothing()
       .returning({ id: groupMovie.tmdbId });
   }
-  // A set-aside movie added again starts fresh: earlier wishes go.
-  if (current.status === "rejected") {
-    await tx.delete(movieWant).where(wishesOf(groupId, tmdbId));
-  }
+  // A set-aside movie added again starts fresh: earlier wishes go, and the
+  // match they made.
+  const fresh = current.status === "rejected";
+  if (fresh) await tx.delete(movieWant).where(wishesOf(groupId, tmdbId));
   return tx
     .update(groupMovie)
-    .set(changes)
+    .set({ ...changes, ...(fresh ? NO_MATCH : {}) })
     .where(listRow(groupId, tmdbId))
     .returning({ id: groupMovie.tmdbId });
 }

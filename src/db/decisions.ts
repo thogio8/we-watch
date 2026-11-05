@@ -1,9 +1,14 @@
 import { and, eq, isNull, ne, notExists } from "drizzle-orm";
 import type { MovieSnapshot } from "@/domain/movie";
-import type { ApplyResult, SwipeDecision } from "@/domain/transitions";
+import type {
+  ApplyResult,
+  SwipeDecision,
+  SwipeOutcome,
+} from "@/domain/transitions";
 import type { Database } from "./create-database";
 import { groupMovie, movieRejection, movieWant } from "./group-schema";
 import { changed, listRow, rejectionOf, wishesOf } from "./list-queries";
+import { markMatch, unmarkMatch } from "./match";
 import { upsertSnapshot } from "./snapshots";
 
 interface SwipeBase {
@@ -24,9 +29,10 @@ export interface Decisions {
   /**
    * « ON LE VEUT »: the movie joins the group's list if absent, and I want it.
    * « BOF »: for me alone, in all my groups; the list is never touched.
-   * "applied" iff this swipe created something (what an undo takes back).
+   * "applied" iff this swipe created something (what an undo takes back);
+   * `matched` iff this very swipe made the movie a match.
    */
-  swipe(input: SwipeInput): Promise<ApplyResult>;
+  swipe(input: SwipeInput): Promise<SwipeOutcome>;
   /** Takes back only what the swipe created. */
   undoSwipe(input: UndoInput): Promise<ApplyResult>;
   /** Movies the deck never shows me: the group's whole list and my BOF. */
@@ -36,7 +42,8 @@ export interface Decisions {
 const myWant = ({ groupId, userId, tmdbId }: UndoInput) =>
   and(wishesOf(groupId, tmdbId), eq(movieWant.userId, userId));
 
-function keep(db: Database, input: KeepInput): Promise<ApplyResult> {
+/** Only a wish this swipe created can complete a match. */
+function keep(db: Database, input: KeepInput): Promise<SwipeOutcome> {
   const { groupId, userId, tmdbId, snapshot } = input;
   const now = input.now ?? new Date();
   return db.transaction(async (tx) => {
@@ -58,23 +65,27 @@ function keep(db: Database, input: KeepInput): Promise<ApplyResult> {
       .values({ groupId, tmdbId, userId, wantedAt: now })
       .onConflictDoNothing()
       .returning({ id: movieWant.tmdbId });
-    return changed(listed, wanted);
+    const matched =
+      wanted.length > 0 &&
+      (await markMatch(tx, { groupId, userId, tmdbId, now }));
+    return { result: changed(listed, wanted), matched };
   });
 }
 
-async function reject(db: Database, input: RejectInput): Promise<ApplyResult> {
+async function reject(db: Database, input: RejectInput): Promise<SwipeOutcome> {
   const { userId, tmdbId } = input;
   const rejected = await db
     .insert(movieRejection)
     .values({ userId, tmdbId, rejectedAt: input.now ?? new Date() })
     .onConflictDoNothing()
     .returning({ id: movieRejection.tmdbId });
-  return changed(rejected);
+  return { result: changed(rejected), matched: false };
 }
 
 /**
- * My wish goes; the row too, if my swipe added it and nothing else holds it
- * (another member's wish, or a favourite marked since).
+ * My wish goes, and the match it made if any; the row too, if my swipe added
+ * it and nothing else holds it (another member's wish, or a favourite marked
+ * since).
  */
 function undoKeep(db: Database, input: UndoInput): Promise<ApplyResult> {
   const { groupId, userId, tmdbId } = input;
@@ -82,7 +93,16 @@ function undoKeep(db: Database, input: UndoInput): Promise<ApplyResult> {
     const unwanted = await tx
       .delete(movieWant)
       .where(myWant(input))
-      .returning({ id: movieWant.tmdbId });
+      .returning({ id: movieWant.tmdbId, wantedAt: movieWant.wantedAt });
+    const [mine] = unwanted;
+    if (mine !== undefined) {
+      await unmarkMatch(tx, {
+        groupId,
+        userId,
+        tmdbId,
+        wantedAt: mine.wantedAt,
+      });
+    }
     const otherWishes = tx
       .select()
       .from(movieWant)

@@ -51,7 +51,7 @@ const GROUP = "groupe-1";
 
 beforeEach(() => {
   vi.mocked(assertMember).mockClear();
-  swipe.mockReset().mockResolvedValue("applied");
+  swipe.mockReset().mockResolvedValue({ result: "applied", matched: false });
   undo.mockReset().mockResolvedValue("applied");
   getDeckDeps.mockReset().mockReturnValue(deckDeps);
   vi.mocked(revalidateListPages).mockReset();
@@ -98,7 +98,7 @@ describe("decideSwipe", () => {
   });
 
   it("signale une décision qui n’a rien créé (rien à annuler)", async () => {
-    swipe.mockResolvedValue("noop");
+    swipe.mockResolvedValue({ result: "noop", matched: false });
     await expect(decideSwipe(GROUP, 244786, "keep")).resolves.toBe("noop");
   });
 
