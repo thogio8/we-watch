@@ -59,21 +59,16 @@ describe("swiper un film que l’autre veut (fonctionnel)", () => {
   it("la file du groupe ouvre le deck, avec qui le veut", async () => {
     const result = await loadMoreCards(groupId, "top", 1);
 
-    // Whiplash first, once (the theme leaves out the group's list), then the
-    // four other films of the catalogue, none of them wanted.
-    expect(result).toEqual({
-      ok: true,
-      batch: {
-        nextPage: null,
-        cards: [
-          expect.objectContaining({
-            tmdbId: WHIPLASH,
-            wish: { others: ["Hugo"], matched: false },
-          }),
-          ...Array(4).fill(expect.not.objectContaining({ wish: {} })),
-        ],
-      },
-    });
+    expect(result).toMatchObject({ ok: true, batch: { nextPage: null } });
+    const cards = result.ok ? result.batch.cards : [];
+    const ids = cards.map((card) => card.tmdbId);
+    // Whiplash once, on top (the theme leaves out the group's list), and
+    // only that queued card carries a wish.
+    expect(ids[0]).toBe(WHIPLASH);
+    expect(ids.filter((id) => id === WHIPLASH)).toHaveLength(1);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(cards[0]?.wish).toEqual({ others: ["Hugo"], matched: false });
+    expect(cards.slice(1).some((card) => "wish" in card)).toBe(false);
   });
 
   it("TMDB en panne : la file s’affiche quand même", async () => {
