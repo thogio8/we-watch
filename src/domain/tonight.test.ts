@@ -39,6 +39,12 @@ describe("BEDTIMES", () => {
       "1H",
     ]);
   });
+
+  it("22h30, 23h, 23h30, minuit et 1h en minutes après minuit", () => {
+    expect(BEDTIMES.map((b) => b.minutes)).toEqual([
+      1350, 1380, 1410, 1440, 1500,
+    ]);
+  });
 });
 
 describe("bedtimeDeadline", () => {
@@ -58,6 +64,14 @@ describe("bedtimeDeadline", () => {
   it("une heure dépassée de peu reste dans le passé", () => {
     expect(bedtimeDeadline(at(23, 50), 23 * 60 + 30)).toEqual(at(23, 30));
     expect(bedtimeDeadline(at(1, 30, 1), 23 * 60 + 30)).toEqual(at(23, 30));
+  });
+
+  it("à 18 h pile avant le coucher, l'échéance reste le soir même", () => {
+    expect(bedtimeDeadline(at(5, 30), 23 * 60 + 30)).toEqual(at(23, 30));
+  });
+
+  it("à 6 h pile après le coucher, l'échéance passe au lendemain", () => {
+    expect(bedtimeDeadline(at(7), 25 * 60)).toEqual(at(1, 0, 1));
   });
 
   it("le matin, on vise le soir qui vient", () => {
@@ -95,6 +109,9 @@ describe("platformKey", () => {
     ["MGM Amazon Channel", "mgm"],
     ["Paramount Plus Premium Amazon Channel", "paramount+"],
     ["Plus Belle La Vie", "plus belle la vie"],
+    ["  Netflix  ", "netflix"],
+    ["Netflix Premium Club", "netflix premium club"],
+    ["Canal With Ads Plus", "canal with ads+"],
   ])("%s → %s", (name, key) => {
     expect(platformKey(name)).toBe(key);
   });
@@ -114,6 +131,12 @@ describe("tonightPlatforms", () => {
       { key: "netflix", name: "Netflix" },
       { key: "canal+", name: "Canal+" },
     ]);
+  });
+
+  it("à noms de même longueur, garde le premier rencontré", () => {
+    const lower = { id: 9, name: "netflix", logoPath: null };
+    const list = [movie(1, { providers: [NETFLIX, lower] })];
+    expect(tonightPlatforms(list)[0]?.name).toBe("Netflix");
   });
 
   it("à égalité, ordre alphabétique", () => {

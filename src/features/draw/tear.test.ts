@@ -33,6 +33,12 @@ describe("measureTear", () => {
     ).toEqual({ axis: "horizontal", at: 293, extent: 540 });
   });
 
+  it("affiche à 90 % pile de la largeur → encore sous l'affiche", () => {
+    expect(
+      measureTear(ticket, { width: 360, height: 290, left: 13, top: 103 }),
+    ).toMatchObject({ axis: "horizontal" });
+  });
+
   it("affiche à gauche → perforation à sa droite", () => {
     expect(
       measureTear(ticket, { width: 200, height: 300, left: 13, top: 103 }),

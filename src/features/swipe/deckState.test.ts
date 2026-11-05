@@ -26,6 +26,7 @@ describe("initDeck", () => {
     expect(state.loadFailed).toBe(false);
     expect(state.undoable).toBeNull();
     expect(state.toast).toBeNull();
+    expect(state.lastDecision).toBe("keep");
   });
 
   it("note l'échec quand le premier lot n'a pas pu être chargé", () => {
@@ -84,6 +85,15 @@ describe("deckReducer", () => {
     expect(state.decided.has(1)).toBe(false);
     expect(state.undoable).toBeNull();
     expect(state.toast).toBe("save_failed");
+  });
+
+  it("un enregistrement raté sans annulation en cours ne duplique pas la carte", () => {
+    const next = deckReducer(deckOf([1, 2]), {
+      type: "decide_failed",
+      card: aSnapshot(1),
+    });
+    expect(ids(next)).toEqual([1, 2]);
+    expect(next.undoable).toBeNull();
   });
 
   it("un enregistrement raté garde l'annulation d'un autre film", () => {

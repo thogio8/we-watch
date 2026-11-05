@@ -38,6 +38,12 @@ describe("drawSessionReducer", () => {
       drawSessionReducer(s, { type: "reject", candidateIds: [1, 2], roll: 0 }),
     ).toEqual({ phase: "result", currentId: 2, pile: [1] });
   });
+  it("draw depuis un résultat ne met pas le film courant dans la pile", () => {
+    const s = { phase: "result", currentId: 5, pile: [1] } as const;
+    expect(
+      drawSessionReducer(s, { type: "draw", candidateIds: [5, 6], roll: 0 }),
+    ).toEqual({ phase: "result", currentId: 5, pile: [1] });
+  });
   it("reject du dernier éligible → exhausted", () => {
     const s = { phase: "result", currentId: 2, pile: [1] } as const;
     expect(
