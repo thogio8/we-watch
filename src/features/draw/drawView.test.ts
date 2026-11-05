@@ -131,6 +131,16 @@ describe("drawButton", () => {
   });
 });
 
+describe("drawButton : le ton suit le choix", () => {
+  // Yellow is the default: only the favourites->matches switch can fail.
+  it("coups de cœur rose, matchs jaune : le changement de choix change le ton", () => {
+    const loved = drawButton({ ...NO_FILTERS, pool: "favorites" }, 2);
+    const matched = drawButton({ ...NO_FILTERS, pool: "matches" }, 2);
+    expect(loved.tone).not.toBe(matched.tone);
+    expect(matched.tone).toBe(drawButton(NO_FILTERS, 2).tone);
+  });
+});
+
 describe("homeCounts", () => {
   it("« dont k ♥ » seulement s’il y a des coups de cœur", () => {
     expect(

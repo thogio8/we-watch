@@ -290,10 +290,17 @@ describe("filtre matchs", () => {
     expect(sanitizeFilters(matches, list).pool).toBe("matches");
   });
 
-  it("un choix qui garde son objet n’en change pas un autre", () => {
+  it("un coup de cœur choisi sans coup de cœur retombe à toute la liste, même avec un match", () => {
     const loved = { ...NO_FILTERS, pool: "favorites" as const };
     expect(sanitizeFilters(loved, [match, other]).pool).toBe("all");
     expect(sanitizeFilters(NO_FILTERS, []).pool).toBe("all");
+  });
+
+  it("l’un des deux objets disparaît pendant son choix : toute la liste, l’autre reste sans effet", () => {
+    const loved = { ...NO_FILTERS, pool: "favorites" as const };
+    expect(sanitizeFilters(loved, list).pool).toBe("favorites");
+    expect(sanitizeFilters(loved, [match, matchDrama, other]).pool).toBe("all");
+    expect(sanitizeFilters(matches, [lovedOnly, other]).pool).toBe("all");
   });
 });
 

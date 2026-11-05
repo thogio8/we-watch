@@ -253,7 +253,7 @@ async function* longAccountName(page: Page) {
 const AMELIE = "Le Fabuleux Destin d'Amélie Poulain";
 
 /** On the draw's home, the favourites filter chosen in its panel. */
-async function favoritesOnly(page: Page) {
+async function favoritesPool(page: Page) {
   await page.getByRole("button", { name: /^LA SOIRÉE/ }).click();
   await page.getByRole("button", { name: /^♥ NOS COUPS DE CŒUR · / }).click();
   await expect(
@@ -277,7 +277,7 @@ async function* favoriteScreens(page: Page) {
   await expect(page.getByText("♡ COUP DE CŒUR\u00A0?")).toBeVisible();
   yield "/list/129 (fantôme)";
   await page.goto("/");
-  await favoritesOnly(page);
+  await favoritesPool(page);
   yield "/ (filtre coups de cœur)";
   await page.getByRole("button", { name: "TIRER UN COUP DE CŒUR" }).click();
   await expect(page.getByText("♥ COUP DE CŒUR", { exact: true })).toBeVisible();
@@ -352,7 +352,7 @@ test.describe("un écran sans défiler", () => {
       await markFromList(app, "Whiplash");
       await app.setViewportSize(viewport);
       await app.goto("/");
-      await favoritesOnly(app);
+      await favoritesPool(app);
       // Folded again, as the evening goes: the filter stays on.
       await app.getByRole("button", { name: /^LA SOIRÉE/ }).click();
       const clock = app.getByText(/^Il est \d/);
