@@ -1,14 +1,15 @@
 import { and, eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { aDatabase, aGroup, aUser } from "@tests/helpers/groups";
+import { aGroup } from "@tests/helpers/groups";
+import { aListWorld } from "@tests/helpers/list-world";
 import { aSnapshot, NETFLIX } from "@tests/helpers/movies";
 import { FORMER_MEMBER, watchedLine } from "@/domain/attribution";
 import type { Movie } from "@/domain/movie";
 import { formatShortDate } from "@/domain/time";
 import { user } from "./auth-schema";
 import type { Database } from "./create-database";
-import { createDecisions, type Decisions } from "./decisions";
-import { createGroupList, type GroupList } from "./group-list";
+import type { Decisions } from "./decisions";
+import type { GroupList } from "./group-list";
 import { groupMovie } from "./group-schema";
 
 const T0 = new Date(2026, 9, 1);
@@ -25,13 +26,7 @@ let groupA: string;
 let groupB: string;
 
 beforeEach(async () => {
-  db = await aDatabase();
-  list = createGroupList(db);
-  decisions = createDecisions(db);
-  lea = await aUser(db, "Léa");
-  hugo = await aUser(db, "Hugo");
-  groupA = await aGroup(db, "A", [lea, hugo]);
-  groupB = await aGroup(db, "B", [lea]);
+  ({ db, list, decisions, lea, hugo, groupA, groupB } = await aListWorld());
 });
 
 const keep = (tmdbId: number, groupId = groupA, userId = lea, now = T0) =>
