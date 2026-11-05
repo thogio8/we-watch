@@ -55,9 +55,9 @@ const EVERY_TABLE = [
             (129, 'Le Voyage de Chihiro', '', 8.5, '[]')`,
   "INSERT INTO app_group (id, name, created_at) VALUES ('nous-deux', 'NOUS DEUX', 1)",
   "INSERT INTO membership (group_id, user_id, joined_at, last_used_at) VALUES ('nous-deux', 'u-1', 2, 3)",
-  `INSERT INTO group_movie (group_id, tmdb_id, status, decided_at, watched_at, added_by, added_via, favorite_at, favorite_by)
-     VALUES ('nous-deux', 244786, 'watched', 4, 5, 'u-1', 'swipe', NULL, NULL),
-            ('nous-deux', 129, 'to_watch', 4, NULL, 'u-1', 'search', 8, 'u-1')`,
+  `INSERT INTO group_movie (group_id, tmdb_id, status, decided_at, watched_at, added_by, added_via, favorite_at, favorite_by, matched_at, matched_by)
+     VALUES ('nous-deux', 244786, 'watched', 4, 5, 'u-1', 'swipe', NULL, NULL, NULL, NULL),
+            ('nous-deux', 129, 'to_watch', 4, NULL, 'u-1', 'search', 8, 'u-1', 9, 'u-1')`,
   "INSERT INTO movie_want (group_id, tmdb_id, user_id, wanted_at) VALUES ('nous-deux', 244786, 'u-1', 6)",
   "INSERT INTO movie_rejection (user_id, tmdb_id, rejected_at) VALUES ('u-1', 129, 7)",
 ];

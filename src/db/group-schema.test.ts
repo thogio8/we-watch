@@ -168,6 +168,7 @@ describe("tables des groupes", () => {
       "group_movie(added_by) → user(id) set null",
       "group_movie(favorite_by) → user(id) set null",
       "group_movie(group_id) → app_group(id) cascade",
+      "group_movie(matched_by) → user(id) set null",
       "group_movie(tmdb_id) → movie_snapshot(tmdb_id) no action",
       "group_movie(watched_by) → user(id) set null",
       "membership(group_id) → app_group(id) cascade",
