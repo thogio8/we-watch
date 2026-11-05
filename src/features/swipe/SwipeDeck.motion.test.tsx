@@ -10,6 +10,7 @@ import { stubMatchMedia } from "@tests/helpers/dom";
 import type { MovieSnapshot } from "@/domain/movie";
 import type { SwipeOutcome } from "@/domain/transitions";
 import type { SwipeDecision } from "./actions";
+import { CONTINUE } from "./messages";
 import { SwipeDeck } from "./SwipeDeck";
 
 const card = (tmdbId: number, title: string): MovieSnapshot =>
@@ -101,7 +102,7 @@ describe("SwipeDeck : le moment du match en mouvement", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "C’EST UN MATCH",
     });
-    expect(screen.getByRole("button", { name: "CONTINUER ▸" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: CONTINUE })).toHaveFocus();
     expect(dialog).toBeVisible();
   });
 

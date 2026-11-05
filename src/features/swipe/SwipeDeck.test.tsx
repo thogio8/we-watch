@@ -9,6 +9,14 @@ import type { MovieSnapshot } from "@/domain/movie";
 import type { DeckId } from "@/tmdb/decks";
 import type { LoadMoreResult, SwipeDecision } from "./actions";
 import type { DeckBatch } from "./deck";
+import {
+  CONTINUE,
+  MATCH_HINT,
+  MATCH_KEPT,
+  MATCH_TEXT,
+  MATCH_TITLE,
+  SEE_LIST,
+} from "./messages";
 import { SwipeDeck } from "./SwipeDeck";
 
 const snapshot = (
@@ -495,15 +503,12 @@ describe("SwipeDeck : un film que le groupe veut", () => {
   /** Exact text: getByText would fold no-break spaces. */
   const banner = () =>
     ticket().queryByText(/LE VEU(T|LENT)$/)?.textContent ?? null;
-  const HINT = "TU LE VEUX AUSSI\u00A0? C’EST UN MATCH.";
-  const KEPT =
-    "LE GROUPE EN AVAIT FAIT UN MATCH AVANT TON ARRIVÉE\u00A0: IL LE RESTE.";
 
   it("porte le bandeau de Becca et la ligne du match quand seule mon envie manque", () => {
     renderDeck(ok([wanted(["Becca"]), WHIPLASH], null), { groupSize: 2 });
 
     expect(banner()).toBe("♥ BECCA LE VEUT");
-    expect(line()).toBe(HINT);
+    expect(line()).toBe(MATCH_HINT);
     expect(ticket().queryByText(/MATCH/)).not.toBeInTheDocument();
   });
 
@@ -519,7 +524,7 @@ describe("SwipeDeck : un film que le groupe veut", () => {
     renderDeck(ok([wanted(others)], null), { groupSize: 5 });
 
     expect(banner()).toBe("♥ 4 MEMBRES LE VEULENT");
-    expect(line()).toBe(HINT);
+    expect(line()).toBe(MATCH_HINT);
   });
 
   it("un match d'avant mon arrivée : le petit tampon et sa ligne", () => {
@@ -527,7 +532,7 @@ describe("SwipeDeck : un film que le groupe veut", () => {
 
     expect(banner()).toBe("♥ LÉA ET HUGO LE VEULENT");
     expect(ticket().getByText(/MATCH$/)).toHaveTextContent("♥♥ MATCH");
-    expect(line()).toBe(KEPT);
+    expect(line()).toBe(MATCH_KEPT);
   });
 
   it("une carte du thème n'a ni bandeau ni ligne", () => {
@@ -569,16 +574,14 @@ describe("SwipeDeck : le moment du match", () => {
       name: "C’EST UN MATCH",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveAccessibleDescription(
-      "IL NE MANQUAIT QUE TOI Tout le monde le veut\u00A0: il rejoint vos matchs",
-    );
+    expect(dialog).toHaveAccessibleDescription(`${MATCH_TITLE} ${MATCH_TEXT}`);
     const inside = within(dialog);
-    expect(inside.getByText("IL NE MANQUAIT QUE TOI")).toBeVisible();
-    expect(inside.getByRole("link", { name: "VOIR LA LISTE" })).toHaveAttribute(
+    expect(inside.getByText(MATCH_TITLE)).toBeVisible();
+    expect(inside.getByRole("link", { name: SEE_LIST })).toHaveAttribute(
       "href",
       "/list",
     );
-    expect(inside.getByRole("button", { name: "CONTINUER ▸" })).toHaveFocus();
+    expect(inside.getByRole("button", { name: CONTINUE })).toHaveFocus();
   });
 
   it("ne s'ouvre pas sur une prédiction : le serveur dit qu'il n'y a pas de match", async () => {
@@ -592,7 +595,7 @@ describe("SwipeDeck : le moment du match", () => {
     const { user } = await keepLastWish(MATCHED);
     await screen.findByRole("dialog");
 
-    await user.click(screen.getByRole("button", { name: "CONTINUER ▸" }));
+    await user.click(screen.getByRole("button", { name: CONTINUE }));
 
     expect(moment()).not.toBeInTheDocument();
     expect(deckRegion()).toHaveFocus();
@@ -609,11 +612,40 @@ describe("SwipeDeck : le moment du match", () => {
     expect(deckRegion()).toHaveFocus();
   });
 
+  it("la pile reste inerte derrière le moment, puis répond de nouveau", async () => {
+    const { user, decide } = await keepLastWish(MATCHED);
+    await screen.findByRole("dialog");
+    const keep = () => screen.getByRole("button", { name: "ON LE VEUT ♥" });
+
+    expect(deckRegion()).toHaveAttribute("inert");
+    expect(keep().closest("[inert]")).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "✕ BOF" }).closest("[inert]"),
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: CONTINUE }));
+
+    expect(deckRegion()).not.toHaveAttribute("inert");
+    expect(keep().closest("[inert]")).toBeNull();
+    await tap(user, "ON LE VEUT ♥");
+    expect(decide).toHaveBeenLastCalledWith(244786, "keep");
+  });
+
+  it("Échap hors du moment ne le ferme pas", async () => {
+    const { user } = await keepLastWish(MATCHED);
+    await screen.findByRole("dialog");
+
+    screen.getByRole("button", { name: "↺ ANNULER" }).focus();
+    await user.keyboard("{Escape}");
+
+    expect(moment()).toBeInTheDocument();
+  });
+
   it("après la dernière carte, le focus revient à la page", async () => {
     const { user } = await keepLastWish(MATCHED, []);
     await screen.findByRole("dialog");
 
-    await user.click(screen.getByRole("button", { name: "CONTINUER ▸" }));
+    await user.click(screen.getByRole("button", { name: CONTINUE }));
 
     expect(screen.getByRole("main")).toHaveFocus();
   });
@@ -629,7 +661,7 @@ describe("SwipeDeck : le moment du match", () => {
       expect(undo).toHaveBeenCalledExactlyOnceWith(194, "keep"),
     );
     expect(currentTitle()).toHaveTextContent(AMELIE.title);
-    expect(line()).toBe("TU LE VEUX AUSSI ? C’EST UN MATCH.");
+    expect(line()).toBe(MATCH_HINT);
     expect(deckRegion()).toHaveFocus();
   });
 
@@ -646,7 +678,7 @@ describe("SwipeDeck : le moment du match", () => {
       act(() => vi.advanceTimersByTime(60_000));
       expect(screen.getByRole("button", { name: "↺ ANNULER" })).toBeVisible();
 
-      await user.click(screen.getByRole("button", { name: "CONTINUER ▸" }));
+      await user.click(screen.getByRole("button", { name: CONTINUE }));
       act(() => vi.advanceTimersByTime(4_000));
       expect(screen.getByRole("button", { name: "↺ ANNULER" })).toBeVisible();
       act(() => vi.advanceTimersByTime(1_000));

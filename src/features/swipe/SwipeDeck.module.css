@@ -48,7 +48,7 @@
 
 /* « TU LE VEUX AUSSI ? C'EST UN MATCH. »: in the gap above the buttons. */
 .hint {
-  max-width: 36ch;
+  max-width: 100%;
   margin: 12px 0 0;
   font-family: var(--font-mono);
   font-size: var(--text-xs);

@@ -16,7 +16,9 @@ interface CardStackProps {
   groupSize: number;
   onDecide: (card: DeckCard, decision: SwipeDecision) => void;
   /** The deck, to give it the focus back (after the match moment). */
-  deckRef?: RefObject<HTMLElement | null>;
+  deckRef: RefObject<HTMLElement | null>;
+  /** Behind the match moment: neither the cards nor the buttons answer. */
+  frozen: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export function CardStack({
   groupSize,
   onDecide,
   deckRef,
+  frozen,
 }: CardStackProps) {
   const reduce = useReducedMotion() ?? false;
   const [leavingIds, setLeavingIds] = useState<ReadonlySet<number>>(
@@ -59,6 +62,7 @@ export function CardStack({
       <section
         ref={deckRef}
         tabIndex={-1}
+        inert={frozen}
         className={styles.deck}
         aria-label="Film à trier"
         aria-busy={locked || undefined}
@@ -84,7 +88,7 @@ export function CardStack({
         </AnimatePresence>
       </section>
       {hint !== null && <p className={styles.hint}>{hint}</p>}
-      <div className={styles.actions}>
+      <div className={styles.actions} inert={frozen}>
         <Button variant="secondary" onClick={() => choose("reject")}>
           ✕ BOF
         </Button>
