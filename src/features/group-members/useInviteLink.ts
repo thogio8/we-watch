@@ -4,6 +4,7 @@ import { leaveIfRefused } from "@/access/refusals";
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   useSyncExternalStore,
@@ -46,9 +47,14 @@ export function useInviteLink({ load, regenerate }: InviteLinkActions) {
     return null;
   }, []);
 
-  useEffect(() => {
+  // Once per mount: each page render binds a new `load`, and the screen is
+  // keyed by its group, so a group change mounts it again.
+  const loadOnce = useEffectEvent(() => {
     load().then(received, failed);
-  }, [load, received, failed]);
+  });
+  useEffect(() => {
+    loadOnce();
+  }, []);
 
   async function share() {
     if (busy.current) return;

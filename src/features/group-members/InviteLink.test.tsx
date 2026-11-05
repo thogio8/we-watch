@@ -36,8 +36,10 @@ function renderLink(sharer: Sharer, load = vi.fn(() => Promise.resolve(LINK))) {
   const regenerate = vi.fn(() => Promise.resolve(NEW_LINK));
   const user = userEvent.setup();
   stubNavigator(sharer);
-  render(<InviteLink load={load} regenerate={regenerate} />);
-  return { user, load, regenerate };
+  const { rerender } = render(
+    <InviteLink load={load} regenerate={regenerate} />,
+  );
+  return { user, load, regenerate, rerender };
 }
 
 const button = (name: string) => screen.getByRole("button", { name });
@@ -49,6 +51,20 @@ describe("InviteLink", () => {
 
     await vi.waitFor(() => expect(button(COPY)).toBeEnabled());
     expect(load).toHaveBeenCalledOnce();
+  });
+
+  it("un nouveau rendu de la page, avec une autre action liée, ne redemande pas le lien", async () => {
+    const { load, regenerate, rerender } = renderLink({
+      writeText: vi.fn(() => Promise.resolve()),
+    });
+    await vi.waitFor(() => expect(button(COPY)).toBeEnabled());
+
+    const rebound = vi.fn(() => Promise.resolve(LINK));
+    rerender(<InviteLink load={rebound} regenerate={regenerate} />);
+    await vi.waitFor(() => expect(button(COPY)).toBeEnabled());
+
+    expect(load).toHaveBeenCalledOnce();
+    expect(rebound).not.toHaveBeenCalled();
   });
 
   it("le téléphone sait partager : « PARTAGER » ouvre son partage", async () => {
