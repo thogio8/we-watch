@@ -56,10 +56,20 @@ describe("tonightStorage", () => {
 
   it("ne garde jamais le filtre coups de cœur sur l’appareil", () => {
     expect(
-      JSON.parse(serializeTonight({ ...NO_FILTERS, favoritesOnly: true })),
+      JSON.parse(serializeTonight({ ...NO_FILTERS, pool: "favorites" })),
     ).toEqual({ bedtime: null, platforms: [] });
     expect(parseStoredTonight('{"favoritesOnly":true}')).toEqual({
       bedtime: null,
+      platforms: [],
+    });
+  });
+
+  it("ne garde jamais le filtre matchs, et ignore un ancien favoritesOnly", () => {
+    expect(
+      JSON.parse(serializeTonight({ ...NO_FILTERS, pool: "matches" })),
+    ).toEqual({ bedtime: null, platforms: [] });
+    expect(parseStoredTonight('{"pool":"matches","bedtime":1380}')).toEqual({
+      bedtime: 1380,
       platforms: [],
     });
   });

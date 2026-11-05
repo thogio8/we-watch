@@ -49,7 +49,7 @@ function screenFor({
         toWatch: toWatch.length,
         watched,
         favorites: toWatch.filter((m) => m.favoriteAt !== null).length,
-        matches: 0,
+        matches: toWatch.filter((m) => m.matchedAt !== null).length,
       }}
       onWatched={onWatched ?? (() => Promise.resolve())}
       pill={pill}
@@ -635,6 +635,11 @@ describe("DrawScreen : filtres « ce soir »", () => {
   });
 });
 
+const openPanel = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole("button", { name: /^LA SOIRÉE/ }));
+const among = () => screen.getByRole("group", { name: "ON TIRE PARMI" });
+const choice = (name: string) => within(among()).getByRole("button", { name });
+
 describe("DrawScreen : tirer parmi nos coups de cœur", () => {
   const loved = (m: Movie): Movie => ({
     ...m,
@@ -648,11 +653,6 @@ describe("DrawScreen : tirer parmi nos coups de cœur", () => {
     WHIPLASH,
     movie(13, "FORREST GUMP", { runtimeMinutes: 142 }),
   ];
-  const openPanel = (user: ReturnType<typeof userEvent.setup>) =>
-    user.click(screen.getByRole("button", { name: /^LA SOIRÉE/ }));
-  const among = () => screen.getByRole("group", { name: "ON TIRE PARMI" });
-  const choice = (name: string) =>
-    within(among()).getByRole("button", { name });
 
   it("sans coup de cœur : ni ligne « ON TIRE PARMI », ni « dont », le bouton jaune de la 2.0", async () => {
     const { user } = renderDraw({ toWatch: others });
@@ -797,5 +797,85 @@ describe("DrawScreen : le match sur le ticket", () => {
     const ticket = await ticketOf(movie(1, "PARASITE", { wantedBy: ["Léa"] }));
 
     expect(ticket.queryByText(/MATCH/)).not.toBeInTheDocument();
+  });
+});
+
+describe("DrawScreen : tirer parmi les matchs", () => {
+  const MATCHED = new Date(2026, 10, 5);
+  const pair = ["Léa", "Hugo"];
+  const matched = movie(496243, "PARASITE", {
+    runtimeMinutes: 132,
+    wantedBy: pair,
+    matchedAt: MATCHED,
+  });
+  const loved = movie(194, "LE FABULEUX DESTIN D’AMÉLIE POULAIN", {
+    favoriteAt: MATCHED,
+    favoriteBy: "Léa",
+  });
+  const others = [CHIHIRO, WHIPLASH];
+
+  it("un match sans coup de cœur : seule la puce matchs s’ajoute à TOUTE LA LISTE", async () => {
+    const { user } = renderDraw({ toWatch: [...others, matched] });
+    await openPanel(user);
+
+    expect(within(among()).getAllByRole("button")).toHaveLength(2);
+    expect(choice("TOUTE LA LISTE")).toHaveAttribute("aria-pressed", "true");
+    expect(choice("♥♥ NOS MATCHS · 1")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(
+      screen.getByText("3 films à regarder · dont 1 match · 0 vu"),
+    ).toBeVisible();
+  });
+
+  it("les trois puces, une seule appuyée à la fois", async () => {
+    const { user } = renderDraw({ toWatch: [...others, matched, loved] });
+    await openPanel(user);
+    expect(within(among()).getAllByRole("button")).toHaveLength(3);
+
+    await user.click(choice("♥♥ NOS MATCHS · 1"));
+    expect(choice("♥♥ NOS MATCHS · 1")).toHaveAttribute("aria-pressed", "true");
+    expect(choice("♥ NOS COUPS DE CŒUR · 1")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(choice("TOUTE LA LISTE")).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(choice("♥ NOS COUPS DE CŒUR · 1"));
+    expect(choice("♥♥ NOS MATCHS · 1")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("filtre matchs : TIRER UN MATCH, le résumé MATCHS, seul un match sort", async () => {
+    // Math.random() is 0: without the filter, CHIHIRO would come out.
+    const { user } = renderDraw({ toWatch: [...others, matched] });
+    await openPanel(user);
+
+    await user.click(choice("♥♥ NOS MATCHS · 1"));
+    await openPanel(user);
+    expect(
+      screen.getByRole("button", { name: /^LA SOIRÉE/ }),
+    ).toHaveTextContent("MATCHS");
+    await user.click(screen.getByRole("button", { name: "TIRER UN MATCH" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "PARASITE" }),
+    ).toBeVisible();
+  });
+
+  it("le dernier match disparaît : le filtre retombe et la ligne s’efface", async () => {
+    const { user, rerender } = renderDraw({ toWatch: [...others, matched] });
+    await openPanel(user);
+    await user.click(choice("♥♥ NOS MATCHS · 1"));
+
+    rerender({ toWatch: [...others, { ...matched, matchedAt: null }] });
+
+    expect(
+      screen.queryByRole("group", { name: "ON TIRE PARMI" }),
+    ).not.toBeInTheDocument();
+    expect(drawButton()).toBeVisible();
   });
 });

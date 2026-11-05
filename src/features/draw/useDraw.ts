@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { lastTornId } from "@/domain/draw-session";
-import { isFavorite, type Movie } from "@/domain/movie";
+import { isFavorite, isMatch, type Movie } from "@/domain/movie";
 import {
   filterTonight,
   isFiltering,
@@ -95,6 +95,7 @@ export function useDraw(
     setFilters,
     platforms: tonightPlatforms(toWatch),
     favoriteCount: toWatch.filter(isFavorite).length,
+    matchCount: toWatch.filter(isMatch).length,
     filtering: isFiltering(filters),
     eligibleCount: eligible.length,
     pile: {
