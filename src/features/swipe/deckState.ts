@@ -1,4 +1,3 @@
-import type { MovieSnapshot } from "@/domain/movie";
 import type { LoadMoreResult, SwipeDecision } from "./actions";
 import type { DeckBatch, DeckCard } from "./deck";
 
@@ -15,17 +14,21 @@ export interface DeckState {
   /** Direction the last decided card leaves in. */
   lastDecision: SwipeDecision;
   /** The swipe « ↺ ANNULER » would take back, null once dismissed. */
-  undoable: { card: MovieSnapshot; decision: SwipeDecision } | null;
+  undoable: { card: DeckCard; decision: SwipeDecision } | null;
   /** Failure currently reported, null when no message. */
   toast: Toast | null;
+  /** The card my swipe made a match of, as the server said; null when closed. */
+  match: DeckCard | null;
 }
 
 export type DeckAction =
   | { type: "loaded"; batch: DeckBatch }
   | { type: "load_failed" }
   | { type: "retry" }
-  | { type: "decided"; card: MovieSnapshot; decision: SwipeDecision }
-  | { type: "decide_failed"; card: MovieSnapshot }
+  | { type: "decided"; card: DeckCard; decision: SwipeDecision }
+  | { type: "decide_failed"; card: DeckCard }
+  | { type: "matched"; card: DeckCard }
+  | { type: "match_closed" }
   | { type: "undone" }
   | { type: "undo_failed"; tmdbId: number }
   | { type: "dismiss_undo" }
@@ -48,7 +51,7 @@ function takeOut(state: DeckState, tmdbId: number): DeckState {
 }
 
 /** The card is back on top, undecided (failed save or « ↺ ANNULER »). */
-function putBack(state: DeckState, card: MovieSnapshot): DeckState {
+function putBack(state: DeckState, card: DeckCard): DeckState {
   const decided = new Set(state.decided);
   decided.delete(card.tmdbId);
   const others = state.queue.filter((c) => c.tmdbId !== card.tmdbId);
@@ -92,10 +95,15 @@ const handlers: Handlers = {
       state.undoable?.card.tmdbId === card.tmdbId ? null : state.undoable;
     return { ...putBack(state, card), undoable, toast: "save_failed" };
   },
-  undone: (state) =>
-    state.undoable === null
-      ? state
-      : { ...putBack(state, state.undoable.card), undoable: null },
+  matched: (state, { card }) => ({ ...state, match: card }),
+  match_closed: (state) => ({ ...state, match: null }),
+  undone: (state) => {
+    if (state.undoable === null) return state;
+    const { card } = state.undoable;
+    // Undoing the swipe that made the match undoes the match: no more moment.
+    const match = state.match?.tmdbId === card.tmdbId ? null : state.match;
+    return { ...putBack(state, card), undoable: null, match };
+  },
   // The decision is still saved: the card leaves again, as decided.
   undo_failed: (state, { tmdbId }) => ({
     ...takeOut(state, tmdbId),
@@ -122,6 +130,7 @@ export function initDeck(initial: LoadMoreResult): DeckState {
     lastDecision: "keep",
     undoable: null,
     toast: null,
+    match: null,
   };
   return initial.ok
     ? deckReducer(empty, { type: "loaded", batch: initial.batch })

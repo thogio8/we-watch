@@ -1,0 +1,68 @@
+.stamp {
+  display: inline-block;
+  border: var(--border);
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+}
+
+/* « ♥♥ MATCH »: printed on a poster, beside the platform stamp. */
+.small {
+  padding: 3px 9px;
+  border-radius: var(--radius-chip);
+  box-shadow: var(--shadow-offset-sm);
+  font-size: clamp(10px, calc(var(--poster-w, 300px) / 17), var(--text-md));
+  line-height: 1.15;
+  white-space: nowrap;
+  transform: rotate(-6deg);
+}
+
+/* The match moment: a double-bordered stamp, « C'EST UN / MATCH / ♥♥ ». */
+.large {
+  width: min(var(--match-width, 260px), 100%);
+  padding: 6px;
+  border: var(--border-heavy);
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-offset-lg), var(--glow-yellow-lg);
+  text-align: center;
+}
+
+.frame {
+  display: block;
+  padding: 12px 8px 14px;
+  border: var(--border-thin);
+  border-radius: var(--radius-chip);
+}
+
+.lead {
+  display: block;
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
+/* Ink keeps the contrast; the pink comes as the riso offset. */
+.word {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--match-word, var(--text-5xl));
+  line-height: 0.95;
+  text-shadow: var(--shadow-offset-pink);
+}
+
+.large .hearts {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
+
+.pink {
+  color: var(--pink);
+}
+
+/* The second heart overlaps the first, a little off register. */
+.blue {
+  margin-left: -0.35em;
+  color: var(--blue);
+}

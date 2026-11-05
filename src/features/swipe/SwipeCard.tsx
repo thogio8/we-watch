@@ -9,12 +9,13 @@ import {
   type Variants,
 } from "motion/react";
 import { useRef } from "react";
-import type { MovieSnapshot } from "@/domain/movie";
 import { Poster } from "@/ui/Poster";
 import { Stamp } from "@/ui/Stamp";
 import { Ticket } from "@/ui/Ticket";
 import { TicketDetails } from "@/ui/TicketDetails";
 import type { SwipeDecision } from "./actions";
+import { CardWish } from "./CardWish";
+import type { DeckCard } from "./deck";
 import styles from "./SwipeCard.module.css";
 
 /** Share of the card width past which a released drag decides. */
@@ -91,7 +92,7 @@ function cardVariants(reduce: boolean): Variants {
 }
 
 interface SwipeCardProps {
-  movie: MovieSnapshot;
+  movie: DeckCard;
   position: CardPosition;
   reduce: boolean;
   onDecide: (decision: SwipeDecision) => void;
@@ -147,6 +148,7 @@ export function SwipeCard({
       <Ticket
         posterHeight={POSTER_HEIGHT}
         adaptive
+        stamp={movie.wish && <CardWish wish={movie.wish} />}
         poster={
           <>
             <Poster path={movie.posterPath} title={movie.title} size="w500" />

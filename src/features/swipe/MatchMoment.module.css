@@ -1,0 +1,137 @@
+/*
+ * The match moment over the deck: under the « ↺ ANNULER » slip (z-index 20),
+ * which stays reachable, above the bottom nav. Scrolls on a short screen.
+ */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: grid;
+  place-items: center;
+  padding: calc(64px + env(safe-area-inset-top)) var(--gutter)
+    calc(16px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--scrim);
+}
+
+.moment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* The note and its two buttons, under the stamp (beside it, phone sideways). */
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Thumped onto the deck, tilted like a real stamp. */
+.stamp {
+  transform: rotate(-9deg);
+  animation: thump 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes thump {
+  0% {
+    opacity: 0;
+    transform: rotate(-9deg) scale(2.2);
+  }
+
+  60% {
+    opacity: 1;
+    transform: rotate(-9deg) scale(0.92);
+  }
+
+  100% {
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+/* « IL NE MANQUAIT QUE TOI » on a white slip. */
+.note {
+  width: 100%;
+  padding: 12px 16px;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--white);
+  box-shadow: var(--shadow-offset);
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  text-transform: uppercase;
+}
+
+.text {
+  margin: 4px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* Two buttons side by side, stacked on the narrowest phones. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* Side by side from 360 px wide: the mockup's smaller type. */
+.side .actions > * {
+  padding-inline: 16px;
+  font-size: var(--text-md);
+}
+
+/* Wide screens: the nav and the slip sit at the top. */
+@media (min-width: 760px) {
+  .layer {
+    padding-top: calc(var(--nav-top-height) + 76px + env(safe-area-inset-top));
+  }
+}
+
+/* Tiny screens: a smaller stamp keeps the buttons in sight. */
+@media (max-height: 620px) {
+  .moment {
+    gap: 14px;
+  }
+
+  .stamp {
+    --match-width: 210px;
+    --match-word: var(--text-4xl);
+  }
+}
+
+/* Phone held sideways: the stamp beside the note and the buttons. */
+@media (min-width: 760px) and (max-height: 520px) {
+  .layer {
+    padding-top: calc(var(--nav-top-height) + 70px + env(safe-area-inset-top));
+  }
+
+  .moment {
+    flex-direction: row;
+    justify-content: center;
+    gap: 32px;
+    max-width: 680px;
+  }
+
+  .side {
+    max-width: 340px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    animation: none;
+  }
+}

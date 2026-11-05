@@ -1,0 +1,63 @@
+/*
+ * Placed against the whole ticket (its `stamp` slot): bottom-left of a
+ * standing poster, the banner leaning against the ticket's left edge (spec
+ * 2.2 §4); bottom-right of the stub of a lying ticket, whose poster is too
+ * narrow for it.
+ */
+.wish {
+  position: absolute;
+  top: var(--poster-h);
+  left: calc(-1 * var(--border-width));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: calc(100% - 20px);
+  transform: translateY(calc(-100% - 14px));
+  pointer-events: none;
+}
+
+/* The small stamp stands on the poster, clear of the edge. */
+.match {
+  margin-left: 12px;
+}
+
+.banner {
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 12px;
+  border: var(--border);
+  border-radius: 0 var(--radius-tab) var(--radius-tab) 0;
+  background: var(--white);
+  box-shadow: var(--shadow-offset-sm);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+/* Only the glyph is pink: pink words on white would miss the contrast. */
+.heart {
+  color: var(--pink);
+}
+
+@container shell (min-width: 640px) {
+  .wish {
+    top: auto;
+    right: 14px;
+    bottom: 14px;
+    left: auto;
+    align-items: flex-end;
+    max-width: 45%;
+    transform: none;
+  }
+
+  .match {
+    margin-left: 0;
+  }
+
+  .banner {
+    border-radius: var(--radius-tab);
+  }
+}

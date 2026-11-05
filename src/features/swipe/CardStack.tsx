@@ -1,18 +1,22 @@
 "use client";
 
 import { AnimatePresence, useReducedMotion } from "motion/react";
-import { useState } from "react";
-import type { MovieSnapshot } from "@/domain/movie";
+import { type RefObject, useState } from "react";
 import { Button } from "@/ui/Button";
 import type { SwipeDecision } from "./actions";
 import type { DeckCard } from "./deck";
 import { SwipeCard } from "./SwipeCard";
 import styles from "./SwipeDeck.module.css";
+import { wishHint } from "./wishHint";
 
 interface CardStackProps {
   queue: DeckCard[];
   lastDecision: SwipeDecision;
-  onDecide: (card: MovieSnapshot, decision: SwipeDecision) => void;
+  /** Members of the group, me included: whether my keep would match. */
+  groupSize: number;
+  onDecide: (card: DeckCard, decision: SwipeDecision) => void;
+  /** The deck, to give it the focus back (after the match moment). */
+  deckRef?: RefObject<HTMLElement | null>;
 }
 
 /**
@@ -22,8 +26,15 @@ interface CardStackProps {
  * A card whose save failed comes back mid-flight: AnimatePresence then never
  * reports the end of its exit, so a leaving id back in the queue no longer
  * locks. The lock also resets with the stack whenever the deck runs dry.
+ * Under the top card, a line when the group wants it (`wishHint`).
  */
-export function CardStack({ queue, lastDecision, onDecide }: CardStackProps) {
+export function CardStack({
+  queue,
+  lastDecision,
+  groupSize,
+  onDecide,
+  deckRef,
+}: CardStackProps) {
   const reduce = useReducedMotion() ?? false;
   const [leavingIds, setLeavingIds] = useState<ReadonlySet<number>>(
     () => new Set(),
@@ -34,7 +45,8 @@ export function CardStack({ queue, lastDecision, onDecide }: CardStackProps) {
   const queued = new Set(queue.map((card) => card.tmdbId));
   const locked = [...leavingIds].some((id) => !queued.has(id));
 
-  const decide = (card: MovieSnapshot, decision: SwipeDecision) => {
+  const hint = wishHint(top, groupSize);
+  const decide = (card: DeckCard, decision: SwipeDecision) => {
     setLeavingIds((ids) => new Set(ids).add(card.tmdbId));
     onDecide(card, decision);
   };
@@ -45,6 +57,8 @@ export function CardStack({ queue, lastDecision, onDecide }: CardStackProps) {
   return (
     <>
       <section
+        ref={deckRef}
+        tabIndex={-1}
         className={styles.deck}
         aria-label="Film à trier"
         aria-busy={locked || undefined}
@@ -69,6 +83,7 @@ export function CardStack({ queue, lastDecision, onDecide }: CardStackProps) {
             ))}
         </AnimatePresence>
       </section>
+      {hint !== null && <p className={styles.hint}>{hint}</p>}
       <div className={styles.actions}>
         <Button variant="secondary" onClick={() => choose("reject")}>
           ✕ BOF
