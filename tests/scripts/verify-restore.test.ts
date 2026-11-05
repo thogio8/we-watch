@@ -68,6 +68,22 @@ function plainBackup(content: unknown) {
 }
 
 describe("exercice de restauration", () => {
+  it("compte les films vus avant les comptes (watched_legacy à 1), un nombre seulement", async () => {
+    await backedUpAndRestored();
+    expect(verify().stdout).toContain("group_movie.watched_legacy à 1 : 0");
+
+    await sql(source, [
+      "UPDATE group_movie SET watched_legacy = 1 WHERE tmdb_id = 2",
+    ]);
+    execFileSync("node", ["scripts/backup-db.mjs", backupFile], {
+      env: env(source),
+    });
+
+    const result = verify();
+    expect(result.stdout).toContain("group_movie.watched_legacy à 1 : 1");
+    expect(result.stdout).not.toContain("Secret");
+  });
+
   it("une sauvegarde restaurée se vérifie table par table", async () => {
     await backedUpAndRestored();
 

@@ -64,20 +64,17 @@ const CHANGES: Record<
     decidedAt: now,
     addedBy: userId,
     addedVia: "search",
-    legacy: false,
     ...NO_FAVORITE,
   }),
   remove: ({ now }) => ({ decidedAt: now, ...NO_FAVORITE }),
   mark_watched: ({ userId, now }) => ({
     watchedAt: now,
     watchedBy: userId,
-    watchedLegacy: false,
     ...NO_FAVORITE,
   }),
   unwatch: () => ({
     watchedAt: null,
     watchedBy: null,
-    watchedLegacy: false,
     ...NO_FAVORITE,
   }),
 };

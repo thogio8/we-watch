@@ -48,7 +48,7 @@ describe("wantedLine", () => {
 });
 
 describe("watchedLine", () => {
-  const seen = { watchedAt: OCT_18, watchedBy: null, watchedLegacy: false };
+  const seen = { watchedAt: OCT_18, watchedBy: null };
 
   it("ne dit rien tant que le film n'est pas vu", () => {
     expect(
@@ -62,12 +62,6 @@ describe("watchedLine", () => {
     );
   });
 
-  it("omet le marqueur d'un film vu avant les comptes", () => {
-    expect(watchedLine({ ...seen, watchedLegacy: true }, formatShortDate)).toBe(
-      "vu le 18/10",
-    );
-  });
-
   it("parle d'un ancien membre quand le compte est supprimé", () => {
     expect(watchedLine(seen, formatShortDate)).toBe(
       `vu le 18/10 · marqué par ${FORMER_MEMBER}`,
@@ -75,8 +69,8 @@ describe("watchedLine", () => {
   });
 
   it("accepte le format long de la fiche", () => {
-    expect(watchedLine({ ...seen, watchedLegacy: true }, formatLongDate)).toBe(
-      "vu le 18 octobre 2026",
+    expect(watchedLine({ ...seen, watchedBy: "Hugo" }, formatLongDate)).toBe(
+      "vu le 18 octobre 2026 · marqué par Hugo",
     );
   });
 });

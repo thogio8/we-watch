@@ -436,19 +436,29 @@ describe("liste du groupe", () => {
     });
   });
 
-  it("signale un film copié de l’ancienne liste", async () => {
+  it("signale un film copié de l’ancienne liste, d’après added_via seul", async () => {
     await keep(1);
-    await db.update(groupMovie).set({ legacy: true, addedBy: null });
+    await keep(2);
+    // The legacy column is no longer read: added_via alone says it.
+    await db
+      .update(groupMovie)
+      .set({ addedVia: "legacy", legacy: false, addedBy: null })
+      .where(eq(groupMovie.tmdbId, 1));
+    await db
+      .update(groupMovie)
+      .set({ legacy: true })
+      .where(eq(groupMovie.tmdbId, 2));
 
     expect(await list.findInList(groupA, 1)).toMatchObject({
       addedBy: null,
       legacy: true,
     });
+    expect(await list.findInList(groupA, 2)).toMatchObject({ legacy: false });
   });
 
   describe("film copié de l’ancienne liste", () => {
-    // What migrations 0006 and 0007 leave: no author, and a movie already
-    // watched before the accounts has nobody to name.
+    // What migrations 0006 and 0011 leave: no author. watched_legacy is no
+    // longer read (spec v2 §17): nobody to name reads as a former member.
     const copied = (watchedAt: Date | null) =>
       db.update(groupMovie).set({
         status: watchedAt === null ? "to_watch" : "watched",
@@ -464,11 +474,11 @@ describe("liste du groupe", () => {
         formatShortDate,
       );
 
-    it("vu avant les comptes : « vu le … », sans marqueur", async () => {
+    it("vu avant les comptes, personne à nommer : « un ancien membre »", async () => {
       await keep(1);
       await copied(T1);
 
-      expect(await line(1)).toBe("vu le 02/10");
+      expect(await line(1)).toBe(`vu le 02/10 · marqué par ${FORMER_MEMBER}`);
     });
 
     it("marqué ensuite par Hugo, dont le compte est supprimé : « un ancien membre »", async () => {

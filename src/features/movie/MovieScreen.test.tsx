@@ -86,8 +86,11 @@ describe("fiche d'un film", () => {
     ],
     [
       "sans auteur (liste d’avant)",
-      { legacy: true, watchedLegacy: true },
-      ["ajouté le 3 octobre 2026", "vu le 27 octobre 2026"],
+      { legacy: true },
+      [
+        "ajouté le 3 octobre 2026",
+        "vu le 27 octobre 2026 · marqué par un ancien membre",
+      ],
     ],
     [
       "un compte supprimé",
