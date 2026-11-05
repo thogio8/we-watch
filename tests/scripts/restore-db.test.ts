@@ -55,13 +55,11 @@ const EVERY_TABLE = [
             (129, 'Le Voyage de Chihiro', '', 8.5, '[]')`,
   "INSERT INTO app_group (id, name, created_at) VALUES ('nous-deux', 'NOUS DEUX', 1)",
   "INSERT INTO membership (group_id, user_id, joined_at, last_used_at) VALUES ('nous-deux', 'u-1', 2, 3)",
-  `INSERT INTO group_movie (group_id, tmdb_id, status, decided_at, watched_at, added_by, added_via, legacy, watched_legacy, favorite_at, favorite_by)
-     VALUES ('nous-deux', 244786, 'watched', 4, 5, 'u-1', 'swipe', 0, 1, NULL, NULL),
-            ('nous-deux', 129, 'to_watch', 4, NULL, 'u-1', 'search', 0, 0, 8, 'u-1')`,
+  `INSERT INTO group_movie (group_id, tmdb_id, status, decided_at, watched_at, added_by, added_via, favorite_at, favorite_by)
+     VALUES ('nous-deux', 244786, 'watched', 4, 5, 'u-1', 'swipe', NULL, NULL),
+            ('nous-deux', 129, 'to_watch', 4, NULL, 'u-1', 'search', 8, 'u-1')`,
   "INSERT INTO movie_want (group_id, tmdb_id, user_id, wanted_at) VALUES ('nous-deux', 244786, 'u-1', 6)",
   "INSERT INTO movie_rejection (user_id, tmdb_id, rejected_at) VALUES ('u-1', 129, 7)",
-  `INSERT INTO movies (tmdb_id, title, overview, vote_average, status, decided_at)
-     VALUES (244786, 'Whiplash', '', 8.4, 'to_watch', 1)`,
 ];
 
 function backup() {
@@ -195,6 +193,36 @@ describe("restauration d'une sauvegarde", () => {
       }),
     ]);
     expect(rows.movie_snapshot?.[0]).toContain('"providers":"[]"');
+  });
+
+  it("une sauvegarde d’avant la suppression des restes (spec v2 §17) se restaure : movies et les deux colonnes sont ignorées et nommées", async () => {
+    const file = plainBackup({
+      app_group: [{ id: "g-1", name: "G", created_at: 1 }],
+      movie_snapshot: [
+        { tmdb_id: 1, title: "T", overview: "", vote_average: 1 },
+      ],
+      group_movie: [
+        {
+          group_id: "g-1",
+          tmdb_id: 1,
+          status: "to_watch",
+          decided_at: 1,
+          added_via: "legacy",
+          legacy: 1,
+          watched_legacy: 0,
+        },
+      ],
+      movies: [{ tmdb_id: 1, title: "T", status: "to_watch", decided_at: 1 }],
+    });
+
+    const result = restore(file);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain(
+      "group_movie: colonne ignorée legacy, watched_legacy",
+    );
+    expect(result.stdout).toContain("movies: table supprimée, ignorée");
+    expect(result.stdout).toContain("group_movie: 1 rows");
   });
 
   it.each([

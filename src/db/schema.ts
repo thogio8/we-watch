@@ -1,13 +1,7 @@
-import {
-  index,
-  integer,
-  real,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
-import type { MovieStatus, StreamingProvider } from "@/domain/movie";
+import { integer, real, text } from "drizzle-orm/sqlite-core";
+import type { StreamingProvider } from "@/domain/movie";
 
-/** TMDB data of a movie: the columns `movies` and `movie_snapshot` share. */
+/** TMDB data of a movie: the columns of `movie_snapshot` (group-schema.ts). */
 export const snapshotColumns = () => ({
   tmdbId: integer("tmdb_id").primaryKey(),
   title: text("title").notNull(),
@@ -26,16 +20,3 @@ export const snapshotColumns = () => ({
     .default([]),
   trailerKey: text("trailer_key"),
 });
-
-export const movies = sqliteTable(
-  "movies",
-  {
-    ...snapshotColumns(),
-    status: text("status", { enum: ["to_watch", "watched", "rejected"] })
-      .$type<MovieStatus>()
-      .notNull(),
-    decidedAt: integer("decided_at", { mode: "timestamp_ms" }).notNull(),
-    watchedAt: integer("watched_at", { mode: "timestamp_ms" }),
-  },
-  (table) => [index("movies_status_idx").on(table.status)],
-);

@@ -72,8 +72,8 @@ async function fillWithSecrets() {
        values ('SECRET-verification-id', 'SECRET-identifier', 'SECRET-value', 1)`,
     "insert into signup_ticket_use (jti, used_at) values ('SECRET-jti', 1)",
     "insert into rate_limit (key, count, window_start) values ('SECRET-key', 1, 1)",
-    `insert into movies (tmdb_id, title, overview, vote_average, status, decided_at)
-       values (244786, 'Whiplash', '', 8.4, 'to_watch', 1)`,
+    `insert into movie_snapshot (tmdb_id, title, overview, vote_average)
+       values (244786, 'Whiplash', '', 8.4)`,
   ]);
   client.close();
 }
@@ -83,22 +83,22 @@ describe("sauvegarde de la base avant migration", () => {
     const { printed, saved } = backup();
 
     expect(saved).toEqual({});
-    expect(printed).toContain("movies: absent");
+    expect(printed).toContain("movie_snapshot: absent");
     expect(printed).toContain("user: absent");
   });
 
-  it("une base 1.3.x : seule la table movies, déjà là, est sauvée", async () => {
+  it("une base incomplète : seules les tables déjà là sont sauvées", async () => {
     const client = createClient({ url });
     await client.batch([
-      "create table movies (tmdb_id integer primary key, title text)",
-      "insert into movies values (244786, 'Whiplash')",
+      "create table user (id text primary key, name text)",
+      "insert into user values ('u-1', 'Léa')",
     ]);
     client.close();
 
     const { printed, saved } = backup();
 
-    expect(saved).toEqual({ movies: [{ tmdb_id: 244786, title: "Whiplash" }] });
-    expect(printed).toContain("movies: 1 rows");
+    expect(saved).toEqual({ user: [{ id: "u-1", name: "Léa" }] });
+    expect(printed).toContain("user: 1 rows");
     expect(printed).toContain("app_group: absent");
     expect(printed).toContain("account: absent");
   });
@@ -121,7 +121,6 @@ describe("sauvegarde de la base avant migration", () => {
       "group_movie",
       "movie_want",
       "movie_rejection",
-      "movies",
     ]);
     expect(saved.app_group).toEqual([
       expect.objectContaining({ id: "g-1", name: "NOUS DEUX" }),

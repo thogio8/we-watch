@@ -15,7 +15,6 @@ import {
   movieWant,
 } from "@/db/group-schema";
 import { rateLimit } from "@/db/rate-limit-schema";
-import { movies } from "@/db/schema";
 import { fakeTmdb } from "../fake-tmdb/handler";
 import { aGroup } from "./groups";
 
@@ -60,7 +59,6 @@ export async function startServerStack(): Promise<{
         membership,
         group,
         movieSnapshot,
-        movies,
         rateLimit,
       ]) {
         await db.delete(table);

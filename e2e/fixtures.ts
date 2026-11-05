@@ -28,7 +28,6 @@ import {
   movieSnapshot,
   movieWant,
 } from "../src/db/group-schema";
-import { movies } from "../src/db/schema";
 import { GROUP_COOKIE } from "../src/domain/group";
 import { watchSecurity } from "./csp";
 import { appUrl, databaseOf, E2E_AUTH_SECRET } from "./env";
@@ -57,7 +56,6 @@ async function wipe() {
     membership,
     group,
     movieSnapshot,
-    movies,
     passkey,
     session,
     account,

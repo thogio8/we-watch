@@ -59,11 +59,6 @@ try {
   });
   const { lines, complete } = await compare(client, backup);
   for (const line of lines) console.log(line);
-  // Temporary (spec v2 §17): the column is dropped only once this reads 0.
-  const watchedLegacy = (backup.group_movie ?? []).filter(
-    (row) => Number(row.watched_legacy) === 1,
-  ).length;
-  console.log(`group_movie.watched_legacy à 1 : ${watchedLegacy}`);
   console.log(complete ? "restauration vérifiée" : "restauration incomplète");
   if (!complete) process.exitCode = 1;
 } catch (error) {

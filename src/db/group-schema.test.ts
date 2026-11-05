@@ -76,7 +76,7 @@ describe("tables des groupes", () => {
 
     expect(created?.createdAt).toBeInstanceOf(Date);
     expect(member?.lastUsedAt).toBeNull();
-    expect(movie?.legacy).toBe(false);
+    expect(movie?.favoriteAt).toBeNull();
   });
 
   it("supprime appartenances, liste et « voulu » avec le groupe", async () => {
