@@ -9,9 +9,10 @@ import {
   topCard,
 } from "./fixtures";
 import { chooseGroup, createGroup, pill } from "./groups";
+import { matchMoment } from "./match";
 
 test.describe("groupes", () => {
-  test("deux membres veulent le même film : il est voulu par Léa et Hugo", async ({
+  test("deux membres veulent le même film, les deux piles déjà ouvertes : le second fait le match, voulu par vous deux", async ({
     app,
     member,
   }) => {
@@ -21,13 +22,16 @@ test.describe("groupes", () => {
     await expect(topCard(hugo)).toHaveText("Whiplash");
 
     await swipe(app, ["keep"]);
+    // His card came before Léa's keep, without a banner: the server alone
+    // says the match.
     await decide(hugo, "keep");
+    await expect(matchMoment(hugo)).toBeVisible();
     await settled(hugo);
 
     for (const page of [app, hugo]) {
       await page.goto("/list");
       await expect(listTitles(page)).toHaveText(["Whiplash"]);
-      await expect(page.getByText("voulu par Léa et Hugo")).toBeVisible();
+      await expect(page.getByText("voulu par vous deux")).toBeVisible();
     }
   });
 
