@@ -418,6 +418,9 @@ async function expectNoOverflow(page: Page, path: string) {
 
 /** axe's serious and critical findings, contrast included. */
 async function seriousViolations(page: Page, path: string) {
+  // Next streams the metadata apart: after a refresh, the <title> may come
+  // a moment after the screen. A title that never comes still fails here.
+  await expect(page, `${path} : titre`).toHaveTitle(/\S/);
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations
     .filter((v) => v.impact === "serious" || v.impact === "critical")
