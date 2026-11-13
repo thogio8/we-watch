@@ -2,9 +2,24 @@ import { fakeRegistration } from "./webauthn";
 
 export const BASE_URL = "http://localhost:3000";
 
-/** Cookies `name=value` a response sets, ready for a `cookie` header. */
-export const cookiesOf = (response: Response) =>
-  response.headers.getSetCookie().map((line) => line.split(";")[0] as string);
+const isExpiry = (line: string) => /;\s*max-age=0(;|$)/i.test(line);
+
+/**
+ * Cookies `name=value` a response leaves on the device, ready for a `cookie`
+ * header: as a browser does, each `Set-Cookie` replaces an earlier one of the
+ * same name, and an expired one (`Max-Age=0`) removes it. A response may
+ * expire a revoked session's cookies, then set the new session's.
+ */
+export function cookiesOf(response: Response): string[] {
+  const jar = new Map<string, string>();
+  for (const line of response.headers.getSetCookie()) {
+    const pair = line.split(";")[0] as string;
+    const name = pair.split("=")[0] as string;
+    jar.delete(name);
+    if (!isExpiry(line)) jar.set(name, pair);
+  }
+  return [...jar.values()];
+}
 
 type Registration = {
   /**
